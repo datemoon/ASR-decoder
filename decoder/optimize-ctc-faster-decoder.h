@@ -57,21 +57,6 @@ struct CtcFasterDecoderOptions
 		}
 	}
 
-	/*
-  	void Register(OptionsItf *opts, bool full) 
-		opts->Register("beam", &_beam, "Decoding beam.  Larger->slower, more accurate.");
-		opts->Register("max-active", &_max_active, "Decoder max active states.  Larger->slower; "
-				"more accurate");
-		opts->Register("min-active", &_min_active,
-				"Decoder min active states (don't prune if #active less than this).");
-		if (full) {
-	  		opts->Register("beam-delta", &_beam_delta,
-					"Increment used in decoder [obscure setting]");
-	  		opts->Register("hash-ratio", &_hash_ratio,
-					"Setting used in decoder to control hash behavior");
-		}
-  	}
-	*/
 };
 
 class CtcFasterDecoder 

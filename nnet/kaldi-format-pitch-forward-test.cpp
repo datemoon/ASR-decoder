@@ -100,9 +100,9 @@ int main(int argc,char *argv[])
 		bool is_black = false;
 		for(int i=0;i<nnet_in_frame;i+=send_frame)
 		{
-			int end = 0;
-			if(i == nnet_in_frame-1)
-				end = 1;
+//			int end = 0;
+//			if(i == nnet_in_frame-1)
+//				end = 1;
 			gettimeofday(&start_time,NULL);
 			forward->FeedForward(feats, send_frame, dim);
 			gettimeofday(&end_time,NULL);

@@ -14,6 +14,7 @@ typedef enum
 	kLstm,
 	kLstmCudnn,
 	kSRU,
+	kTfLstm,
 
 	kActivationFunction = 0x0200,
 	kSoftmax,

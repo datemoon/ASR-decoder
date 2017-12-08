@@ -22,7 +22,7 @@ int main(int argc,char *argv[])
 		"Usage:optimize-ctc-faster-decoder-kaldifeature-test featconf fst nnetmodel feat.list\n";
 	ConfigParseOptions conf(usage);
 
-	CtcFasterDecoderOptions decodeopt(16.0,7000,20,0.5,2.0);
+	CtcFasterDecoderOptions decodeopt(16.0,5000,20,0.5,2.0);
 	NnetForwardOptions nnetopt;
 	decodeopt.Register(&conf, true);
 	nnetopt.Register(&conf);
@@ -194,12 +194,12 @@ int main(int argc,char *argv[])
 				{
 					printf("%s ",wordsymbol->FindWordStr(best_words_arr[i]));
 				}
-				printf("%f %f",best_tot_score,best_lm_score);
+				//printf("%f %f",best_tot_score,best_lm_score);
 				printf("\n");
-				for(unsigned i = 0; i < best_phones_arr.size(); ++i)
+				//for(unsigned i = 0; i < best_phones_arr.size(); ++i)
 					//printf("(%d) %d \n",i,best_phones_arr[i]);
-					printf(" %d",best_phones_arr[i]);
-				printf("\n");
+				//	printf(" %d",best_phones_arr[i]);
+				//printf("\n");
 			}
 		}
 		else

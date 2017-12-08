@@ -51,6 +51,58 @@ void DnnFeat::SetRows(int rows)
 	_cur_frame += rows;
 }
 
+int DnnFeat::GetFeats(FILE *fp,float **feats,int *nnet_in_frame, int *dim)
+{
+	// anasy file
+	long f_offset = ftell(fp);
+#define GETLINE (128*64)
+	char line[GETLINE]={0};
+	int num_line =0;
+	while(fgets(line,GETLINE,fp) != NULL)
+	{
+		if (num_line == 0)
+			assert(strstr(line,"["));
+		num_line ++;
+		if (strstr(line,"]") != NULL)
+			break;
+	}
+	if (num_line == 0)
+		return 1;
+	fseek(fp, f_offset, SEEK_SET);
+	int frames = num_line - 1;
+	float *feat = GetFeatsPoint(frames);
+
+	ReadMatrix(fp, feat, frames, _dims);
+	SetRows(frames);
+	// no features.
+	if(frames == 0 && _start == 1)
+		return 0;
+
+	// copy the first frame 
+	for(int i=0; i < _leftcontext; ++i)
+	{
+		memcpy(_feats+i*_dims,
+				_feats+_leftcontext*_dims,_dims*sizeof(float));
+	}
+	// GetFeatsPoint have consider memery, so there no realloc process.
+	// but I do assert() check.
+	assert(_capacity >= (_rows+_rightcontext)*_dims);
+	for(int i=0; i < _rightcontext; ++i)
+	{
+		memcpy(_feats+(_rows+i)*_dims,
+				_feats+ (_rows-1)*_dims, _dims*sizeof(float));
+	}
+	_end = 1;
+	_rows += _rightcontext;
+	
+	*feats = _feats;
+	*nnet_in_frame = _rows - _leftcontext - _rightcontext;
+	*nnet_in_frame = *nnet_in_frame > 0 ? *nnet_in_frame : 0;
+	*dim = _dims;
+	fclose(fp);
+	return 0;
+}
+
 int DnnFeat::GetFeats(char *file,float **feats,int *nnet_in_frame, int *dim)
 {
 	// anasy file

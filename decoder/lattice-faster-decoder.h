@@ -34,6 +34,7 @@ struct LatticeFasterDecoderConfig
 	float _prune_scale; // Note: we don't make this configurable on the command line,
 						// it's not a very important parameter.  It affects the
 						// algorithm that prunes the tokens as we go.
+	
 	LatticeFasterDecoderConfig(): 
 		_beam(16.0),
 		_max_active(std::numeric_limits<int>::max()),

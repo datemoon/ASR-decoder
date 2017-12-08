@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "decoder/optimize_fst.h"
+#include "decoder/optimize-fst.h"
 #include "fst/connect-fst.h"
 
 

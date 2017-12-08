@@ -249,6 +249,7 @@ float LatticeFasterDecoder::ProcessEmitting(AmInterface *decodable)
 			}
 		}
 		// at here process black arc
+		if(blkid >= 0)
 		{
 			float ac_cost = - decodable->LogLikelihood(nnetframe, blkid);
 			double new_weight = tok->_tot_cost + ac_cost;
@@ -301,6 +302,7 @@ float LatticeFasterDecoder::ProcessEmitting(AmInterface *decodable)
 					_num_links++;
 				}
 			}// for all arc.
+			if(blkid >= 0)
 			{ // now process black arc
 				float ac_cost = - decodable->LogLikelihood(nnetframe, blkid);
 				float tot_cost = tok->_tot_cost + ac_cost;

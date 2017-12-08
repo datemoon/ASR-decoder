@@ -16,8 +16,10 @@ LIBS = ../pitch/libpitch.a ../nnet/libnnet.a ../hmm/libhmm.a ../util/libutil.a \
 	   $(CBLASLIB) $(FEATLIB)
 
 OBJ=nnet-layer.o matrix.o nnet-component.o nnet-nnet.o \
-	nnet-feature-api.o lstm-layer.o nnet-util.o cudnn-lstm-layer.o nnet-feature-pitch-api.o \
-	lstm-projected-layer.o nnet-simple-recurrent.o
+	nnet-feature-api.o lstm-layer.o nnet-util.o \
+	cudnn-lstm-layer.o nnet-feature-pitch-api.o \
+	lstm-projected-layer.o nnet-simple-recurrent.o \
+	tf-lstm-layer.o
 
 BIN = nnetread nnet-feature-api-test forward-test \
 	  kaldi-forward-test nnet-read-test pitch-forward-test \

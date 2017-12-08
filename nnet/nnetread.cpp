@@ -16,7 +16,7 @@ int main(int argc,char *argv[])
 #else
 	nnet->ReadNnet(argv[1],true);
 	nnet->ReadNnet(argv[2],true);
-//	nnet->ReadNnet(argv[3],true);
+	nnet->ReadNnet(argv[3],true);
 	if(false == nnet->WriteNnet(argv[4]))
 		std::cout << "write nnet error!" << std::endl;
 #endif

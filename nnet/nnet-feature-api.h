@@ -64,6 +64,7 @@ public:
 	// for support kaldi format feature add this function
 	int GetFeats(char *file,float **feats,int *nnet_in_frame, int *dim);
 
+	int GetFeats(FILE *fp,float **feats,int *nnet_in_frame, int *dim);
 	// call GetFeats and use feature after,you must call this function
 	// for delete have been used features.
 	void RemoveFeats(int nnet_in_frame);

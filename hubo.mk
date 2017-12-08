@@ -3,7 +3,7 @@
 
 CXXFLAGS=-msse -msse2 -Wall -I.. -pthread \
 		 -std=c++0x \
-		 -gdwarf-2 #-gstabs+ #-DDEBUGTOKEN -g #-pg #-DDEBUG #-DDEBUGGRAPH
+		 -O2 #-gdwarf-2 #-gstabs+ #-DDEBUGTOKEN -g #-pg #-DDEBUG #-DDEBUGGRAPH
 
 CXXFLAGS += -fPIC
 

@@ -8,6 +8,7 @@
 #include "nnet/nnet-util.h"
 #include "nnet/lstm-projected-layer.h"
 #include "nnet/nnet-simple-recurrent.h"
+#include "nnet/tf-lstm-layer.h"
 
 bool Nnet::ReadNnet(const char* file)
 {
@@ -134,10 +135,12 @@ void NnetForward::FeedForward(float *in,int frames,int dim)
 	{
 		for(int i = 0; i < _true_frames;++i)
 		{
-			input[i*outdim+0] *= _bk_scale;
-			if(input[i*outdim+0]/(_bk_scale+1e-8) > _skip_bk)
+			if(_block_pdf_pdfid < 0)
+				break;
+			input[i*outdim+_block_pdf_pdfid] *= _bk_scale;
+			if(input[i*outdim+_block_pdf_pdfid]/(_bk_scale+1e-8) > _skip_bk)
 			{
-				input[i*outdim+0] = 2.71828e30;
+				input[i*outdim+_block_pdf_pdfid] = 2.71828e30;
 			}
 		}
 		DoLog(input, _true_frames, outdim, _output_data);
@@ -183,6 +186,11 @@ void NnetForward::ResetRnnBuffer()
 		{
 			SRUcell *sru = dynamic_cast<SRUcell*>(comp);
 			sru->ResetBuf();
+		}
+		else if(type == kTfLstm)
+		{
+			TfLstm *tflstm = dynamic_cast<TfLstm*>(comp);
+			tflstm->ResetBuf();
 		}
 	}
 }

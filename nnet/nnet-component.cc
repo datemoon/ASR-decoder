@@ -8,6 +8,7 @@
 #include "nnet/cudnn-lstm-layer.h"
 #include "nnet/lstm-projected-layer.h"
 #include "nnet/nnet-simple-recurrent.h"
+#include "nnet/tf-lstm-layer.h"
 
 Component* Component::NewComponentOfType(ComponentType comp_type, int input_dim, int output_dim)
 {
@@ -49,6 +50,9 @@ Component* Component::NewComponentOfType(ComponentType comp_type, int input_dim,
 			break;
 		case kSRU:
 			ans = new SRUcell(input_dim, output_dim);
+			break;
+		case kTfLstm:
+			ans = new TfLstm(input_dim, output_dim);
 			break;
 		case kUnknown :
 		default:
@@ -145,6 +149,8 @@ ComponentType GetTypeInOutDim(char *str,int &indim, int &outdim, bool essen)
 		type = kLstmProjectedStreams;
 	else if(strncmp(token,"<SimpleRecurrentUnit>",21) == 0)
 		type = kSRU;
+	else if(strncmp(token,"<TfLstm>", 8) == 0)
+		type = kTfLstm;
 	else
 	{
 		type = kUnknown;

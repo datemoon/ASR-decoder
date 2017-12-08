@@ -66,9 +66,10 @@ struct NnetForwardOptions
 	float _block_scale;
 	float _skip_block;
 	float _acoustic_scale;
+	int _block_pdf_pdfid;
 
 	NnetForwardOptions():
-		_skip(0), _do_log(true), _sub_prior(true), _block_scale(1.0), _skip_block(1.0), _acoustic_scale(1.0) { }
+		_skip(0), _do_log(true), _sub_prior(true), _block_scale(1.0), _skip_block(1.0), _acoustic_scale(1.0), _block_pdf_pdfid(-1) { }
 
 	void Register(ConfigParseOptions *opts)
 	{
@@ -78,13 +79,15 @@ struct NnetForwardOptions
 		opts->Register("block-scale", &_block_scale, "In ctc have block, you can scale");// (float, default = 1.0)");
 		opts->Register("skip-block", &_skip_block, "Whether process some large probability block. If probability greather then skip-block, so skip it ");//(float, default = 1.0)");
 		opts->Register("acoustic-scale", &_acoustic_scale, "Scaling factor for acoustic likelihoods");// (float, default = 1.0)");
+		opts->Register("block-pdf-pdfid", &_block_pdf_pdfid, "If use ctc model block, here it's NumTransitionIds+1 ");
 	}
 };
 class NnetForward
 {
 public:
 	NnetForward(Nnet *nnet, const NnetForwardOptions * config):
-		_trans_model(nnet->GetTrans()), _block_pdf_index(-1), _nnet(nnet->GetNet()),
+		_trans_model(nnet->GetTrans()), _block_pdf_pdfid(config->_block_pdf_pdfid), _block_pdf_index(-1),
+		_nnet(nnet->GetNet()),
 		_skip_frames(config->_skip), _do_log(config->_do_log), 
 		_sub_prior(config->_sub_prior), _bk_scale(config->_block_scale),
 		_skip_bk(config->_skip_block), _acoustic_scale(config->_acoustic_scale)
@@ -92,14 +95,8 @@ public:
 		// first get _block_pdf_id for skip block
 		if(NULL != _trans_model)
 		{
-			for(int i=1;i<=_trans_model->NumTransitionIds();++i)
-			{
-				if(_trans_model->TransitionIdToPdf(i) == 0)
-				{
-					_block_pdf_index = i;
-					break;
-				}
-			}
+			if(_block_pdf_pdfid >= 0)
+				_block_pdf_index = _trans_model->NumTransitionIds() + 1;
 		}
 		_max_dim = 0;
 		for(int i = 0 ; i < NumComponents();++i)
@@ -122,8 +119,8 @@ public:
 	}
 	NnetForward(Nnet *nnet, int skip=0, bool do_log = true, 
 			bool sub_prior = true, float bk_scale=1.0,
-		   	float skip_bk = 1.0, float acoustic_scale=1.0):
-		_trans_model(nnet->GetTrans()), _block_pdf_index(-1),
+		   	float skip_bk = 1.0, float acoustic_scale=1.0, int block_pdf_pdfid=-1):
+		_trans_model(nnet->GetTrans()), _block_pdf_pdfid(block_pdf_pdfid), _block_pdf_index(-1),
 		_nnet(nnet->GetNet()), _skip_frames(skip),
 		_do_log(do_log), _sub_prior(sub_prior), 
 		_bk_scale(bk_scale), _skip_bk(skip_bk),
@@ -132,14 +129,8 @@ public:
 		// first get _block_pdf_id for skip block
 		if(NULL != _trans_model)
 		{
-			for(int i=1;i<=_trans_model->NumTransitionIds();++i)
-			{
-				if(_trans_model->TransitionIdToPdf(i) == 0)
-				{
-					_block_pdf_index = i;
-					break;
-				}
-			}
+			if(_block_pdf_pdfid >= 0)
+				_block_pdf_index = _trans_model->NumTransitionIds() + 1;
 		}
 		_max_dim = 0;
 		for(int i = 0 ; i < NumComponents();++i)
@@ -212,11 +203,17 @@ public:
 	{
 		if(NULL != _trans_model)
 		{
-			ilabel = _trans_model->TransitionIdToPdf(ilabel);
+			if(ilabel == _block_pdf_index)
+				ilabel = _block_pdf_pdfid;
+			else
+				ilabel = _trans_model->TransitionIdToPdf(ilabel);
 		}
 		else
 		{
-			ilabel -= 1;
+			if(ilabel == _block_pdf_index)
+				ilabel = _block_pdf_pdfid;
+			else
+				ilabel -= 1;
 		}
 		assert((_true_cur_frameid + _true_frames) > frame);
 		if(ilabel >= _outdim)
@@ -236,7 +233,10 @@ public:
 	{
 		if(NULL != _trans_model)
 		{
-			return _trans_model->TransitionIdToPhone(ilabel);
+			if(ilabel == _block_pdf_index)
+				return -1 * ilabel;
+			else
+				return _trans_model->TransitionIdToPhone(ilabel);
 		}
 		else
 		{
@@ -273,6 +273,7 @@ private:
 	void SetSkipFrames(int skip);
 private:
 	TransitionModel *_trans_model;
+	int _block_pdf_pdfid;
 	int _block_pdf_index;
 	vector<Component *> *_nnet;
 	float *_input_data;

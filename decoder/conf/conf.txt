@@ -1,23 +1,26 @@
 #decode config
---beam=16
---max-active=7000
---min-active=20
+--beam=13
+--max-active=5000
+--min-active=200
 --beam-delta=0.5
 --hash-ratio=2.0
 --prune-interval=25
 --lattice-beam=7.0
 
---hmmfile=/home/hubo/git/PachiraCTC/src/graph/1state_lstm3layer_frameSkip_2/final.mdl
---phonedict=/home/hubo/git/PachiraCTC/src/graph/data/hclg/phones.txt
---prondict=/home/hubo/git/PachiraCTC/src/graph/lang/lexicon.txt
---wordlist=/home/hubo/git/PachiraCTC/src/graph/data/hclg/words.txt
+--hmmfile=/search/speech/hubo/git/ASR-decoder/nnet/tf-model/graph/final.mdl.txt
+#--phonedict=/home/hubo/git/PachiraCTC/src/graph/data/hclg/phones.txt
+#--prondict=/home/hubo/git/PachiraCTC/src/graph/lang/lexicon.txt
+#--wordlist=/search/speech/hubo/git/ASR-decoder/nnet/tf-model/graph/words.txt
+--wordlist=/search/speech/hubo/git/ASR-decoder/nnet/tf-model/source/words.txt
 
 #nnet options
 --skip=2
-#--skip-block=1
---sub-prior=true
+--skip-block=1
+#--sub-prior=true
 --do-log=true
 #--acoustic-scale=0.3
-#--block-scale=10.0
+#--block-scale=1.0
+
+--block-pdf-pdfid=4222
 
 
