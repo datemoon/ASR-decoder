@@ -103,7 +103,7 @@ int DnnFeat::GetFeats(FILE *fp,float **feats,int *nnet_in_frame, int *dim)
 	return 0;
 }
 
-int DnnFeat::GetFeats(char *file,float **feats,int *nnet_in_frame, int *dim)
+int DnnFeat::GetFeats(const char *file,float **feats,int *nnet_in_frame, int *dim)
 {
 	// anasy file
 	FILE *fp = fopen(file,"r");

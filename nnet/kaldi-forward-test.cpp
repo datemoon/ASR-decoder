@@ -2,6 +2,7 @@
 #include <sys/time.h>
 #include "nnet/nnet-nnet.h"
 #include "nnet/nnet-feature-api.h"
+#include "nnet/nnet-util.h"
 
 int main(int argc,char *argv[])
 {
@@ -47,13 +48,10 @@ int main(int argc,char *argv[])
 	}
 	float all_wavtime = 0;
 	float all_nnettime = 0;
-	char linefeat[LEN];
-
-	while(NULL != fgets(linefeat,1024,featfp))
+	std::string key,file;
+	long offset = 0;
+	while(ReadScp(featfp, key, file, offset) == true)
 	{
-		linefeat[strlen(linefeat)-1] = '\0';
-		if(linefeat[0] == '#')
-			continue;
 #ifdef DEBUGPRINT
 		int frame = 0;
 #endif
@@ -61,7 +59,7 @@ int main(int argc,char *argv[])
 		{
 			forward->Reset();
 			dnnfeat->Reset();
-			dnnfeat->GetFeats(linefeat,&feats,&nnet_in_frame,&dim);
+			dnnfeat->GetFeats(file.c_str() ,&feats,&nnet_in_frame,&dim);
 			if(feats == NULL)
 			{
 				fprintf(stderr,"GetFeats failed.\n");
@@ -83,7 +81,7 @@ int main(int argc,char *argv[])
 #define DEBUG
 #ifdef DEBUG
 			int outdim = forward->GetOutdim();
-			printf("%s [\n",linefeat);
+			printf("%s [\n",key.c_str());
 			for(int i = 0;i<nnet_in_frame;++i)
 			{
 				if(false == forward->ExamineFrame(frame+i))

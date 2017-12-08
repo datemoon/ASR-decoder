@@ -5,6 +5,24 @@
 #include <string.h>
 #include "nnet-util.h"
 
+bool ReadScp(FILE *fp, std::string &key, std::string &file, long &offset)
+{
+	const unsigned len = 2048;
+	char line[len];
+	memset(line,0x00,sizeof(char)*len);
+	char *token = NULL;
+	if(true != ReadLine(fp,line,len))
+		return false;
+	char *ptr = NULL;
+	token = strtok_r(line," ",&ptr);
+	key = token;
+	token = strtok_r(NULL,":",&ptr);
+	file = token;
+//	token = strtok_r(NULL," ",&ptr);
+//	offset = atol(token);
+	return true;
+}
+
 void ReadMatrixData(FILE *fp,float *mat,int rows,int cols)
 {
 	const unsigned len = 20480*20;
@@ -168,13 +186,14 @@ void ReadMatrix(FILE *fp,int *mat,int rows,int cols)
 	assert(row == rows);
 }
 
-void ReadLine(FILE *fp,char *str,int len)
+bool ReadLine(FILE *fp,char *str,int len)
 {
 	memset(str,0x00,sizeof(char)*len);
 	char *line = fgets(str, len, fp);
 	if(line == NULL)
-		return ;
+		return false;
 	str[strlen(str)-1] = '\0';
+	return true;
 }
 
 template <typename Real>

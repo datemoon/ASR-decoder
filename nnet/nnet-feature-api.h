@@ -62,7 +62,7 @@ public:
 			float **feats, int *nnet_in_frame, int *dim, int endflag = 0);
 
 	// for support kaldi format feature add this function
-	int GetFeats(char *file,float **feats,int *nnet_in_frame, int *dim);
+	int GetFeats(const char *file,float **feats,int *nnet_in_frame, int *dim);
 
 	int GetFeats(FILE *fp,float **feats,int *nnet_in_frame, int *dim);
 	// call GetFeats and use feature after,you must call this function
