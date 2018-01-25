@@ -147,6 +147,8 @@ ComponentType GetTypeInOutDim(char *str,int &indim, int &outdim, bool essen)
 		type = kLstmCudnn;
 	else if(strncmp(token,"<LstmProjectedStreams>", 22) == 0)
 		type = kLstmProjectedStreams;
+	else if(strncmp(token,"<LstmProjected>", 15) == 0)
+		type = kLstmProjectedStreams;
 	else if(strncmp(token,"<SimpleRecurrentUnit>",21) == 0)
 		type = kSRU;
 	else if(strncmp(token,"<TfLstm>", 8) == 0)

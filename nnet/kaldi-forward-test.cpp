@@ -35,7 +35,6 @@ int main(int argc,char *argv[])
 	dnnfeat->Init(featconf.c_str(),"./");
 	dnnfeat->InitParameters(left,right);
 #define LEN (1024)
-	int frame = 0;
 	int nnet_in_frame = 0;
 	int dim = 0;
 	float *feats = NULL;
@@ -52,7 +51,8 @@ int main(int argc,char *argv[])
 	long offset = 0;
 	while(ReadScp(featfp, key, file, offset) == true)
 	{
-#ifdef DEBUGPRINT
+#define DEBUG
+#ifdef DEBUG
 		int frame = 0;
 #endif
 		while(1)
@@ -78,7 +78,6 @@ int main(int argc,char *argv[])
 			all_wavtime += nnet_in_frame/100.0;
 			gettimeofday(&start,NULL);
 #endif
-#define DEBUG
 #ifdef DEBUG
 			int outdim = forward->GetOutdim();
 			printf("%s [\n",key.c_str());

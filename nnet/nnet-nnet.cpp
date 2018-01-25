@@ -124,6 +124,11 @@ void NnetForward::FeedForward(float *in,int frames,int dim)
 		Component * comp = (*_nnet)[i];
 		if(comp->GetType() == kPrior)
 			break;
+		if (false == _do_softmax)
+		{
+			if(comp->GetType() == kSoftmax)
+				break;
+		}
 		comp->Propagate(input,_true_frames,indim,_output_data,outdim);
 		indim = outdim;
 		SwapInputOutput();
@@ -131,7 +136,7 @@ void NnetForward::FeedForward(float *in,int frames,int dim)
 		// print every layer information
 		//PrintPoint(_output_data, _true_frames , outdim);
 	}
-	if(_do_log == true)
+	if(_do_softmax == true && _do_log == true)
 	{
 		for(int i = 0; i < _true_frames;++i)
 		{

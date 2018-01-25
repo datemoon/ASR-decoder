@@ -63,19 +63,21 @@ struct NnetForwardOptions
 	int _skip;
 	bool _do_log;
 	bool _sub_prior;
+	bool _do_softmax;
 	float _block_scale;
 	float _skip_block;
 	float _acoustic_scale;
 	int _block_pdf_pdfid;
 
 	NnetForwardOptions():
-		_skip(0), _do_log(true), _sub_prior(true), _block_scale(1.0), _skip_block(1.0), _acoustic_scale(1.0), _block_pdf_pdfid(-1) { }
+		_skip(0), _do_log(true), _sub_prior(true), _do_softmax(true),  _block_scale(1.0), _skip_block(1.0), _acoustic_scale(1.0), _block_pdf_pdfid(-1) { }
 
 	void Register(ConfigParseOptions *opts)
 	{
 		opts->Register("skip", &_skip, "Skip frame");// (int, default = 0)");
 		opts->Register("do-log", &_do_log , "Transform NN output by log()");//(bool, default = true)");
 		opts->Register("sub-prior", &_sub_prior , "Whether subtract prior");// (bool, default = true)");
+		opts->Register("do-softmax", &_do_softmax , "Transform NN output by softmax");//(bool, default = true)");
 		opts->Register("block-scale", &_block_scale, "In ctc have block, you can scale");// (float, default = 1.0)");
 		opts->Register("skip-block", &_skip_block, "Whether process some large probability block. If probability greather then skip-block, so skip it ");//(float, default = 1.0)");
 		opts->Register("acoustic-scale", &_acoustic_scale, "Scaling factor for acoustic likelihoods");// (float, default = 1.0)");
@@ -89,7 +91,8 @@ public:
 		_trans_model(nnet->GetTrans()), _block_pdf_pdfid(config->_block_pdf_pdfid), _block_pdf_index(-1),
 		_nnet(nnet->GetNet()),
 		_skip_frames(config->_skip), _do_log(config->_do_log), 
-		_sub_prior(config->_sub_prior), _bk_scale(config->_block_scale),
+		_sub_prior(config->_sub_prior), _do_softmax(config->_do_softmax),
+		_bk_scale(config->_block_scale),
 		_skip_bk(config->_skip_block), _acoustic_scale(config->_acoustic_scale)
 	{
 		// first get _block_pdf_id for skip block
@@ -118,11 +121,11 @@ public:
 		_true_frames = 0;
 	}
 	NnetForward(Nnet *nnet, int skip=0, bool do_log = true, 
-			bool sub_prior = true, float bk_scale=1.0,
+			bool sub_prior = true,bool do_softmax = true,  float bk_scale=1.0,
 		   	float skip_bk = 1.0, float acoustic_scale=1.0, int block_pdf_pdfid=-1):
 		_trans_model(nnet->GetTrans()), _block_pdf_pdfid(block_pdf_pdfid), _block_pdf_index(-1),
 		_nnet(nnet->GetNet()), _skip_frames(skip),
-		_do_log(do_log), _sub_prior(sub_prior), 
+		_do_log(do_log), _sub_prior(sub_prior), _do_softmax(do_softmax),
 		_bk_scale(bk_scale), _skip_bk(skip_bk),
 		_acoustic_scale(acoustic_scale)
 	{
@@ -290,6 +293,7 @@ private:
 	// for nnet posterior
 	bool _do_log;
 	bool _sub_prior;
+	bool _do_softmax;
 
 	float _bk_scale;
 	float _skip_bk;

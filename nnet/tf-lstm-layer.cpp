@@ -64,8 +64,8 @@ void TfLstm::PropagateFnc(float *in, int frames, int cols, float *out )
 			// forget gate
 			VectorMulVector(_phole_f_c, prev_y_c, y_f, _dim, 1.0, 1.0);
 		}
-		for(int i =0 ; i < _dim;++i)
-			y_f[i] += 1.0;
+		//for(int i =0 ; i < _dim;++i)
+		//	y_f[i] += 1.0;
 		// apply sigmoid/tanh functionis to squash the outputs
 		DoSigmoid(y_i, 1, _dim, y_i);
 		DoSigmoid(y_f, 1, _dim, y_f);
