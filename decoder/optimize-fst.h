@@ -7,6 +7,7 @@
 
 typedef int StateId;
 typedef int Label;
+//typedef float Weight;
 
 typedef long long int LLint;
 typedef unsigned long long int ULLint;
@@ -14,11 +15,6 @@ typedef unsigned long long int ULLint;
 class Arc
 {
 public:
-	typedef float Weight;
-	typedef int Label;
-	typedef int StateId;
-
-
 	Label _input;
 	Label _output;
 	StateId _to;
@@ -175,6 +171,15 @@ public:
 			return NULL;
 	}
 	
+	Arc *GetArc(int arcid)
+	{
+		return &_arc_arr[arcid];
+	}
+	int GetArcId(const Arc *arc)
+	{
+		return arc - _arc_arr;
+	}
+
 	inline StateId Start()
 	{
 		return _start_stateid;
@@ -188,6 +193,10 @@ public:
 	inline StateId TotState()
 	{
 		return _total_states;
+	}
+	inline int TotArc()
+	{
+		return _total_arcs;
 	}
 };
 
