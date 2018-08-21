@@ -11,7 +11,11 @@ bool Fst::ReadFst(const char *file)
 		LOGERR("fopen %s failed.\n",file);
 		return false;
 	}
-
+	ReadFst(fp);
+	fclose(fp);
+}
+bool Fst::ReadFst(FILE *fp)
+{
 	if(1 != fread(&(_start_stateid),sizeof(int),1,fp))
 		return false;
 	if(1 != fread(&(_final_stateid),sizeof(int),1,fp))
@@ -47,7 +51,6 @@ bool Fst::ReadFst(const char *file)
 		arc_offset += num_arc;
 	}
 	assert(arc_offset == _total_arcs && "arc read is error.\n");
-	fclose(fp);
 	return true;
 }
 

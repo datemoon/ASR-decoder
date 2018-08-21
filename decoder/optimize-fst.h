@@ -15,6 +15,8 @@ typedef unsigned long long int ULLint;
 class Arc
 {
 public:
+	typedef int StateId;
+	typedef int Label;
 	Label _input;
 	Label _output;
 	StateId _to;
@@ -158,7 +160,9 @@ public:
 		_total_noepsilons = 0;
 	}
 
+
 	bool ReadFst(const char *file);
+	bool ReadFst(FILE *fp);
 	void PrintFst();
 	bool WriteFst(const char *file);
 	State* GetState(StateId stateid)
