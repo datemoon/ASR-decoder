@@ -28,7 +28,7 @@ void ClgLatticeFasterOnlineDecoder::InitDecoding()
 
 	_decoding_finalized = false;
 
-	StateId start_state = _graph->Start();
+	ClgTokenStateId start_state = _graph->Start();
 
 	_active_toks.resize(1);
 	Token *start_tok = new Token(0.0, 0.0, NULL, NULL, NULL);
@@ -59,7 +59,7 @@ void ClgLatticeFasterOnlineDecoder::ClearActiveTokens()
 }
 
 // FindOrAddToken either locates a token in hash of _cur_toks,
-ClgLatticeFasterOnlineDecoder::Token *ClgLatticeFasterOnlineDecoder::FindOrAddToken(StateId stateid,
+ClgLatticeFasterOnlineDecoder::Token *ClgLatticeFasterOnlineDecoder::FindOrAddToken(ClgTokenStateId stateid,
 		int frame_plus_one, float tot_cost, Token *backpointer, bool *changed)
 {
 	// Returns the Token pointer.  Sets "changed" (if non-NULL) to true
@@ -67,7 +67,7 @@ ClgLatticeFasterOnlineDecoder::Token *ClgLatticeFasterOnlineDecoder::FindOrAddTo
 	assert((size_t)frame_plus_one < _active_toks.size());
 	Token *&toks = _active_toks[frame_plus_one]._toks;
 
-	unordered_map<StateId, Token*>::const_iterator iter = _cur_toks.find(stateid);
+	unordered_map<ClgTokenStateId, Token*>::const_iterator iter = _cur_toks.find(stateid);
 	if(iter == _cur_toks.end())
 	{ // this state not arrive in current frame.
 		const float extra_cost = 0.0;
@@ -109,7 +109,7 @@ ClgLatticeFasterOnlineDecoder::Token *ClgLatticeFasterOnlineDecoder::FindOrAddTo
 /*************
  * before ProcessEmitting, call GetCutoff, get this frame cutoff.
  *************/
-float ClgLatticeFasterOnlineDecoder::GetCutoff(Token **best_tok, StateId *best_stateid,
+float ClgLatticeFasterOnlineDecoder::GetCutoff(Token **best_tok, ClgTokenStateId *best_stateid,
 		float *adaptive_beam)
 {
 	size_t tok_count = 0;
@@ -207,11 +207,11 @@ float ClgLatticeFasterOnlineDecoder::ProcessEmitting(AmInterface *decodable)
 	int frame = _active_toks.size() - 1;
 	_active_toks.resize(_active_toks.size() + 1);
 
-//	StateId tot_state = _graph->TotState();
+//	ClgTokenStateId tot_state = _graph->TotState();
 //	Label blkid = decodable->GetBlockTransitionId();
 
 	Token *best_tok = NULL;
-	StateId best_stateid = -1;
+	ClgTokenStateId best_stateid = -1;
 	float adaptive_beam;
 //	size_t tok_cnt = 0;
 
@@ -235,17 +235,43 @@ float ClgLatticeFasterOnlineDecoder::ProcessEmitting(AmInterface *decodable)
 	// products of the next block are "next_cutoff" and "cost_offset".
 	if (best_tok != NULL)
 	{
-		StateId stateid = best_stateid;
+		ClgTokenStateId stateid = best_stateid;
 		Token *tok = best_tok;
-		StdState *state = _graph->GetState((unsigned)stateid);
-		for(int i = 0; i < static_cast<int>(state->GetArcSize()); ++i)
-		{
-			StdArc *arc = state->GetArc((unsigned)i);
-			if (arc->_input != 0)
-			{ // propagate
-				float tot_score =  tok->_tot_cost + arc->_w - decodable->LogLikelihood(nnetframe, arc->_input);
-				if(tot_score + adaptive_beam < next_cutoff)
-					next_cutoff = tot_score + adaptive_beam;
+		StdState *state = _graph->GetState(stateid);
+		if(_graph->StateIdInClg(stateid))
+		{ // in clg fst
+			for(int i = 0; i < static_cast<int>(state->GetArcSize()); ++i)
+			{
+				StdArc *clgarc = state->GetArc((unsigned)i);
+				if(clgarc->_input != 0)
+				{
+					ClgTokenStateId hmmstateid = _graph->MapClgTokenStateId(stateid, clgarc);
+					StdState *hmmstate = _graph->GetState(hmmstateid);
+					// in hmm propagate
+					for(int j = 0; j < static_cast<int>(hmmstate->GetArcSize()); ++j)
+					{
+						StdArc *arc = hmmstate->GetArc((unsigned)j);
+						if (arc->_input != 0)
+						{ // propagate
+							float tot_score =  tok->_tot_cost + clgarc->_w + arc->_w - decodable->LogLikelihood(nnetframe, arc->_input);
+							if(tot_score + adaptive_beam < next_cutoff)
+								next_cutoff = tot_score + adaptive_beam;
+						}
+					}
+				}
+			}
+		}
+		else
+		{ // in hmm fst
+			for(int i = 0; i < static_cast<int>(state->GetArcSize()); ++i)
+			{
+				StdArc *arc = state->GetArc((unsigned)i);
+				if (arc->_input != 0)
+				{ // propagate
+					float tot_score =  tok->_tot_cost + arc->_w - decodable->LogLikelihood(nnetframe, arc->_input);
+					if(tot_score + adaptive_beam < next_cutoff)
+						next_cutoff = tot_score + adaptive_beam;
+				}
 			}
 		}
 		if(next_cutoff == FLOAT_INF)
@@ -265,32 +291,73 @@ float ClgLatticeFasterOnlineDecoder::ProcessEmitting(AmInterface *decodable)
 	// the tokens are now owned here, in _prev_toks.
 	for(auto it = _prev_toks.begin(); it != _prev_toks.end(); ++it)
 	{
-		StateId stateid = it->first;
+		ClgTokenStateId stateid = it->first;
 		Token *tok = it->second;
 		if(tok->_tot_cost < cur_cutoff)
 		{// it's OK.
 			StdState *state = _graph->GetState((unsigned)stateid);
-			for(int i = 0; i < static_cast<int>(state->GetArcSize()); ++i)
-			{
-				const StdArc *arc = state->GetArc((unsigned)i);
-				if(arc->_input != 0) // can't be black state
-				{ // propagate
-					float ac_cost = - decodable->LogLikelihood(nnetframe, arc->_input);
-					float graph_cost = arc->_w;
-					float cur_cost = tok->_tot_cost;
-					float tot_cost = cur_cost + ac_cost + graph_cost;
-					if(tot_cost > next_cutoff)
-						continue;
-					else if(tot_cost + adaptive_beam < next_cutoff)
-						next_cutoff = tot_cost + adaptive_beam; // prune by best current token
-					// Note: the frame indexes into _active_toks are one-based,
-					// hence the + 1.
-					Token *next_tok = FindOrAddToken(arc->_to,
-							frame + 1, tot_cost, tok, NULL);
-					// Add ForwardLink from tok to next_tok (put on head of list tok->links)
-					tok->_links = new ForwardLink(next_tok, arc->_input, arc->_output,
-							graph_cost, ac_cost, tok->_links);
-					_num_links++;
+			if(_graph->StateIdInClg(stateid))
+			{ // in clg fst
+				for(int i = 0; i < static_cast<int>(state->GetArcSize()); ++i)
+				{
+					StdArc *clgarc = state->GetArc((unsigned)i);
+					if(clgarc->_input != 0)
+					{
+						ClgTokenStateId hmmstateid = _graph->MapClgTokenStateId(stateid, clgarc);
+						StdState *hmmstate = _graph->GetState(hmmstateid);
+						// hmm propagate
+						for(int j = 0; j < static_cast<int>(hmmstate->GetArcSize()); ++j)
+						{
+							StdArc *arc = hmmstate->GetArc((unsigned)j);
+							if (arc->_input != 0)
+							{
+								float ac_cost = - decodable->LogLikelihood(nnetframe, arc->_input);
+								float graph_cost = arc->_w + clgarc->_w;
+								float cur_cost = tok->_tot_cost;
+								float tot_cost = cur_cost + ac_cost + graph_cost;
+								if(tot_cost > next_cutoff)
+									continue;
+								else if(tot_cost + adaptive_beam < next_cutoff)
+									next_cutoff = tot_cost + adaptive_beam; // prune by best current token
+								// Note: the frame indexes into _active_toks are one-based,
+								// hence the + 1.
+								ClgTokenStateId arrivestateid = _graph->MapClgTokenStateId(hmmstateid, arc);
+								Token *next_tok = FindOrAddToken(arrivestateid,
+										frame + 1, tot_cost, tok, NULL);
+								// Add ForwardLink from tok to next_tok (put on head of list tok->links)
+								tok->_links = new ForwardLink(next_tok, arc->_input, clgarc->_output,
+										graph_cost, ac_cost, tok->_links);
+								_num_links++;
+							}
+						}
+					}
+				} // all clg arc
+			}
+			else
+			{ // in hmm state
+				for(int i = 0; i < static_cast<int>(state->GetArcSize()); ++i)
+				{
+					const StdArc *arc = state->GetArc((unsigned)i);
+					if(arc->_input != 0) // can't be black state
+					{ // propagate
+						float ac_cost = - decodable->LogLikelihood(nnetframe, arc->_input);
+						float graph_cost = arc->_w;
+						float cur_cost = tok->_tot_cost;
+						float tot_cost = cur_cost + ac_cost + graph_cost;
+						if(tot_cost > next_cutoff)
+							continue;
+						else if(tot_cost + adaptive_beam < next_cutoff)
+							next_cutoff = tot_cost + adaptive_beam; // prune by best current token
+						// Note: the frame indexes into _active_toks are one-based,
+						// hence the + 1.
+						ClgTokenStateId arrivestateid = _graph->MapClgTokenStateId(stateid, arc);
+						Token *next_tok = FindOrAddToken(arrivestateid,
+								frame + 1, tot_cost, tok, NULL);
+						// Add ForwardLink from tok to next_tok (put on head of list tok->links)
+						tok->_links = new ForwardLink(next_tok, arc->_input, arc->_output,
+								graph_cost, ac_cost, tok->_links);
+						_num_links++;
+					}
 				}
 			}// for all arc.
 		}
@@ -324,7 +391,7 @@ void ClgLatticeFasterOnlineDecoder::ProcessNonemitting(float cutoff)
 
 	while (!_queue.empty())
 	{
-		StateId stateid = _queue.back();
+		ClgTokenStateId stateid = _queue.back();
 		_queue.pop_back();
 
 		Token *tok = _cur_toks[stateid];
@@ -353,7 +420,8 @@ void ClgLatticeFasterOnlineDecoder::ProcessNonemitting(float cutoff)
 				if(tot_cost < cutoff)
 				{
 					bool changed = false;
-					Token *new_tok = FindOrAddToken(arc->_to, frame, tot_cost,
+					ClgTokenStateId arrivestateid = _graph->MapClgTokenStateId(stateid, arc);
+					Token *new_tok = FindOrAddToken(arrivestateid, frame, tot_cost,
 							tok, &changed);
 					tok->_links = new ForwardLink(new_tok, 0, arc->_output,
 							graph_cost, 0, tok->_links);
@@ -361,7 +429,7 @@ void ClgLatticeFasterOnlineDecoder::ProcessNonemitting(float cutoff)
 					// if add node have exist and the tot_cost > this tot_cost
 					// this situation don't add this node to _queue.
 					if(changed)
-						_queue.push_back(arc->_to);
+						_queue.push_back(arrivestateid);
 				}
 			}
 		}// for all arcs in this node.
@@ -618,7 +686,7 @@ void ClgLatticeFasterOnlineDecoder::ComputeFinalCosts(
 
 	for(auto it = _cur_toks.begin() ; it != _cur_toks.end() ; ++it)
 	{
-		StateId stateid = it->first;
+		ClgTokenStateId stateid = it->first;
 		Token *tok = it->second;
 		bool fst_final = _graph->IsFinal(stateid); // here I don't use infinity inside of log(0).
 		best_cost = std::min(tok->_tot_cost, best_cost);
@@ -801,7 +869,7 @@ bool ClgLatticeFasterOnlineDecoder::GetRawLattice(Lattice *ofst,
 	assert(num_frames > 0);
 
 	const int bucket_count = _num_toks/2+3;
-	unordered_map<Token*, StateId> tok_map(bucket_count);
+	unordered_map<Token*, ClgTokenStateId> tok_map(bucket_count);
 	// First create all states.
 	std::vector<Token*> token_list;
 	for(int f = 0; f <= num_frames; ++f)
@@ -834,12 +902,12 @@ bool ClgLatticeFasterOnlineDecoder::GetRawLattice(Lattice *ofst,
 	{
 		for (Token *tok = _active_toks[f]._toks; tok != NULL; tok = tok->_next)
 		{
-			StateId cur_state = tok_map[tok];
+			ClgTokenStateId cur_state = tok_map[tok];
 			for (ForwardLink *l = tok->_links; l != NULL; l = l->_next)
 			{
-				unordered_map<Token*, StateId>::const_iterator iter =
+				unordered_map<Token*, ClgTokenStateId>::const_iterator iter =
 					tok_map.find(l->_next_tok);
-				StateId nextstate = iter->second;
+				ClgTokenStateId nextstate = iter->second;
 				assert(iter != tok_map.end());
 				float cost_offset = 0.0;
 				/* don't use _cost_offsets
@@ -976,7 +1044,8 @@ bool ClgLatticeFasterOnlineDecoder::GetBestPath(Lattice &best_path,
 		return false;
 	best_tot_score = 0;
 	// here best_path can't be top sort
-	LatticeState * cur_state = best_path.GetState(0);
+	StateId start_start = best_path.Start();
+	LatticeState * cur_state = best_path.GetState(start_start);
 	while(!cur_state->IsFinal())
 	{
 		// beacause one best path , so every state have only one arc.

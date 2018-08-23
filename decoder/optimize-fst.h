@@ -165,6 +165,7 @@ public:
 	bool ReadFst(FILE *fp);
 	void PrintFst();
 	bool WriteFst(const char *file);
+	void RmOlalel();
 	State* GetState(StateId stateid)
 	{
 		if(stateid <_total_states)

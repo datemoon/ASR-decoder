@@ -13,6 +13,7 @@ bool Fst::ReadFst(const char *file)
 	}
 	ReadFst(fp);
 	fclose(fp);
+	return true;
 }
 bool Fst::ReadFst(FILE *fp)
 {
@@ -45,6 +46,7 @@ bool Fst::ReadFst(FILE *fp)
 		{
 			if(num_arc != fread(_state_arr[i]._arcs,sizeof(Arc),num_arc,fp))
 			{
+				LOGERR("fread arc error!\n");
 				return false;
 			}
 		}
@@ -62,6 +64,18 @@ void Fst::PrintFst()
 		for(int j = 0; j < _state_arr[i]._num_arcs ; ++j)
 		{
 			printf("%d\t%d\t%d\t%d\t%f\n", i, arc[j]._to, arc[j]._input, arc[j]._output, arc[j]._w);
+		}
+	}
+}
+
+void Fst::RmOlalel()
+{
+	for(int i =0 ; i < _total_states ; ++i)
+	{
+		Arc* arc = _state_arr[i]._arcs;
+		for(int j = 0; j < _state_arr[i]._num_arcs ; ++j)
+		{
+			arc[j]._output=0;
 		}
 	}
 }

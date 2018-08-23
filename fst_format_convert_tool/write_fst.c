@@ -5,7 +5,7 @@
 
 int write_fst(const char *filename,struct Fst *fst)
 {
-	FILE *fp = fopen(filename,"wb");
+	FILE *fp = fopen(filename,"a");
 	if(1 != fwrite(&(fst->start_state),sizeof(int),1,fp))
 	{
 		return -1;

@@ -25,7 +25,7 @@ int main(int argc,char *argv[])
 {
 	const char *usage = "This is a ctc decode.\n"
 		"wfst graph no block flag.\n\n"
-		"Usage:optimize-ctc-lattice-faster-decoder-kaldifeature-test featconf fst nnetmodel feat.list\n";
+		"Usage:optimize-ctc-lattice-faster-decoder-kaldifeature-test featconf fst hmmfst nnetmodel feat.list\n";
 	ConfigParseOptions conf(usage);
 
 	LatticeFasterDecoderConfig decodeopt;
@@ -45,7 +45,7 @@ int main(int argc,char *argv[])
 	conf.Register("hmmfile", &hmmfile, "default is nohmmfile");
 	
 	conf.Read(argc, argv);
-	if(conf.NumArgs() != 5)
+	if(conf.NumArgs() != 6)
 	{
 		conf.PrintUsage();
 		return -1;
@@ -81,7 +81,11 @@ int main(int argc,char *argv[])
 	dnnfeat->InitParameters(left,right);
 
 	ClgFst fst;
-	fst.Init(fst_in_filename.c_str(), hmm_in_filename.c_str());
+	if(fst.Init(fst_in_filename.c_str(), hmm_in_filename.c_str())!= true)
+	{
+		std::cerr << "load fst error." << std::endl;
+		return -1;
+	}
 
 
 	ClgLatticeFasterOnlineDecoder decode(&fst, decodeopt);
@@ -182,6 +186,7 @@ int main(int argc,char *argv[])
 		// get onebest
 		Lattice best_path;
 		decode.GetBestPath(&best_path);
+//		best_path.Print();
 /*
 		// get raw lattice
 		Lattice best_path;

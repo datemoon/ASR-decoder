@@ -77,7 +77,7 @@ public:
 	void AdvanceDecoding(AmInterface *decodable,
 			int max_num_frames = -1);
 
-	float GetCutoff(Token **best_tok, StateId *best_stateid,
+	float GetCutoff(Token **best_tok, ClgTokenStateId *best_stateid,
 			float *adaptive_beam);
 
 	void PruneActiveTokens(float delta);
@@ -147,7 +147,7 @@ public:
 	bool GetRawLattice(Lattice *ofst,
 			bool use_final_probs) const;
 private:
-	Token * FindOrAddToken(StateId stateid,int frame_plus_one, float tot_cost, 
+	Token * FindOrAddToken(ClgTokenStateId stateid,int frame_plus_one, float tot_cost, 
 			Token *backpointer, bool *changed);
 
 	// Prune away any tokens on this frame that have no forward links.
@@ -269,11 +269,11 @@ private:
 	};
 
 	// At a frame ,a token can be indexed by StateId.
-	std::unordered_map<StateId,Token *> _cur_toks;
-	std::unordered_map<StateId,Token *> _prev_toks;
+	std::unordered_map<ClgTokenStateId,Token *> _cur_toks;
+	std::unordered_map<ClgTokenStateId,Token *> _prev_toks;
 	std::vector<TokenList> _active_toks;
 	
-	vector<StateId> _queue;
+	vector<ClgTokenStateId> _queue;
 
 	std::vector<float> _tmp_array;  // used in GetCutoff.
 
