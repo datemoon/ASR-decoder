@@ -57,7 +57,7 @@ public:
 	}
 	// Processes emitting arcs for one frame.  Propagates from prev_toks_ to cur_toks_.
 	// Returns the cost cutoff for subsequent ProcessNonemitting() to use.
-	float ProcessEmitting(AmInterface *decodable);
+	float ProcessEmitting(DecodableInterface *decodable);
 
 	// Processes nonemitting (epsilon) arcs for one frame.  Called after
 	// ProcessEmitting() on each frame.  The cost cutoff is computed by the
@@ -74,7 +74,7 @@ public:
 	/// object.  You can keep calling it each time more frames become available.
 	/// If max_num_frames is specified, it specifies the maximum number of frames
 	/// the function will decode before returning.
-	void AdvanceDecoding(AmInterface *decodable,
+	void AdvanceDecoding(DecodableInterface *decodable,
 			int max_num_frames = -1);
 
 	float GetCutoff(Token **best_tok, ClgTokenStateId *best_stateid,
@@ -82,7 +82,7 @@ public:
 
 	void PruneActiveTokens(float delta);
 
-	bool Decode(AmInterface *decodable);
+	bool Decode(DecodableInterface *decodable);
 
 	/// This function may be optionally called after AdvanceDecoding(), when you
 	/// do not plan to decode any further.  It does an extra pruning step that

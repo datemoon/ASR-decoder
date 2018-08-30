@@ -10,7 +10,7 @@
 #include "decoder/clg-lattice-faster-online-decoder.h"
 #include "nnet/nnet-nnet.h"
 #include "nnet/nnet-feature-api.h"
-#include "wordid-to-wordstr.h"
+#include "decoder/wordid-to-wordstr.h"
 #include "align/phone-to-word.h"
 #include "fst/lattice-functions.h"
 #include "fst/lattice-to-nbest.h"

@@ -199,7 +199,7 @@ float ClgLatticeFasterOnlineDecoder::GetCutoff(Token **best_tok, ClgTokenStateId
 	}// end if
 }
 
-float ClgLatticeFasterOnlineDecoder::ProcessEmitting(AmInterface *decodable)
+float ClgLatticeFasterOnlineDecoder::ProcessEmitting(DecodableInterface *decodable)
 {
 	assert(_active_toks.size() > 0 && "it's serious bug.");
 
@@ -612,11 +612,11 @@ void ClgLatticeFasterOnlineDecoder::PruneTokensForFrame(int frame_plus_one)
 	}
 }
 
-bool ClgLatticeFasterOnlineDecoder::Decode(AmInterface *decodable)
+bool ClgLatticeFasterOnlineDecoder::Decode(DecodableInterface *decodable)
 {
 	InitDecoding();
 
-	while (!decodable->ExamineFrame(_num_frames_decoded - 1))
+	while((_num_frames_decoded - 1) < decodable->NumFramesReady())
 	{
 		// prune active tokens.
 		if (NumFramesDecoded() % _config._prune_interval == 0)
@@ -631,7 +631,7 @@ bool ClgLatticeFasterOnlineDecoder::Decode(AmInterface *decodable)
 	return !_active_toks.empty() && _active_toks.back()._toks != NULL;
 }
 
-void ClgLatticeFasterOnlineDecoder::AdvanceDecoding(AmInterface *decodable,
+void ClgLatticeFasterOnlineDecoder::AdvanceDecoding(DecodableInterface *decodable,
 		int max_num_frames)
 {
 	assert(_num_frames_decoded >= 0 && !_decoding_finalized &&
@@ -651,11 +651,13 @@ void ClgLatticeFasterOnlineDecoder::AdvanceDecoding(AmInterface *decodable,
 	}
 	while(_num_frames_decoded < target_frames_decoded)
 	{
+		/*
 		if(true == decodable->SkipBlockFrame(_num_frames_decoded))
 		{
 			_num_frames_decoded++;
 			continue;
 		}
+		*/
 #ifdef DEBUG
 		std::cerr << "frame:" << _num_frames_decoded << "@number links " << _num_links << " number tokens "
 			<< _num_toks << std::endl;
