@@ -6,6 +6,49 @@
 
 static pthread_mutex_t add_fsa_node_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+bool Fsa::Write(FILE *fp)
+{
+	if(fp == NULL)
+	{
+		std::cerr << "FILE is NULL" << std::endl;
+		return false;
+	}
+	// first total state number
+	if(fwrite((void*)&states_num, sizeof(FsaStateId), 1, fp) != 1)
+	{
+		std::cerr << "Write total states number failed." << std::endl;
+		return false;
+	}
+	FsaStateId tot_arcs_num = 0;
+	// write state info
+	for(FsaStateId i=0; i<states_num; ++i)
+	{
+		// write arc number
+		if(fwrite((void*)&states[i].arc_num, sizeof(int),1 ,fp) != 1)
+		{
+			std::cerr << "Write arc number failed." << std::endl;
+			return false;
+		}
+		tot_arcs_num += static_cast<FsaStateId>(states[i].arc_num);
+	}
+	// write total arc number
+	if(fwrite((void*)&tot_arcs_num, sizeof(FsaStateId), 1, fp) != 1)
+	{
+		std::cerr << "Write total arcs number failed." << std::endl;
+		return false;
+	}
+	for(FsaStateId i=0; i<states_num; ++i)
+	{
+		if(fwrite((void*)states[i].arc, sizeof(FsaArc), states[i].arc_num ,fp)
+			   	!= (size_t)states[i].arc_num)
+		{
+			std::cerr << "Write arc failed." << std::endl;
+			return false;
+		}
+	}
+	return true;
+}
+
 void strtoupper( char *str )
 {
 	if(str == NULL)
@@ -88,7 +131,6 @@ FsaStateId Arpa2Fsa::AnasyArpa()
 			++cut_line;
 			++cur_line;
 			++tot_gram_line;
-			assert((size_t)cur_gram == _num_gram.size());
 			size_t cur_ngram_line = _num_gram[cur_gram-1];
 			if(cur_line%(cur_ngram_line + _nthread)/_nthread == 0)
 			{
@@ -126,6 +168,7 @@ int Arpa2Fsa::ReadSymbols()
 	char word[128];
 	int word_num = 0;
 	memset(word,0x00,sizeof(word));
+	int max_wordid = 0;
 	while(NULL != fgets(line,sizeof(line),fp))
 	{
 		line[strlen(line)-1] = '\0';
@@ -136,7 +179,13 @@ int Arpa2Fsa::ReadSymbols()
 		}
 		_symbols[word] = wordid;
 		word_num++;
+		max_wordid = max_wordid > wordid ? max_wordid:wordid;
 		//_symbols.insert(std::make_pair<std::string,int>(std::string(word),wordid));
+	}
+	_map_syms.resize(max_wordid+1);
+	for(auto it = _symbols.begin(); it != _symbols.end(); ++it)
+	{
+		_map_syms[it->second] = it->first;
 	}
 	fclose(fp);
 	return word_num;
@@ -175,11 +224,11 @@ bool Arpa2Fsa::AnalyLine(char *line, ArpaLine *arpaline,int gram)
 			std::cerr << "No word " << curr_word << " in " << line << std::endl;
 			return false;
 		}
-		if(wordid == _fsa.BosSymbol() && i != 0) 
+		if(wordid == BosSymbol() && i != 0) 
 		{
 			return false;
 		}
-		if(wordid == _fsa.EosSymbol() && i != gram-1) 
+		if(wordid == EosSymbol() && i != gram-1) 
 			return false;
 		else
 			arpaline->words.push_back(wordid);
@@ -206,10 +255,10 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 		FsaStateId &prev_gram_stateid, int gram)
 {
 	FsaStateId startid = _fsa.Start();
+	FsaState *start = _fsa.GetState(startid);
 	// first words node
 	if(gram == 1)
 	{
-		FsaState *start = _fsa.GetState(startid);
 		while(true)
 		{
 			int arcnum = start->GetArcNum();
@@ -249,7 +298,7 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 					arc = tmpstate->SearchStartArc(arpaline->words[i]);
 				else
 					arc = tmpstate->SearchArc(arpaline->words[i]);
-				assert(arc == NULL && "arc shouldn't NULL");
+				assert(arc != NULL && "arc shouldn't NULL");
 				FsaStateId tostateid = arc->tostateid;
 				prev_gram_stateid = tostateid;
 				tmpstate = _fsa.GetState(tostateid);
@@ -269,8 +318,9 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 			size_t back_start = 1;
 			while(true)
 			{
-				tmpstate = state;
-				for(size_t i=back_start;i<num_words;++i)
+				tmpstate = start;
+				size_t i=0;
+				for(i=back_start;i<num_words;++i)
 				{
 					FsaArc *arc = NULL;
 					if(i==back_start)
@@ -280,11 +330,13 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 					if(arc == NULL)
 					{
 						std::cerr << "No search arc,shouldn't happen." << std::endl;
+						PrintArpaLine(*arpaline);
 						break;
 					}
 					tostateid = arc->tostateid;
+					tmpstate = _fsa.GetState(tostateid);
 				}
-				if(tostateid != 0)
+				if(i == num_words)
 					break;
 				back_start++;
 				assert(back_start<num_words);
@@ -302,7 +354,8 @@ bool Arpa2Fsa::NgramToFsa(int gram,int nt)
 {
 	FsaStateId line_count = 0;
 	ArpaLine *prev_arpaline = new ArpaLine(),
-			 *cur_arpaline = new ArpaLine();
+			 *cur_arpaline = new ArpaLine(),
+			 *tmp_line = NULL;
 
 	FsaStateId prev_stateid = 0;
 
@@ -340,7 +393,10 @@ bool Arpa2Fsa::NgramToFsa(int gram,int nt)
 		}
 
 		// record cur_arpaline
+		tmp_line = prev_arpaline;
 		prev_arpaline = cur_arpaline;
+		cur_arpaline = tmp_line;
+
 		++line_count;
 		if(line_count >= _file_offset[gram-1][nt-1].line)
 			break;
@@ -360,6 +416,10 @@ bool Arpa2Fsa::ConvertArpa2Fsa()
 	_fsa.InitMem(tot_grammer_line+1000, 0);
 	FsaStateId startstate = _fsa.AddState();
 	_fsa.SetStart(startstate);
+
+	_bos_symbol = _symbols["<s>"];
+	_eos_symbol = _symbols["</s>"];
+	_unk_symbol = _symbols["<unk>"];
 
 	std::vector<pthread_t> thread;
 	thread.resize(_nthread, 0);

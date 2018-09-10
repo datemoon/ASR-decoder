@@ -13,7 +13,7 @@ int main(int argc,char *argv[])
 	std::string wordlist = argv[2];
 	Arpa2Fsa *arpa2fsa = new Arpa2Fsa(1, arpafile, wordlist);
 
-	if(arpa2fsa->ConvertArpa2Fsa() != false)
+	if(arpa2fsa->ConvertArpa2Fsa() != true)
 	{
 		std::cerr << "Convert arpa to fsa failed."<< std::endl;
 		return -1;

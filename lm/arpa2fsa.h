@@ -130,22 +130,15 @@ private:
 	FsaStateId states_num;    // state real number
 	FsaStateId states_max_len;      // state max number
 	FsaStateId add_num;
-	int bos_symbol; // begin symbol
-	int eos_symbol; // end symbol
-	int unk_symbol; // <unk>
-	int ngram_order; //
-	int num_words;  // word list number, no use now.
 	bool continuous_storage;
 public:
 	Fsa(bool con_storage=false):
 		states(NULL), arcs(NULL), start(0), arcs_num(0), states_num(0), 
-		states_max_len(0), add_num(10000), bos_symbol(-1), eos_symbol(-1), 
-		unk_symbol(-1), num_words(0), continuous_storage(con_storage) { }
+		states_max_len(0), add_num(10000), continuous_storage(con_storage) { }
 
 	Fsa(FsaStateId states_max_len, bool con_storage=true):
 		states(NULL),arcs(NULL), start(0), arcs_num(0), states_num(0),
-		states_max_len(states_max_len), add_num(10000), bos_symbol(-1), 
-		eos_symbol(-1), unk_symbol(-1), num_words(0), continuous_storage(con_storage) 
+		states_max_len(states_max_len), add_num(10000), continuous_storage(con_storage) 
 	{
 	   states = new FsaState[states_max_len];	
 	}
@@ -215,10 +208,19 @@ public:
 		return (states_num-1);
 	}
 
-	int BosSymbol() const { return bos_symbol; }
-	int EosSymbol() const { return eos_symbol; }
-	int UnkSymbol() const { return unk_symbol; }
-	int NgramOrder() const { return ngram_order; }
+	bool Write(FILE *fp);
+	bool Write(const char *file)
+	{
+		FILE *fp = fopen(file, "w");
+		if(fp == NULL)
+		{
+			std::cerr << "Open " << file << " failed." << std::endl;
+			return false;
+		}
+		bool ret = Write(fp);
+		fclose(fp);
+		return ret;
+	}
 };
 
 class Arpa2Fsa;
@@ -236,7 +238,8 @@ class Arpa2Fsa
 	struct ArpaLine;
 public:
 	Arpa2Fsa(int nthread, std::string arpafile, std::string wordlist=""):
-		_nthread(nthread), _arpafile(arpafile), _wordlist(wordlist) { }
+		_nthread(nthread), _bos_symbol(-1), _eos_symbol(-1), _unk_symbol(-1),
+		_arpafile(arpafile), _wordlist(wordlist){ }
 
 	// anasy Arpa file for thread
 	// know every threads read start position
@@ -268,6 +271,10 @@ public:
 	bool NgramToFsa(int gram,int nt);
 
 	bool ConvertArpa2Fsa();
+	int BosSymbol() const { return _bos_symbol; }
+	int EosSymbol() const { return _eos_symbol; }
+	int UnkSymbol() const { return _unk_symbol; }
+	int NgramOrder() const { return static_cast<int>(_num_gram.size()); }
 private:
 	struct ArpaLine 
 	{
@@ -283,6 +290,8 @@ private:
 		}
 		inline bool operator==(const ArpaLine &other) const
 		{
+			if(other.words.size() != words.size())
+					return false;
 			for(size_t i=0;i<words.size()-1;++i)
 			{
 				if(words[i] != other.words[i])
@@ -291,6 +300,13 @@ private:
 			return true;
 		}
 	};
+	void PrintArpaLine(ArpaLine &arpaline)
+	{
+		std::cout << arpaline.logprob << " ";
+		for(size_t i=0;i<arpaline.words.size();++i)
+			std::cout << _map_syms[arpaline.words[i]] << " ";
+		std::cout << arpaline.backoff_logprob << " " << std::endl;
+	}
 private:
 	static void *Arpa2FsaThread(void *arg)
 	{
@@ -304,6 +320,9 @@ private:
 	}
 private:
 	int _nthread;
+	int _bos_symbol; // begin symbol
+	int _eos_symbol; // end symbol
+	int _unk_symbol; // <unk>
 	std::string _arpafile;
 	std::string _wordlist;
 	std::vector<size_t> _num_gram; // record ngram line number.
@@ -318,6 +337,7 @@ private:
 	
 	std::vector<std::vector<Offset> > _file_offset;
 	std::unordered_map<std::string, int> _symbols;
+	std::vector<std::string> _map_syms;
 
 	Fsa _fsa;
 };
