@@ -8,19 +8,19 @@
  * This class change arpa lm to fsa.
  * */
 struct FsaState;
-typedef size_t FsaStateId;
+typedef long long int FsaStateId;
 struct FsaArc
 {
 	int wordid;      // word id
 	float weight;    // weight in arc , if word id is 0 ,weight is backoff 
 	FsaStateId tostateid;
 	//struct FsaState *state; // arrive state point
-	FsaArc():wordid(0),weight(0),state(NULL) { }
+	FsaArc():wordid(0),weight(0),tostateid(0) { }
 	~FsaArc()
 	{
 		wordid = 0;
 		weight = 0.0;
-		state = NULL;
+		tostateid = 0;
 	}
 };
 
@@ -38,12 +38,10 @@ struct FsaState
 	{
 		if(arc != NULL)
 		{
-			delete [] arc;
-			arc = NULL;
+			Delete();
 		}
-		arc_num = 0;
-		max_len = 0;
 	}
+	int GetArcNum() { return arc_num; }
 	void Delete()
 	{
 		if(arc != NULL)
@@ -63,16 +61,16 @@ struct FsaState
 	}
 
 	// add arc and sort
-	void AddArc(int tostateid,int wordid,float weight, int alloc_size=10)
+	void AddArc(FsaStateId tostateid,int wordid,float weight, int alloc_size=10)
 	{
 		// realloc arc
 		if(arc_num >= max_len)
 		{
-			FasArc *tmp = new FsaArc[max_len + alloc_size];
+			FsaArc *tmp = new FsaArc[max_len + alloc_size];
 			max_len += alloc_size;
 			if(arc != NULL)
 			{
-				memcpy(tmp, arc, sizeof(FasArc)*arc_num);
+				memcpy(tmp, arc, sizeof(FsaArc)*arc_num);
 				delete[] arc;
 			}
 			arc = tmp;
@@ -99,23 +97,26 @@ struct FsaState
 	}
 
 	// arc is sort, so binary search
-	FasArc *SearchArc(int wordid)
+	FsaArc *SearchArc(int wordid)
 	{
 		int start = 0,
-			end = num_arc-1,
+			end = arc_num-1,
 			mid = (start + end)/2;
 		while(start <= end)
 		{
 			if(arc[mid].wordid > wordid)
 				end = mid - 1;
-				min = (start + end)/2;
-			if(arc[mid].wordid < wordid)
+			else if(arc[mid].wordid < wordid)
 				start = mid + 1;
 			else
 				return &(arc[mid]);
-			min = (start + end)/2;
+			mid = (start + end)/2;
 		}
 		return NULL;
+	}
+	FsaArc *SearchStartArc(int wordid)
+	{
+		return &(arc[wordid]);
 	}
 };
 
@@ -124,6 +125,7 @@ class Fsa
 private:
 	FsaState *states; // Fsa state save memory
 	FsaArc *arcs;
+	FsaStateId start;
 	FsaStateId arcs_num;
 	FsaStateId states_num;    // state real number
 	FsaStateId states_max_len;      // state max number
@@ -132,22 +134,23 @@ private:
 	int eos_symbol; // end symbol
 	int unk_symbol; // <unk>
 	int ngram_order; //
-	int num_words;  // word list number
-	bool contious_storage;
+	int num_words;  // word list number, no use now.
+	bool continuous_storage;
 public:
-	Fsa(bool contious_storage=false):
-		states(NULL),arcs(NULL), arcs_num(0), states_num(0), 
-		states_max_len(0), add_num(100000), bos_symbol(-1), eos_symbol(-1), 
-		unk_symbol(-1), num_words(0), con_storage(con_storage) { }
+	Fsa(bool con_storage=false):
+		states(NULL), arcs(NULL), start(0), arcs_num(0), states_num(0), 
+		states_max_len(0), add_num(10000), bos_symbol(-1), eos_symbol(-1), 
+		unk_symbol(-1), num_words(0), continuous_storage(con_storage) { }
 
-	Fsa(FsaStateId states_max_len, bool contious_storage=true):
-		states(NULL),arcs(NULL), arcs_num(0), states_num(0),
-		states_max_len(states_max_len), add_num(100000), bos_symbol(-1), 
-		eos_symbol(-1), unk_symbol(-1), num_words(0), con_storage(con_storage) 
+	Fsa(FsaStateId states_max_len, bool con_storage=true):
+		states(NULL),arcs(NULL), start(0), arcs_num(0), states_num(0),
+		states_max_len(states_max_len), add_num(10000), bos_symbol(-1), 
+		eos_symbol(-1), unk_symbol(-1), num_words(0), continuous_storage(con_storage) 
 	{
 	   states = new FsaState[states_max_len];	
 	}
 	
+
 	~Fsa()
 	{
 		if(arcs != NULL)
@@ -164,6 +167,36 @@ public:
 		states_max_len=0;
 	}
 
+	// alloc memory
+	void InitMem(FsaStateId states_n, FsaStateId arcs_n=0)
+	{
+		if(states == NULL && states_n != 0)
+		{
+			states = new FsaState[states_n];
+			states_num = 0;
+			states_max_len = states_n;
+		}
+		if(arcs == NULL && arcs_n != 0)
+		{
+			arcs = new FsaArc[arcs_n];
+			arcs_num = arcs_n;
+		}
+	}
+
+	FsaStateId Start()
+	{
+		return start;
+	}
+
+	void SetStart(FsaStateId s)
+	{
+		start = s;
+	}
+	FsaState* GetState(FsaStateId id)
+	{
+		return &(states[id]);
+	}
+
 	FsaStateId AddState()
 	{
 		// realloc
@@ -173,8 +206,8 @@ public:
 			states_max_len += add_num;
 			if(states != NULL)
 			{
+				memcpy(tmp, states, sizeof(FsaState)*states_max_len);
 				delete [] states;
-				memcpy(tmp, states, sizeof(FasState)*states_max_len);
 			}
 			states = tmp;
 		}
@@ -188,33 +221,54 @@ public:
 	int NgramOrder() const { return ngram_order; }
 };
 
-class Arap2Fsa
+class Arpa2Fsa;
+struct ArgsT
 {
+	int gram;
+	int nthread;
+	Arpa2Fsa *arp2fsa;
+//	ArgsT(int gram, int nthread, Arpa2Fsa *arp2fsa):
+//		gram(gram), nthread(nthread), arp2fsa(arp2fsa) { }
+};
+
+class Arpa2Fsa
+{
+	struct ArpaLine;
 public:
-	Arap2Fsa(int nthread):_nthread(nthread) { }
-	
+	Arpa2Fsa(int nthread, std::string arpafile, std::string wordlist=""):
+		_nthread(nthread), _arpafile(arpafile), _wordlist(wordlist) { }
+
 	// anasy Arpa file for thread
 	// know every threads read start position
 	// return state approximate number.
-	FsaStateId AnasyArpa(const char *file);
+	FsaStateId AnasyArpa();
 
 	// Read  word list.
-	int ReadSymbols(const char *file);
+	int ReadSymbols();
 
 	// Invert word to wordid
-	inline int InvertWord2Id(std::string wordstr);
-
-	bool AddLineToFsa(ArpaLine &arpaline);
-private:
-	int _nthread;
-	std::vector<size_t> _num_gram; // record ngram line number.
-	struct Offset
+	inline int InvertWord2Id(std::string wordstr)
 	{
-		int64 line;//read how many line, it's end;
-		int64 offset;//file offset,it's start
-		Offset():line(0), offset(0) { }
-	};
+		std::unordered_map<std::string, int>::const_iterator iter = _symbols.find(wordstr);
+		if(iter != _symbols.end())
+			return iter->second;
+		else
+			return -1;
+	}
 
+
+
+	// convert one line to arpaline
+	bool AnalyLine(char *line, ArpaLine *arpaline,int gram);
+
+	// add one line grammer to fsa.
+	bool AddLineToFsa(ArpaLine *arpaline,
+			FsaStateId &prev_gram_stateid, int gram);
+
+	bool NgramToFsa(int gram,int nt);
+
+	bool ConvertArpa2Fsa();
+private:
 	struct ArpaLine 
 	{
 		std::vector<int> words; // Sequence of words to be printed.
@@ -237,8 +291,30 @@ private:
 			return true;
 		}
 	};
+private:
+	static void *Arpa2FsaThread(void *arg)
+	{
+		ArgsT *args = (ArgsT *)arg;
+		if(args->arp2fsa->NgramToFsa(args->gram, args->nthread) != true)
+		{
+			int rt = -1 * args->nthread;
+			pthread_exit((void*)&rt);
+		}
+		return NULL;
+	}
+private:
+	int _nthread;
+	std::string _arpafile;
+	std::string _wordlist;
+	std::vector<size_t> _num_gram; // record ngram line number.
+	struct Offset
+	{
+		FsaStateId line;//read how many line, it's end;
+		FsaStateId offset;//file offset,it's start
+		Offset():line(0), offset(0) { }
+	};
 
-	bool AnalyLine(char *line, ArpaLine *arpaline, int gram);
+	enum {NON,DATA,GRAM};
 	
 	std::vector<std::vector<Offset> > _file_offset;
 	std::unordered_map<std::string, int> _symbols;
