@@ -3,14 +3,17 @@ include ../hubo.mk
 
 CXXFLAGS+=-I. -I.. -lm
 
-OBJ=arpa2fsa.o
+OBJ=arpa2fsa.o compose-arpalm.o
 
 LIB=../lm/liblm.a 
 
-all:liblm.a arpa2fsa-bin
+all:liblm.a arpa2fsa-bin lmscore
 
 liblm.a:$(OBJ)
 	$(AR) -rc $@ $^
+
+lmscore:lmscore.o
+	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB)
 
 arpa2fsa-bin:arpa2fsa-bin.o
 	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB)
@@ -26,5 +29,5 @@ arpa2fsa-bin:arpa2fsa-bin.o
 
 
 clean:
-	rm -f *.o liblm.a arpa2fsa-bin
+	rm -f *.o liblm.a arpa2fsa-bin lmscore
 

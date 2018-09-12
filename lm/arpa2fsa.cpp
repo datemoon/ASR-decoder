@@ -49,6 +49,76 @@ bool Fsa::Write(FILE *fp)
 	return true;
 }
 
+bool Fsa::Read(FILE *fp)
+{
+	if(fp == NULL)
+	{
+		std::cerr << "FILE is NULL" << std::endl;
+		return false;
+	}
+	if(fread((void*)&states_num,sizeof(FsaStateId),1,fp) != 1)
+	{
+		std::cerr << "Read total states number failed." << std::endl;
+		return false;
+	}
+	states = new FsaState[states_num];
+	if(states == NULL)
+	{
+		std::cerr << "New states failed." << std::endl;
+		return false;
+	}
+	FsaStateId tot_arcs_num = 0,
+			   read_arcs_num = 0;
+	// read state info
+	for(FsaStateId i=0; i<states_num; ++i)
+	{
+		if(fread((void*)&states[i].arc_num, sizeof(int),1 ,fp) != 1)
+		{
+			std::cerr << "Read arc number failed." << std::endl;
+			return false;
+		}
+		tot_arcs_num += static_cast<FsaStateId>(states[i].arc_num);
+	}
+	// read tot arcs
+	if(fread((void*)&read_arcs_num, sizeof(FsaStateId), 1, fp) != 1)
+	{
+		std::cerr << "Read total arcs number failed." << std::endl;
+		return false;
+	}
+	assert(read_arcs_num == tot_arcs_num && "Read arc number error.");
+	// read all arc info
+	arcs = new FsaArc[tot_arcs_num];
+	if(arcs == NULL)
+	{
+		std::cerr << "New arcs failed." << std::endl;
+		return false;
+	}
+	if(fread((void*)arcs, sizeof(FsaArc), tot_arcs_num, fp) != static_cast<size_t>(tot_arcs_num))
+	{
+		std::cerr << "Read arc failed." << std::endl;
+		return false;
+	}
+	// assignment arc
+	FsaStateId offset_arc_point = 0;
+	for(FsaStateId i=0; i<states_num; ++i)
+	{
+		states[i].arc = arcs+offset_arc_point;
+		offset_arc_point += states[i].arc_num;
+	}
+	return true;
+}
+
+bool Fsa::GetArc(FsaStateId id, int wordid, FsaArc *&arc)
+{
+	if(id == start)
+		arc = states[id].SearchStartArc(wordid);
+	else
+		arc = states[id].SearchArc(wordid);
+	if(arc == NULL)
+		return false;
+	return true;
+}
+
 void strtoupper( char *str )
 {
 	if(str == NULL)
@@ -154,12 +224,12 @@ FsaStateId Arpa2Fsa::AnasyArpa()
 	return tot_gram_line;
 }
 
-int Arpa2Fsa::ReadSymbols()
+int ArpaLm::ReadSymbols(const char *wordlist)
 {
-	FILE *fp = fopen(_wordlist.c_str(), "r");
+	FILE *fp = fopen(wordlist, "r");
 	if(NULL == fp)
 	{
-		std::cerr << "Open " << _wordlist << " failed." << std::endl;
+		std::cerr << "Open " << wordlist << " failed." << std::endl;
 		return -1;
 	}
 	char line[256];
@@ -190,15 +260,66 @@ int Arpa2Fsa::ReadSymbols()
 	fclose(fp);
 	return word_num;
 }
-/*
-inline int Arpa2Fsa::InvertWord2Id(std::string wordstr)
+
+void CutLine(char *line, std::vector<std::string> &cut_line)
 {
-	if(_symbols[wordstr] != _symbols.end())
-		return _symbols[wordstr];
-	else
-		return -1;
+	char *curr_word=NULL;
+	char *str_thread = NULL;
+	curr_word = strtok_r( line , " \r\n\t" ,&str_thread) ;
+	cut_line.push_back(std::string(curr_word));
+	while((curr_word = strtok_r( NULL , " \n\r\t" ,&str_thread )) != NULL)
+	{
+		cut_line.push_back(std::string(curr_word));
+	}
 }
-*/
+
+//
+bool ArpaLmScore::ComputerText(char *text)
+{
+	std::vector<std::string> cut_text;
+	std::vector<int> ids;
+	CutLine(text,cut_text);
+	//ids.push_back(InvertWord2Id("<s>"));
+	for(size_t i=0;i<cut_text.size();++i)
+		ids.push_back(InvertWord2Id(cut_text[i]));
+	ids.push_back(InvertWord2Id("</s>"));
+	FsaStateId state = _fsa.Start();
+	FsaArc *arc=NULL;
+	_fsa.GetArc(state, InvertWord2Id("<s>"), arc);
+	state = arc->tostateid;
+	int s_ngram = 1;
+	int e_ngram = (int)_num_gram.size();
+	float tot_score = 0.0;
+	for(size_t i=0;i<ids.size();++i)
+	{
+		float backoff = 0.0,
+			  logprob = 0.0;
+		while(_fsa.GetArc(state, ids[i], arc) == false)
+		{
+			s_ngram--;
+			assert(s_ngram >= 0);
+			// search back off
+			if(_fsa.GetArc(state, 0, arc) == false)
+			{
+				std::cerr << "It shouldn't be happen." << std::endl;
+				return false;
+			}
+			state = arc->tostateid;
+			backoff += arc->weight;
+		}
+		logprob = arc->weight;
+		state = arc->tostateid;
+		s_ngram++;
+		if(s_ngram > e_ngram) 
+			s_ngram = e_ngram;
+		std::cout << logprob << " " << _map_syms[ids[i]] << " " 
+			<< backoff << " " <<  logprob+backoff << " " << s_ngram << std::endl;
+		tot_score += logprob+backoff;
+	}
+	std::cout << tot_score << std::endl;
+	return true;
+}
+
 bool Arpa2Fsa::AnalyLine(char *line, ArpaLine *arpaline,int gram)
 {
 	if ( sscanf( line , "%f" , &arpaline->logprob ) != 1 )
@@ -359,7 +480,7 @@ bool Arpa2Fsa::NgramToFsa(int gram,int nt)
 
 	FsaStateId prev_stateid = 0;
 
-	FILE *fp = fopen(_arpafile.c_str(),"r");
+	FILE *fp = fopen(_arpafile.c_str(),"rb");
 	if(fp == NULL)
 	{
 		std::cerr << "Open " << _arpafile << " failed." << std::endl;
@@ -411,7 +532,7 @@ bool Arpa2Fsa::NgramToFsa(int gram,int nt)
 bool Arpa2Fsa::ConvertArpa2Fsa()
 {
 	//int numwords = 
-	ReadSymbols();
+	ReadSymbols(_wordlist.c_str());
 	FsaStateId tot_grammer_line = AnasyArpa();
 	_fsa.InitMem(tot_grammer_line+1000, 0);
 	FsaStateId startstate = _fsa.AddState();
@@ -457,3 +578,4 @@ bool Arpa2Fsa::ConvertArpa2Fsa()
 	}
 	return true;
 }
+

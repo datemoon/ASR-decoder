@@ -73,7 +73,7 @@ public:
 		}
 	}
 
-	unsigned int GetArcSize() { return _arc.size();}
+	size_t GetArcSize() { return _arc.size();}
 
 	// Here use quick sort.
 	

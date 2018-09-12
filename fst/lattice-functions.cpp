@@ -144,8 +144,8 @@ bool LatticeCheckFormat(Lattice *fst)
 		{
 			if(cur_state->GetArcSize() != 0)
 			{
-				std::cerr << "it's error format lattice." << std::endl;
-				return false;
+				std::cerr << "it's error format lattice. num arc " << cur_state->GetArcSize() << std::endl;
+				//return false;
 			}
 		}
 		else
