@@ -118,7 +118,8 @@ float ClgLatticeFasterOnlineDecoder::GetCutoff(Token **best_tok, ClgTokenStateId
 	if(_config._max_active == std::numeric_limits<int>::max() &&
 			_config._min_active == 0)
 	{
-		for(auto it = _cur_toks.begin(); it != _cur_toks.end();++it,++tok_count)
+		//for(auto it = _cur_toks.begin(); it != _cur_toks.end();++it,++tok_count)
+		for(auto it = _prev_toks.begin(); it != _prev_toks.end();++it,++tok_count)
 		{
 			float w = it->second->_tot_cost;
 			if(w < best_weight)
@@ -381,7 +382,7 @@ void ClgLatticeFasterOnlineDecoder::ProcessNonemitting(float cutoff)
 	assert(_queue.empty() && "_queue must be empty.");
 
 	for(auto it = _cur_toks.begin(); it != _cur_toks.end();++it)
-		_queue.push_back(static_cast<int>(it->first));
+		_queue.push_back(static_cast<ClgTokenStateId>(it->first));
 
 	if (_queue.empty())
 	{

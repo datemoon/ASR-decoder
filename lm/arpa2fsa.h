@@ -2,12 +2,17 @@
 #define __ARPA2FSA_H__
 
 #include <unordered_map>
+#include <unordered_set>
+#include <queue>
 #include <cstring>
 #include <vector>
 #include <iostream>
 /*
  * This class change arpa lm to fsa.
  * */
+#ifndef M_LN10
+#define M_LN10 2.302585092994045684017991454684
+#endif
 struct FsaState;
 typedef long long int FsaStateId;
 //typedef int FsaStateId;
@@ -44,6 +49,12 @@ struct FsaState
 		}
 	}
 	int GetArcNum() { return arc_num; }
+	FsaArc* GetArc(int n)
+	{
+		if(n < arc_num)
+			return &arc[n];
+		return NULL;
+	}
 	void Delete()
 	{
 		if(arc != NULL)
@@ -133,18 +144,17 @@ private:
 	FsaStateId states_max_len;      // state max number
 	FsaStateId add_num;
 public:
-	Fsa(bool con_storage=false):
+	Fsa():
 		states(NULL), arcs(NULL), start(0), arcs_num(0), states_num(0), 
 		states_max_len(0), add_num(10000) { }
 
-	Fsa(FsaStateId states_max_len, bool con_storage=true):
+	Fsa(FsaStateId states_max_len):
 		states(NULL),arcs(NULL), start(0), arcs_num(0), states_num(0),
 		states_max_len(states_max_len), add_num(10000)
 	{
 	   states = new FsaState[states_max_len];	
 	}
 	
-
 	~Fsa()
 	{
 		if(arcs != NULL)
@@ -237,6 +247,9 @@ public:
 		fclose(fp);
 		return ret;
 	}
+
+	// rescale arc weight*scale
+	void Rescale(float scale);
 };
 
 class ArpaLm
@@ -264,6 +277,7 @@ public:
 			return _unk_symbol;
 	}
 
+	void Rescale(float scale) { _fsa.Rescale(scale); }
 	FsaStateId Start() { return _fsa.Start(); }
 
 	bool GetArc(FsaStateId id, int wordid, FsaArc *&arc)

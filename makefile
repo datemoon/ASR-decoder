@@ -3,7 +3,8 @@
 
 
 SUBDIRS=util hmm align lib pitch nnet \
-	fst decoder fst_format_convert_tool 
+	fst lm \
+	decoder fst_format_convert_tool 
 
 all:ex
 

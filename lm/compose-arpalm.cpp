@@ -34,7 +34,7 @@ bool ComposeArpaLm::GetArc(FsaStateId s, Label ilabel, StdArc* oarc)
 	}
 	oarc->_input = arc->wordid;
 	oarc->_output = arc->wordid;
-	oarc->_w += arc->weight;
+	oarc->_w += (-1.0 * arc->weight);
 	oarc->_to = arc->tostateid;
 	return true;
 }

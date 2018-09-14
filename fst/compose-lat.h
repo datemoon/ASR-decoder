@@ -7,8 +7,7 @@ template<class I>
 class LatticeComposeItf
 {
 public:
-	LatticeComposeItf();
-	~LatticeComposeItf();
+	virtual ~LatticeComposeItf() { }
 
 	virtual I Start() = 0;
 

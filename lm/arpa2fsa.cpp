@@ -119,6 +119,33 @@ bool Fsa::GetArc(FsaStateId id, int wordid, FsaArc *&arc)
 	return true;
 }
 
+void Fsa::Rescale(float scale)
+{
+	std::unordered_set<FsaStateId> state_set;
+	std::queue<FsaStateId> state_queue;
+	FsaStateId start = Start();
+	state_set.insert(start);
+	state_queue.push(start);
+	while(!state_queue.empty())
+	{
+		FsaStateId s = state_queue.front();
+		state_queue.pop();
+		FsaState *state = GetState(s);
+		int n = 0;
+		FsaArc *arc = NULL;
+		while((arc = state->GetArc(n)) != NULL)
+		{
+			arc->weight *= scale;
+			if(state_set.find(arc->tostateid) == state_set.end())
+			{
+				state_set.insert(arc->tostateid);
+				state_queue.push(arc->tostateid);
+			}
+			n++;
+		}
+	}
+}
+
 void strtoupper( char *str )
 {
 	if(str == NULL)
@@ -202,10 +229,10 @@ FsaStateId Arpa2Fsa::AnasyArpa()
 			++cur_line;
 			++tot_gram_line;
 			size_t cur_ngram_line = _num_gram[cur_gram-1];
-			if(cur_line%(cur_ngram_line + _nthread)/_nthread == 0)
+			if(cur_line%((cur_ngram_line + _nthread)/_nthread )== 0)
 			{
 				// prev thread read end line
-				_file_offset[cur_gram-1][cur_thread_n-1].line = cur_line; 
+				_file_offset[cur_gram-1][cur_thread_n-1].line = cut_line; 
 				// cur thread read start offset
 				_file_offset[cur_gram-1][cur_thread_n].offset = ftell(fp);
 				cut_line = 0;
@@ -219,7 +246,10 @@ FsaStateId Arpa2Fsa::AnasyArpa()
 	FsaStateId tot_line =0;
 	for(size_t i =0;i<_file_offset.size();++i)
 		for(size_t j=0;j<_file_offset[i].size();++j)
+		{
 			tot_line += _file_offset[i][j].line;
+			//std::cout << _file_offset[i][j].line << std::endl;
+		}
 	assert(tot_line == tot_gram_line);
 	return tot_gram_line;
 }
@@ -327,6 +357,7 @@ bool Arpa2Fsa::AnalyLine(char *line, ArpaLine *arpaline,int gram)
 		std::cerr << "Read logprob failed,in line: " << line << std::endl;
 		return false;
 	}
+	arpaline->logprob *= M_LN10;
 	char *curr_word=NULL;
 	//int word_arr[12];
 	char *str_thread = NULL;
@@ -340,7 +371,7 @@ bool Arpa2Fsa::AnalyLine(char *line, ArpaLine *arpaline,int gram)
 			return false;
 		}
 		int wordid = InvertWord2Id(curr_word);
-		if(wordid < 0)
+		if(wordid == UnkSymbol())
 		{
 			std::cerr << "No word " << curr_word << " in " << line << std::endl;
 			return false;
@@ -351,8 +382,7 @@ bool Arpa2Fsa::AnalyLine(char *line, ArpaLine *arpaline,int gram)
 		}
 		if(wordid == EosSymbol() && i != gram-1) 
 			return false;
-		else
-			arpaline->words.push_back(wordid);
+		arpaline->words.push_back(wordid);
 	}
 	if(static_cast<size_t>(gram) < _num_gram.size())
 	{
@@ -362,13 +392,14 @@ bool Arpa2Fsa::AnalyLine(char *line, ArpaLine *arpaline,int gram)
 		{
 			if(sscanf( curr_word , "%f" , &arpaline->backoff_logprob ) != 1)
 			{
-				std::cerr << "Read back off weight error,line: " << line << std::endl;
+				std::cerr << "Read back off weight error,line: " << curr_word << std::endl;
 				return false;
 			}
 		}
 	}
 	else
 		arpaline->backoff_logprob = 0;
+	arpaline->backoff_logprob *= M_LN10;
 	return true;
 }
 
@@ -379,13 +410,13 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 	FsaState *start = _fsa.GetState(startid);
 	// first words node
 	if(gram == 1)
-	{
+	{ // add 1 grammer
 		while(true)
 		{
+			pthread_mutex_lock(&add_fsa_node_mutex);
 			int arcnum = start->GetArcNum();
 			if(arcnum-1 < arpaline->words[0])
 			{	
-				pthread_mutex_lock(&add_fsa_node_mutex);
 				FsaStateId id = _fsa.AddState();
 				start->AddArc(id, arcnum, 0.0);
 				pthread_mutex_unlock(&add_fsa_node_mutex);
@@ -398,7 +429,6 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 				// add backoff arc
 				// if backoff_logprob==0.0 ,add arc for search
 				FsaState* tostate = _fsa.GetState(arc->tostateid);
-				pthread_mutex_lock(&add_fsa_node_mutex);
 				tostate->AddArc(startid, 0, arpaline->backoff_logprob);
 				pthread_mutex_unlock(&add_fsa_node_mutex);
 				break;
@@ -406,7 +436,7 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 		}
 	}
 	else
-	{
+	{ // add 2 to n grammer
 		FsaState *state = _fsa.GetState(prev_gram_stateid);
 		FsaState *tmpstate = state;
 		size_t num_words = arpaline->words.size();
@@ -419,6 +449,8 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 					arc = tmpstate->SearchStartArc(arpaline->words[i]);
 				else
 					arc = tmpstate->SearchArc(arpaline->words[i]);
+				if(arc == NULL)
+					PrintArpaLine(*arpaline);
 				assert(arc != NULL && "arc shouldn't NULL");
 				FsaStateId tostateid = arc->tostateid;
 				prev_gram_stateid = tostateid;
@@ -448,10 +480,13 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 						arc = tmpstate->SearchStartArc(arpaline->words[i]);
 					else
 						arc = tmpstate->SearchArc(arpaline->words[i]);
-					if(arc == NULL)
+					if(arc == NULL )
 					{
-						std::cerr << "No search arc,shouldn't happen." << std::endl;
-						PrintArpaLine(*arpaline);
+						if(arpaline->backoff_logprob != 0)
+						{	
+							std::cerr << "No search arc,shouldn't happen." << std::endl;
+							PrintArpaLine(*arpaline);
+						}
 						break;
 					}
 					tostateid = arc->tostateid;
@@ -500,10 +535,13 @@ bool Arpa2Fsa::NgramToFsa(int gram,int nt)
 		if ( (line[0]==' ') || (line[0]=='\r') || (line[0]=='\n') || 
 				(line[0]=='\t') || (line[0]=='#') )
 			continue;
+		++line_count;
 		if(AnalyLine(line, cur_arpaline, gram) != true)
 		{
-			std::cerr << "AnalyLine " << line << " failed." << std::endl;
-			return false;
+			std::cerr << "AnalyLine failed,the line it's not legal." << gram << std::endl;
+			PrintArpaLine(*cur_arpaline);
+			memset(line,0x00,sizeof(line));
+			continue;
 		}
 		if(!(*prev_arpaline == *cur_arpaline))
 			prev_stateid = _fsa.Start();
@@ -518,7 +556,6 @@ bool Arpa2Fsa::NgramToFsa(int gram,int nt)
 		prev_arpaline = cur_arpaline;
 		cur_arpaline = tmp_line;
 
-		++line_count;
 		if(line_count >= _file_offset[gram-1][nt-1].line)
 			break;
 		memset(line,0x00,sizeof(line));
@@ -540,7 +577,7 @@ bool Arpa2Fsa::ConvertArpa2Fsa()
 
 	_bos_symbol = _symbols["<s>"];
 	_eos_symbol = _symbols["</s>"];
-	_unk_symbol = _symbols["<unk>"];
+	_unk_symbol = _symbols["<UNK>"];
 
 	std::vector<pthread_t> thread;
 	thread.resize(_nthread, 0);

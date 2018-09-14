@@ -120,3 +120,10 @@ void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat)
 	}
 	Connect(olat);
 }
+
+// instantiate templates
+template void ComposeLattice(Lattice *clat,
+		LatticeComposeItf<long long int> *fst, Lattice *olat);
+template void ComposeLattice(Lattice *clat,
+		LatticeComposeItf<int> *fst, Lattice *olat);
+

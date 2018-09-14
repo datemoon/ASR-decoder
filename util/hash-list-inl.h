@@ -1,5 +1,5 @@
-#ifndef __HASH_LIST_INI_H__
-#define __HASH_LIST_INI_H__
+#ifndef __HASH_LIST_INL_H__
+#define __HASH_LIST_INL_H__
 
 template<class I, class T> HashList<I, T>::HashList()
 {

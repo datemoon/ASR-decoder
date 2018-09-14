@@ -10,6 +10,7 @@
 #include "nnet/nnet-component.h"
 #include "hmm/transition-model.h"
 #include "util/config-parse-options.h"
+#include "nnet/decodable-itf.h"
 using namespace std;
 
 class Nnet
@@ -84,7 +85,7 @@ struct NnetForwardOptions
 		opts->Register("block-pdf-pdfid", &_block_pdf_pdfid, "If use ctc model block, here it's NumTransitionIds+1 ");
 	}
 };
-class NnetForward
+class NnetForward : public DecodableInterface
 {
 public:
 	NnetForward(Nnet *nnet, const NnetForwardOptions * config):
@@ -175,7 +176,7 @@ public:
 	// add function ResetRnnBuffer, every start must be call.
 	void ResetRnnBuffer();
 	
-	int GetOutdim() { return _outdim;}
+	int GetOutdim() const { return _outdim;}
 	void Reset()
 	{
 		_frames = 0;
@@ -192,14 +193,19 @@ public:
 		return true;
 	}
 
-	int NumFramesReady()
+	int NumFramesReady() const
 	{
 		return _true_frames+_true_cur_frameid;
 	}
 
-	bool IsLastFrame()
+	bool IsLastFrame(int frame=0) const
 	{
 		return true;
+	}
+	
+	int NumIndices() const
+	{
+		return GetOutdim()+1;
 	}
 
 	float LogLikelihood(int frame, int ilabel)
