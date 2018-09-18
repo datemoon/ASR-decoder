@@ -1,6 +1,8 @@
+
 #include <iostream>
 #include <fstream>
 #include <string>
+#include "fst/compose-lat.h"
 #include "lm/compose-arpalm.h"
 
 int main(int argc, char *argv[])
@@ -20,15 +22,21 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	arpalmscore->ReadSymbols(wordlist.c_str());
+	ComposeArpaLm *composearpalm = new ComposeArpaLm(static_cast<ArpaLm*>(arpalmscore));
+
 	std::fstream fp(textfile);
 	std::string line;
 	while(getline(fp,line))
 	{
-		if(arpalmscore->ComputerText((char*)line.c_str()) != true)
-		{
-			std::cerr << "Computer \"" << line << "\" failed."  << std::endl;
-		}
+		Lattice lat, olat;
+		arpalmscore->ConvertText2Lat((char*)line.c_str(), &lat);
+
+		ComposeLattice<FsaStateId>( &lat,
+				static_cast<LatticeComposeItf<FsaStateId>* >(composearpalm),
+				&olat);
+		olat.Print();
 	}
 	delete arpalmscore;
+	delete composearpalm;
 	return 0;
 }

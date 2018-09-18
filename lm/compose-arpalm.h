@@ -21,4 +21,15 @@ public:
 
 };
 
+class ArpaLmScore:public ArpaLm
+{
+private:
+public:
+	bool ComputerText(char *text);
+	void ConvertText2Lat(char *text, Lattice *lat);
+	void ComposeText();
+};
+
+void CutLine(char *line, std::vector<std::string> &cut_line);
+
 #endif

@@ -12,7 +12,7 @@ int main(int argc,char *argv[])
 	std::string arpafile = argv[1];
 	std::string wordlist = argv[2];
 	std::string outputfile = argv[3];
-	Arpa2Fsa *arpa2fsa = new Arpa2Fsa(4, arpafile, wordlist);
+	Arpa2Fsa *arpa2fsa = new Arpa2Fsa(16, arpafile, wordlist);
 
 	if(arpa2fsa->ConvertArpa2Fsa() != true)
 	{

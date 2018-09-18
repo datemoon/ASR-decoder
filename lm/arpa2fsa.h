@@ -74,7 +74,7 @@ struct FsaState
 	}
 
 	// add arc and sort
-	void AddArc(FsaStateId tostateid,int wordid,float weight, int alloc_size=10)
+	void AddArc(FsaStateId tostateid,int wordid,float weight, int alloc_size=5)
 	{
 		// realloc arc
 		if(arc_num >= max_len)
@@ -371,14 +371,6 @@ public:
 	}
 };
 
-void CutLine(char *line, std::vector<std::string> &cut_line);
-
-class ArpaLmScore:public ArpaLm
-{
-private:
-public:
-	bool ComputerText(char *text);
-};
 
 class Arpa2Fsa;
 struct ArgsT
