@@ -1231,82 +1231,81 @@ MemOptimizeClgLatticeFasterOnlineDecoder::Token *MemOptimizeClgLatticeFasterOnli
 		float tot_cost, float extra_cost, ForwardLink *links,
 		Token *next, Token *backpointer)
 {
-	if(_token_pool == NULL)
+	if(_token_pool_head == NULL)
 	{
-		Token *tok = new Token(tot_cost, extra_cost, links, next, backpointer);
-		return tok;
+		Token *tok = new Token[_allocate_block_size];
+		for(size_t i=0; i+1<_allocate_block_size; ++i)
+			tok[i]._next = tok+i+1;
+		tok[_allocate_block_size-1]._next = NULL;
+		_token_pool_head = tok;
+		_token_pool_size += _allocate_block_size;
 	}
-	else
-	{
-		Token *tok = _token_pool;
-		_token_pool = _token_pool->_next;
-		tok->_tot_cost = tot_cost;
-		tok->_extra_cost = extra_cost;
-		tok->_links = links;
-		tok->_next = next;
-		tok->_backpointer = backpointer;
-		_token_pool_size--;
-		return tok;
-	}
+	Token *tok = _token_pool_head;
+	_token_pool_head = _token_pool_head->_next;
+	_token_pool_size--;
+	tok->_tot_cost = tot_cost;
+	tok->_extra_cost = extra_cost;
+	tok->_links = links;
+	tok->_next = next;
+	tok->_backpointer = backpointer;
+	return tok;
 }
 
 MemOptimizeClgLatticeFasterOnlineDecoder::ForwardLink *MemOptimizeClgLatticeFasterOnlineDecoder::NewForwardLink(Token *next_tok, Label ilabel, Label olabel,
 		float graph_cost, float acoustic_cost, ForwardLink *next)
 {
-	if(_link_pool == NULL)
+	if(_link_pool_head == NULL)
 	{
-		ForwardLink *link = new ForwardLink(next_tok, ilabel, olabel, graph_cost, acoustic_cost, next);
-		return link;
+		ForwardLink *link = new ForwardLink[_allocate_block_size];
+		for(size_t i=0; i+1<_allocate_block_size; ++i)
+			link[i]._next = link+i+1;
+		link[_allocate_block_size-1]._next = NULL;
+		_link_pool_head = link;
+		_link_pool_size += _allocate_block_size;
 	}
-	else
-	{
-		ForwardLink *link = _link_pool;
-		_link_pool = _link_pool->_next;
-		link->_next_tok = next_tok;
-		link->_ilabel = ilabel;
-		link->_olabel = olabel;
-		link->_graph_cost = graph_cost;
-		link->_acoustic_cost = acoustic_cost;
-		link->_next = next;
-		_link_pool_size--;
-		return link;
-	}
+	ForwardLink *link = _link_pool_head;
+	_link_pool_head = _link_pool_head->_next;
+	_link_pool_size--;
+	link->_next_tok = next_tok;
+	link->_ilabel = ilabel;
+	link->_olabel = olabel;
+	link->_graph_cost = graph_cost;
+	link->_acoustic_cost = acoustic_cost;
+	link->_next = next;
+	return link;
 }
 
 void MemOptimizeClgLatticeFasterOnlineDecoder::DeleteToken(Token *tok)
 {
-	tok->_next = _token_pool;
-	_token_pool = tok;
+	tok->_next = _token_pool_head;
+	_token_pool_head = tok;
 	_token_pool_size++;
 }
 
 void MemOptimizeClgLatticeFasterOnlineDecoder::DeleteForwardLink(ForwardLink *link)
 {
-	link->_next = _link_pool;
-	_link_pool = link;
+	link->_next = _link_pool_head;
+	_link_pool_head = link;
 	_link_pool_size++;
 }
 
 void MemOptimizeClgLatticeFasterOnlineDecoder::DeletePool()
 {
-	Token *tok = _token_pool;
-	while(tok != NULL)
+	ClearActiveTokens();
+	for(size_t i=0;i<_token_pools.size();++i)
 	{
-		_token_pool = tok->_next;
-		delete tok;
-		tok = _token_pool;
-		assert(_token_pool_size > 0);
-		_token_pool_size--;
+		delete []_token_pools[i];
+		_token_pool_size -= _allocate_block_size;
 	}
-
-	ForwardLink *link = _link_pool;
-	while(link != NULL)
+	_token_pools.clear();
+	_token_pool_head = NULL;
+	for(size_t i=0;i<_link_pools.size();++i)
 	{
-		_link_pool = link->_next;
-		delete link;
-		link = _link_pool;
-		assert(_link_pool_size > 0);
-		_link_pool_size--;
+		delete []_link_pools[i];
+		_link_pool_head -= _allocate_block_size;
 	}
+	_link_pools.clear();
+	_link_pool_head = NULL;
+	assert(_token_pool_size == 0 && _link_pool_head == 0);
 }
 

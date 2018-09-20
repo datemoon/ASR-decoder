@@ -45,7 +45,7 @@ public:
 			const LatticeFasterDecoderConfig &config):
 		_graph(graph), _delete_fst(false), _config(config),
 		_num_toks(0), _num_links(0), _num_frames_decoded(0),
-		_token_pool(NULL), _link_pool(NULL), _token_pool_size(0), _link_pool_size(0)
+		_token_pool_head(NULL), _link_pool_head(NULL), _token_pool_size(0), _link_pool_size(0)
 	{
 		_toks.SetSize(1024);
 		_config.Check();
@@ -217,6 +217,9 @@ private:
 			_next_tok(next_tok), _ilabel(ilabel), _olabel(olabel),
 			_graph_cost(graph_cost), _acoustic_cost(acoustic_cost),
 			_next(next) { }
+		inline ForwardLink():
+			_next_tok(NULL), _ilabel(0), _olabel(0), _graph_cost(0.0),
+			_acoustic_cost(0.0), _next(NULL){ }
 	};
 
 	// Token is what's resident in a particular state at a particular time.
@@ -239,6 +242,9 @@ private:
 							 // the lattice generation (the "links" list is what
 							 // stores the forward links, for that).
 
+		inline Token():
+			_tot_cost(0.0), _extra_cost(0.0), _links(NULL),
+			_next(NULL), _backpointer(NULL) { }
 		inline Token(float tot_cost, float extra_cost, ForwardLink *links,
 				Token *next, Token *backpointer):
 			_tot_cost(tot_cost), _extra_cost(extra_cost), 
@@ -265,6 +271,8 @@ private:
 	inline void DeleteForwardLinks(Token *tok)
 	{
 		ForwardLink *l = tok->_links;
+		if(l == NULL)
+			return ;
 		ForwardLink *m = l;
 		size_t num_link = 0;
 		while (l != NULL)
@@ -275,8 +283,8 @@ private:
 		}
 		_num_links -= num_link;
 		_link_pool_size += num_link;
-		m->_next = _link_pool;
-		_link_pool = tok->_links;
+		m->_next = _link_pool_head;
+		_link_pool_head = tok->_links;
 		tok->_links = NULL;
 	}
 	struct TokenList 
@@ -328,8 +336,11 @@ private:
 	int _num_frames_decoded;
 	
 	// Add pool avoid frequent new and delete .
-	Token *_token_pool;
-	ForwardLink *_link_pool;
+	std::vector<Token *> _token_pools;
+	std::vector<ForwardLink *> _link_pools;
+
+	Token *_token_pool_head;
+	ForwardLink *_link_pool_head;
 	size_t _token_pool_size;
 	size_t _link_pool_size;
 
@@ -343,6 +354,9 @@ private:
 
 	void DeletePool();
 
+	static const size_t _allocate_block_size = 1024;
+	// Numbers of Elements to allocate in one block. Must be largish so storing
+	//_allocated doesn't become a problem.
 	// Pool end
 };
 
