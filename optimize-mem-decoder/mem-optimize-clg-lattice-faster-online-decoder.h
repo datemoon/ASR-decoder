@@ -344,13 +344,13 @@ private:
 	size_t _token_pool_size;
 	size_t _link_pool_size;
 
-	Token *NewToken(float tot_cost, float extra_cost, 
+	inline Token *NewToken(float tot_cost, float extra_cost, 
 			ForwardLink *links, Token *next, Token *backpointer);
-	void DeleteToken(Token *tok);
-	ForwardLink *NewForwardLink(Token *next_tok, Label ilabel, 
+	inline void DeleteToken(Token *tok);
+	inline ForwardLink *NewForwardLink(Token *next_tok, Label ilabel, 
 			Label olabel, float graph_cost, float acoustic_cost, 
 			ForwardLink *next);
-	void DeleteForwardLink(ForwardLink *link);
+	inline void DeleteForwardLink(ForwardLink *link);
 
 	void DeletePool();
 

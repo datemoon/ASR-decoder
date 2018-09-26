@@ -890,8 +890,10 @@ bool MemOptimizeClgLatticeFasterOnlineDecoder::GetRawLattice(Lattice *ofst,
 		(_decoding_finalized ? _final_costs : final_costs_local);
 
 	if (!_decoding_finalized && use_final_probs)
+	{
+		PruneActiveTokens(_config._lattice_beam * _config._prune_scale);
 		ComputeFinalCosts(&final_costs_local, NULL, NULL);
-
+	}
 	ofst->DeleteStates();
 	// num-frames plus one (since frames are one-based, and we have
 	// an extra frame for the start-state).
@@ -1239,6 +1241,7 @@ MemOptimizeClgLatticeFasterOnlineDecoder::Token *MemOptimizeClgLatticeFasterOnli
 		tok[_allocate_block_size-1]._next = NULL;
 		_token_pool_head = tok;
 		_token_pool_size += _allocate_block_size;
+		_token_pools.push_back(tok);
 	}
 	Token *tok = _token_pool_head;
 	_token_pool_head = _token_pool_head->_next;
@@ -1262,6 +1265,7 @@ MemOptimizeClgLatticeFasterOnlineDecoder::ForwardLink *MemOptimizeClgLatticeFast
 		link[_allocate_block_size-1]._next = NULL;
 		_link_pool_head = link;
 		_link_pool_size += _allocate_block_size;
+		_link_pools.push_back(link);
 	}
 	ForwardLink *link = _link_pool_head;
 	_link_pool_head = _link_pool_head->_next;
