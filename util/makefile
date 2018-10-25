@@ -3,29 +3,35 @@ include ../hubo.mk
 
 CXXFLAGS+=-I. -I.. 
 
+LIBS=../util/libutil.a
 
+TESTFILES=test-config-parse-options test-text-util hash-list-test log-message-test
 
-all:test-config-parse-options test-text-util hash-list-test log-message-test libutil.a
+OBJFILES=config-parse-options.o text-util.o io-funcs.o read-vector.o log-message.o
 
-test-config-parse-options:test-config-parse-options.o config-parse-options.o text-util.o
-	$(GXX) $(CXXFLAGS) -o $@ $^
+all:libutil.a 
 
-test-text-util:test-text-util.o text-util.o
-	$(GXX) $(CXXFLAGS) -o $@ $^
+test:$(LIBS) $(TESTFILES)
+
+test-config-parse-options:test-config-parse-options.o 
+	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+
+test-text-util:test-text-util.o 
+	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 hash-list-test:hash-list-test.o
-	$(GXX) $(CXXFLAGS) -o $@ $^
+	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
-log-message-test:log-message-test.o log-message.o
-	$(GXX) $(CXXFLAGS) -o $@ $^
+log-message-test:log-message-test.o 
+	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 %.o:%.cpp
 	$(GXX) $(CXXFLAGS) -c -o $@ $<
 
-libutil.a:config-parse-options.o text-util.o io-funcs.o read-vector.o
+libutil.a:$(OBJFILES)
 	$(AR) -rc $@ $^
 
 .PHONY:
 
 clean:
-	rm -f *.o test-config-parse-options libutil.a test-text-util hash-list-test
+	rm -f *.o $(TESTFILES) $(LIBS)

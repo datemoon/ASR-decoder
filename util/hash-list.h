@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <limits>
 #include <cassert>
+#include "util/log-message.h"
 
 template<class I, class T> class HashList
 {

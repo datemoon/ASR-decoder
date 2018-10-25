@@ -115,7 +115,7 @@ HashList<I, T>::~HashList()
 	}
 	if(num_in_list != num_allocated)
 	{
-		std::cerr << "Possible memory leak: " << num_in_list
+		LOG_WARN << "Possible memory leak: " << num_in_list
 			<< " != " << num_allocated
 			<< ": you might have forgotten to call Delete on "
 			<< "some Elems";

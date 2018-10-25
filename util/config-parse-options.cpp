@@ -7,8 +7,9 @@
 #include <cstdlib>
 #include <cassert>
 #include <cstring>
-#include "config-parse-options.h"
-#include "text-util.h"
+#include "util/config-parse-options.h"
+#include "util/text-util.h"
+#include "util/log-message.h"
 /*
 ConfigParseOptions::ConfigParseOptions(const std::string &prefix,OptionsItf *other):
 	 _print_args(false), _help(false), _usage(""), _argc(0), _argv(NULL)
@@ -79,7 +80,7 @@ void ConfigParseOptions::RegisterTmpl(const std::string &name, T *ptr,
 	}
 	else
 	{
-		assert(_prefix != "" && 
+		LOG_ASSERT(_prefix != "" && 
 				"Cannot use empty prefix when registering with prefix.");
 		std::string new_name = _prefix + '.' + name; // name becomes prefix.name
 		_other_parser->Register(new_name, ptr, doc);
@@ -100,7 +101,7 @@ void ConfigParseOptions::NormalizeArgName(std::string *str)
 	}
 	*str = out;
 
-	assert(str->length() > 0);
+	LOG_ASSERT(str->length() > 0);
 }
 
 // used to register standard parameters (those that are present in all of the
@@ -117,11 +118,11 @@ template<typename T>
 void ConfigParseOptions::RegisterCommon(const std::string &name, T *ptr,
 		const std::string &doc, bool is_standard) 
 {
-	assert(ptr != NULL);
+	LOG_ASSERT(ptr != NULL);
 	std::string idx = name;
 	NormalizeArgName(&idx);
 	if (_doc_map.find(idx) != _doc_map.end())
-		std::cerr << "Registering option twice, ignoring second time: " << name << std::endl;
+		LOG_WARN << "Registering option twice, ignoring second time: " << name << std::endl;
 	this->RegisterSpecific(name, idx, ptr, doc, is_standard);
 }
 
@@ -188,9 +189,9 @@ void ConfigParseOptions::RegisterSpecific(const std::string &name,
 void ConfigParseOptions::DisableOption(const std::string &name)
 {
 	if (_argv != NULL)
-		std::cerr << "DisableOption must not be called after calling Read().";
+		LOG_ERR << "DisableOption must not be called after calling Read().";
 	if (_doc_map.erase(name) == 0)
-		std::cerr << "Option " << name
+		LOG_ERR << "Option " << name
 			<< " was not registered so cannot be disabled: ";
 	_bool_map.erase(name);
 	_int_map.erase(name);
@@ -207,9 +208,9 @@ int ConfigParseOptions::NumArgs() const
 
 
 std::string ConfigParseOptions::GetArg(int i) const
-{	// use KALDI_ERR if code error
+{	// use LOG_ERR if code error
 	if (i < 1 || i > static_cast<int>(_positional_args.size()))
-		std::cerr << "ParseOptions::GetArg, invalid index " << i;
+		LOG_ERR << "ParseOptions::GetArg, invalid index " << i;
 	return _positional_args[i];
 }
 
@@ -265,7 +266,7 @@ int ConfigParseOptions::Read(int argc, const char *const argv[])
 			if (!SetOption(key, value, has_equal_sign))
 			{
 				PrintUsage(true);
-				std::cerr << "Invalid option " << argv[i] << std::endl;
+				LOG_ERR << "Invalid option " << argv[i] << std::endl;
 			}
 		}
 		else
@@ -341,8 +342,7 @@ void ConfigParseOptions::ReadConfigFile(const std::string &filename)
 	std::ifstream is(filename.c_str(), std::ifstream::in);
 	if (!is.good())
 	{
-		std::cerr << "Cannot open config file: " << filename;
-		exit(-1);
+		LOG_ERR << "Cannot open config file: " << filename;
 	}
 
 	std::string line, key, value;
@@ -362,9 +362,9 @@ void ConfigParseOptions::ReadConfigFile(const std::string &filename)
 
 		if (line.substr(0, 2) != "--")
 		{
-			std::cerr << "Reading config file " << filename
+			LOG_ERR << "Reading config file " << filename
 				<< ": line " << line_number << " does not look like a line "
-				<< "from a Kaldi command-line program's config file: should "
+				<< "from a command-line program's config file: should "
 				<< "be of the form --x=y.  Note: config files intended to "
 				<< "be sourced by shell scripts lack the '--'.";
 		}
@@ -376,7 +376,7 @@ void ConfigParseOptions::ReadConfigFile(const std::string &filename)
 		if (!SetOption(key, value, has_equal_sign))
 		{
 			PrintUsage(true);
-			std::cerr << "Invalid option " << line << " in config file " << filename << std::endl;
+			LOG_ERR << "Invalid option " << line << " in config file " << filename << std::endl;
 		}
 	}
 }
@@ -386,6 +386,7 @@ void ConfigParseOptions::SplitLongArg(std::string in,
 		std::string *value,
 		bool *has_equal_sign)
 {
+	LOG_ASSERT(in.substr(0, 2) == "--"); // precondition.
 	size_t pos = in.find_first_of('=', 0);
 	if (pos == std::string::npos)
 	{// we allow --option for bools
@@ -397,7 +398,7 @@ void ConfigParseOptions::SplitLongArg(std::string in,
 	else if (pos == 2) 
 	{  // we also don't allow empty keys: --=value
 		PrintUsage(true);
-		std::cerr << "Invalid option (no key): " << in << '\n';
+		LOG_ERR << "Invalid option (no key): " << in << '\n';
 	}
 	else
 	{ // normal case: --option=value
@@ -414,7 +415,7 @@ bool ConfigParseOptions::SetOption(const std::string &key,
 	if (_bool_map.end() != _bool_map.find(key))
 	{
 		if (has_equal_sign && value == "")
-			std::cerr << "Invalid option --" << key << "=";
+			LOG_ERR << "Invalid option --" << key << "=";
 		*(_bool_map[key]) = ToBool(value);
 	}
 	else if(_int_map.end() != _int_map.find(key))
@@ -436,7 +437,8 @@ bool ConfigParseOptions::SetOption(const std::string &key,
 	else if (_string_map.end() != _string_map.find(key))
 	{
 		if (!has_equal_sign)
-			std::cerr << "Invalid option --" << key;
+			LOG_ERR << "Invalid option --" << key
+				<< " (option format is --x=y).";
 		*(_string_map[key]) = value;
 	}
 	else
@@ -462,7 +464,7 @@ bool ConfigParseOptions::ToBool(std::string str)
 	}
 	// if it is neither true nor false:
 	PrintUsage(true);
-	std::cerr << "Invalid format for boolean argument [expected true or false]: "
+	LOG_ERR << "Invalid format for boolean argument [expected true or false]: "
 		<< str ;
 	return false;
 }
@@ -472,7 +474,7 @@ int ConfigParseOptions::ToInt(const std::string &str)
 	int ret = 0;
 	if (1 != sscanf(str.c_str(), "%d", &ret))
 	{
-		std::cerr << "Invalid integer option \"" << str << "\"" << std::endl;
+		LOG_ERR << "Invalid integer option \"" << str << "\"" << std::endl;
 	}
 	return ret;
 }
@@ -482,7 +484,7 @@ unsigned ConfigParseOptions::ToUint(const std::string &str)
 	unsigned ret=0;
 	if(1 != sscanf(str.c_str(), "%u", &ret))
 	{
-		std::cerr << "Invalid integer option \"" << str << "\"" << std::endl;
+		LOG_ERR << "Invalid integer option \"" << str << "\"" << std::endl;
 	}
 	return ret;
 }
@@ -492,7 +494,7 @@ float ConfigParseOptions::ToFloat(const std::string &str)
 	float ret;
 	if(1 != sscanf(str.c_str(), "%f", &ret))
 	{
-		std::cerr << "Invalid floating-point option \"" << str << "\"" << std::endl;
+		LOG_ERR << "Invalid floating-point option \"" << str << "\"" << std::endl;
 	}
 	return ret;
 }
@@ -502,7 +504,7 @@ double ConfigParseOptions::ToDouble(const std::string &str)
 	double ret;
 	if(1 != sscanf(str.c_str(), "%lf", &ret))
 	{
-		std::cerr << "Invalid floating-point option \"" << str << "\"" << std::endl;
+		LOG_ERR << "Invalid floating-point option \"" << str << "\"" << std::endl;
 	}
 	return ret;
 }

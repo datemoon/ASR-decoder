@@ -6,7 +6,8 @@
 #include <string.h>
 #include <string>
 #include <stdexcept>
-#include "io-funcs.h"
+#include "util/io-funcs.h"
+#include "util/log-message.h"
 
 bool ReadWordList(std::string file, std::vector<std::string> &wordlist, bool binary)
 {
@@ -27,7 +28,7 @@ bool ReadWordList(std::string file, std::vector<std::string> &wordlist, bool bin
 	{
 		ifs >> word;
 		ifs >> wordid;
-//		std::cout << word << " " <<  wordid << std::endl;
+//		LOG << word << " " <<  wordid << std::endl;
 		while(wordid >= (int)(wordlist.size()))
 		{
 			wordlist.push_back("");
@@ -42,7 +43,7 @@ bool ReadWordList(std::string file, std::vector<std::string> &wordlist, bool bin
 void ExpectToken(std::istream &is, bool binary, const char *token)
 {
 	int pos_at_start = is.tellg();
-	assert(NULL != token);
+	LOG_ASSERT(NULL != token);
 	if(!binary)
 		is >> std::ws; // consume whitespace.
 	std::string str;
@@ -51,12 +52,12 @@ void ExpectToken(std::istream &is, bool binary, const char *token)
 	is.get(); // consume the space
 	if(is.fail())
 	{
-		std::cerr << "Failed to read token [started at file position "
+		LOG_ERR << "Failed to read token [started at file position "
 			<< pos_at_start << "], expected " << token << std::endl;
 	}
 	if(strcmp(str.c_str(), token) != 0)
 	{
-		std::cerr << "Expected token \"" << token << "\", got instead \""
+		LOG_ERR << "Expected token \"" << token << "\", got instead \""
 			<< str <<"\"." << std::endl;
 	}
 }
@@ -68,17 +69,17 @@ void ExpectToken(std::istream &is, bool binary, const std::string &token)
 
 void ReadToken(std::istream &is, bool binary, std::string *str) 
 {
-	assert(str != NULL);
+	LOG_ASSERT(str != NULL);
 	if (!binary) is >> std::ws;  // consume whitespace.
 	is >> *str;
 	if (is.fail()) 
 	{
-		std::cerr << "ReadToken, failed to read token at file position "
+		LOG_ERR << "ReadToken, failed to read token at file position "
 			<< is.tellg() << std::endl;
 	}
 	if (!isspace(is.peek())) 
 	{
-		std::cerr << "ReadToken, expected space after token, saw instead "
+		LOG_ERR << "ReadToken, expected space after token, saw instead "
 			<< static_cast<char>(is.peek())
 			<< ", at file position " << is.tellg() << std::endl;
 	}
@@ -88,11 +89,11 @@ void ReadToken(std::istream &is, bool binary, std::string *str)
 void CheckToken(const char *token) 
 {
 	if (*token == '\0')
-		std::cerr << "Token is empty (not a valid token)" << std::endl;
+		LOG_ERR << "Token is empty (not a valid token)" << std::endl;
 	const char *orig_token = token;
 	while (*token != '\0') {
 		if (::isspace(*token))
-			std::cerr << "Token is not a valid token (contains space): '"
+			LOG_ERR << "Token is not a valid token (contains space): '"
 				<< orig_token << "'" << std::endl;
 		token++;
 	}
@@ -101,7 +102,7 @@ void WriteToken(std::ostream &os, bool binary, const char *token)
 {
 	// binary mode is ignored;
 	// we use space as termination character in either case.
-	assert(token != NULL);
+	LOG_ASSERT(token != NULL);
 	CheckToken(token);  // make sure it's valid (can be read back)
 	os << token << " ";
 	if (os.fail())
@@ -140,7 +141,7 @@ template<> void WriteBasicType<int>(std::ostream &os, bool binary, int f)
 
 template<> void ReadBasicType<float>(std::istream &is, bool binary, float *f) 
 {
-	assert(f != NULL);
+	LOG_ASSERT(f != NULL);
 	if (binary) 
 	{
 		double d;
@@ -157,7 +158,7 @@ template<> void ReadBasicType<float>(std::istream &is, bool binary, float *f)
 		} 
 		else 
 		{
-			std::cerr << "ReadBasicType: expected float, saw " << is.peek()
+			LOG_ERR << "ReadBasicType: expected float, saw " << is.peek()
 				<< ", at file position " << is.tellg() << std::endl;
 		}
 	} 
@@ -167,14 +168,14 @@ template<> void ReadBasicType<float>(std::istream &is, bool binary, float *f)
 	}
 	if (is.fail()) 
 	{
-		std::cerr << "ReadBasicType: failed to read, at file position "
+		LOG_ERR << "ReadBasicType: failed to read, at file position "
 			<< is.tellg() << std::endl;
 	}
 }
 
 template<> void ReadBasicType<double>(std::istream &is, bool binary, double *f) 
 {
-	assert(f != NULL);
+	LOG_ASSERT(f != NULL);
 	if (binary) 
 	{
 		double d;
@@ -191,7 +192,7 @@ template<> void ReadBasicType<double>(std::istream &is, bool binary, double *f)
 		} 
 		else 
 		{
-			std::cerr << "ReadBasicType: expected float, saw " << is.peek()
+			LOG_ERR << "ReadBasicType: expected float, saw " << is.peek()
 				<< ", at file position " << is.tellg() << std::endl;
 		}
 	} 
@@ -201,7 +202,7 @@ template<> void ReadBasicType<double>(std::istream &is, bool binary, double *f)
 	}
 	if (is.fail()) 
 	{
-		std::cerr << "ReadBasicType: failed to read, at file position "
+		LOG_ERR << "ReadBasicType: failed to read, at file position "
 			<< is.tellg() << std::endl;
 	}
 }

@@ -80,5 +80,5 @@ int main() {
     TestHashList<char, unsigned char>();
     TestHashList<unsigned char, int>();
   }
-  std::cout << "Test OK.\n";
+  LOG << "Test OK.\n";
 }

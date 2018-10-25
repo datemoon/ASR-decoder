@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-/* Important that this file does not depend on any other kaldi headers. */
+/* Important that this file does not depend on any other headers. */
 
 // By adding 'NOEXCEPT(bool)' immediately after function declaration,
 // we can tell the compiler that the function must-not produce
@@ -114,20 +114,19 @@ private:
 	::MessageLogger(::LogMessageEnvelope::kInfo, \
 			__func__, __FILE__, __LINE__).stream()
 #define VLOG(v) if ((v) <= ::g_verbose_level)     \
-	::MessageLogger((::kaldi::LogMessageEnvelope::Severity)(v), \
+	::MessageLogger((::LogMessageEnvelope::Severity)(v), \
 					 __func__, __FILE__, __LINE__).stream()
 
 
-/***** KALDI ASSERTS *****/
+/***** ASSERTS *****/
 
 void AssertFailure_(const char *func, const char *file,
 		int line, const char *cond_str);
 
-// Note on KALDI_ASSERT and KALDI_PARANOID_ASSERT
 // The original (simple) version of the code was this
 //
-// #define KALDI_ASSERT(cond) if (!(cond))
-//              kaldi::KaldiAssertFailure_(__func__, __FILE__, __LINE__, #cond);
+// #define LOG_ASSERT(cond) if (!(cond))
+//              ::AssertFailure_(__func__, __FILE__, __LINE__, #cond);
 //
 // That worked well, but we were concerned that it
 // could potentially cause a performance issue due to failed branch
@@ -161,7 +160,7 @@ typedef void (*LogHandler)(const LogMessageEnvelope &envelope,
 
 /// Set logging handler. If called with a non-NULL function pointer, the
 /// function pointed by it is called to send messages to a caller-provided
-/// log. If called with NULL pointer, restores default Kaldi error logging to
+/// log. If called with NULL pointer, restores default error logging to
 /// stderr.  SetLogHandler is obviously not thread safe.
 LogHandler SetLogHandler(LogHandler);
 

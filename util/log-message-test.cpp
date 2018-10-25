@@ -8,12 +8,15 @@ int main(int argc,char *argv[])
 		CreateLogHandler(argv[1]);
 		LOG << "it's log test code";
 		LOG_WARN << "it's warning test code";
+		LOG_ERR << "it's error test code";
 		CloseLogHandler();
 	}
 	else
 	{
 		LOG << "it's log test code";
 		LOG_WARN << "it's warning test code";
+		LOG_ASSERT(0);
+		LOG_ERR << "it's error test code";
 	}
 	return 0;
 }

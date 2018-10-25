@@ -2,13 +2,14 @@
 #include <iostream>
 #include "util/read-vector.h"
 #include "util/io-funcs.h"
+#include "util/log-message.h"
 
 void ReadVector(std::istream &is, std::vector<float> &vec, bool binary)
 {
 	int pos_at_start = is.tellg();
 	if(is.fail())
 	{
-		std::cerr << "Failed to read token [started at file position "
+		LOG_ERR << "Failed to read token [started at file position "
 			<< pos_at_start << "]" << std::endl;
 	}
 	if(!binary)
