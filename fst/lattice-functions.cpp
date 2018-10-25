@@ -62,7 +62,7 @@ void LatticeShortestPath(Lattice *ilat, Lattice *shortest_lat)
 		StateId prev_state = best_cost_and_pred[cur_state].second;
 		if(prev_state == kNoStateId)
 		{
-			std::cout << "Failure in best-path algorithm for lattice (infinite costs?)" << std::endl;
+			LOG_WARN << "Failure in best-path algorithm for lattice (infinite costs?)" ;
 			return ; // return empty best-path.
 		}
 		states.push_back(prev_state);
@@ -144,7 +144,7 @@ bool LatticeCheckFormat(Lattice *fst)
 		{
 			if(cur_state->GetArcSize() != 0)
 			{
-				std::cerr << "it's error format lattice. num arc " << cur_state->GetArcSize() << std::endl;
+				LOG_WARN << "it's error format lattice. num arc " << cur_state->GetArcSize() ;
 				//return false;
 			}
 		}
@@ -152,7 +152,7 @@ bool LatticeCheckFormat(Lattice *fst)
 		{
 			if(cur_state->GetArcSize() == 0)
 			{
-				std::cerr << "it's error format lattice. non final state no arc" << std::endl;
+				LOG_WARN << "it's error format lattice. non final state no arc" ;
 				return false;
 			}
 		}

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include "decoder/optimize-fst.h"
+#include "util/util-common.h"
 
 using namespace std;
 using std::vector;
@@ -113,7 +114,7 @@ public:
 			_arc[i].Print(stateid);
 		}
 		if(_final != 0)
-			std::cout << stateid << " " << -1 << std::endl;
+			LOG << stateid << " " << -1 ;
 	}
 
 	int _final;

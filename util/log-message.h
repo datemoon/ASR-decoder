@@ -41,7 +41,7 @@ extern int g_verbose_level;
 extern const char *g_program_name;
 
 /// This is save log file.
-extern const char *g_log_file;
+extern std::string g_log_file;
 extern FILE *g_log_file_pointer;
 
 inline int GetVerboseLevel() { return g_verbose_level; }

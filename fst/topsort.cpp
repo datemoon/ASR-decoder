@@ -7,7 +7,7 @@ void StateSort(Lattice *fst,const vector<StateId> &order)
 {
 	if(order.size() != (unsigned)(fst->NumStates()))
 	{
-		std::cerr << "StateSort: bad order vector size: " << order.size() << std::endl;
+		LOG_WARN << "StateSort: bad order vector size: " << order.size() ;
 		return ;
 	}
 	if(fst->Start() == kNoStateId)

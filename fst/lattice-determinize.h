@@ -130,7 +130,7 @@ public:
 			return a;
 		vector<IntType> a_vec;
 		ConvertToVector(a, &a_vec);
-		assert(a_vec.size() >= n);
+		LOG_ASSERT(a_vec.size() >= n);
 		const Entry *ans = NULL;
 		for(size_t i=n; i < a_vec.size(); ++i)
 			ans = Successor(ans, a_vec[i]);
@@ -319,7 +319,7 @@ public:
 		for(OutputStateId s = 0; s<nStates; ++s)
 		{
 			OutputStateId news = ofst->AddState();
-			assert(news == s);
+			LOG_ASSERT(news == s);
 		}
 
 		ofst->SetStart(0);
@@ -475,7 +475,7 @@ public:
 	// or max-states related reasons.
 	bool Determinize(bool *debug_ptr)
 	{
-		assert(!_determinized);
+		LOG_ASSERT(!_determinized);
 		// This determinizes the input fst but leaves it in the "special format"
 		// in "output_arcs_".  Must be called after Initialize().  To get the
 		// output, call one of the Output routines.
@@ -499,16 +499,15 @@ public:
 				arcs_size = _num_arcs * sizeof(TempArc),
 				elems_size = _num_elems * sizeof(Element),
 				total_size = repo_size + arcs_size + elems_size;
-			std::cerr << "Memory allocation error doing lattice determinization; using "
+			LOG_WARN << "Memory allocation error doing lattice determinization; using "
 				<< total_size << " bytes (max = " << _opts._max_mem
 				<< " (repo,arcs,elems) = ("
-				<< repo_size << "," << arcs_size << "," << elems_size << ")"
-				<< std::endl;
+				<< repo_size << "," << arcs_size << "," << elems_size << ")";
 			return (_determinized = false);
 		}
 		catch(std::runtime_error)
 		{
-			std::cerr << "Caught exception doing lattice determinization" << std::endl;
+			LOG_WARN << "Caught exception doing lattice determinization" ;
 			return (_determinized = false);
 		}
 		return true;
@@ -591,7 +590,7 @@ private:
 		bool operator ()(const vector<Element> *s1, const vector<Element> *s2) const
 		{
 			size_t sz = s1->size();
-			assert(sz >=0);
+			LOG_ASSERT(sz >=0);
 			if(sz != s2->size())
 				return false;
 			typename vector<Element>::const_iterator iter1 = s1->begin(),
@@ -618,7 +617,7 @@ private:
 		bool operator ()(const vector<Element> *s1, const vector<Element> *s2) const
 		{
 			size_t sz = s1->size();
-			assert(sz >=0);
+			LOG_ASSERT(sz >=0);
 			if(sz != s2->size())
 				return false;
 			typename vector<Element>::const_iterator iter1 = s1->begin(),
@@ -749,7 +748,7 @@ private:
 			ConvertToMinimal(&subset); // remove all but final states and
 			// states with input-labels on arcs out of them.
 			vector<Element> *subset_ptr = new vector<Element>(subset);
-			assert(_output_arcs.empty() && _output_states.empty());
+			LOG_ASSERT(_output_arcs.empty() && _output_states.empty());
 			// add the new state...
 			_output_states.push_back(subset_ptr);
 			_output_arcs.push_back(vector<TempArc>());
@@ -802,7 +801,7 @@ private:
 
 			if(_opts._max_loop > 0 && counter++ > _opts._max_loop)
 			{
-				std::cerr << "Lattice determinization aborted since looped more than "
+				LOG_WARN << "Lattice determinization aborted since looped more than "
 					<< _opts._max_loop << " times during epsilon closure";
 			}
 
@@ -864,7 +863,7 @@ private:
 	// states).  Output is not necessarily normalized, even if input_subset was.
 	void ConvertToMinimal(vector<Element> *subset) 
 	{
-		assert(!subset->empty());
+		LOG_ASSERT(!subset->empty());
 		typename vector<Element>::iterator cur_in = subset->begin(),
 				 cur_out = subset->begin(), end = subset->end();
 		while(cur_in != end)
@@ -914,7 +913,7 @@ private:
 			else if(a_vec[i] > b_vec[i])
 				return 1;
 		}
-		assert(0); // because we checked if a_str == b_str above, shouldn't reach here
+		LOG_ASSERT(0); // because we checked if a_str == b_str above, shouldn't reach here
 		return 0;
 	}
 
@@ -922,7 +921,7 @@ private:
 	{ // returns true if this state
 	  // of the input FST either is final or has an osymbol on an arc out of it.
 	  // Uses the vector isymbol_or_final_ as a cache for this info.
-		assert(state >=0);
+		LOG_ASSERT(state >=0);
 		if(_isymbol_or_final.size() <= (unsigned)state)
 			_isymbol_or_final.resize(state+1, static_cast<char>(OSF_UNKNOWN));
 		if(_isymbol_or_final[state] == static_cast<char>(OSF_NO))
@@ -1057,7 +1056,7 @@ private:
 				cur++;
 			}
 			// We now have a subset for this ilabel.
-			assert(!this_subset.empty()); // temp.
+			LOG_ASSERT(!this_subset.empty()); // temp.
 			ProcessTransition(output_state, ilabel, &this_subset);
 		}
 		all_elems.clear(); // as it's a class variable-- want it to stay
@@ -1106,8 +1105,8 @@ private:
 	void MakeSubsetUnique(vector<Element> *subset)
 	{
 		typedef typename vector<Element>::iterator IterType;
-		// this assert is designed to fail (usually) if the subset is not sorted on state.
-		assert(subset->size() < 2 || (*subset)[0]._state <= (*subset)[1]._state);
+		// this LOG_ASSERT is designed to fail (usually) if the subset is not sorted on state.
+		LOG_ASSERT(subset->size() < 2 || (*subset)[0]._state <= (*subset)[1]._state);
 
 		IterType cur_in = subset->begin(), cur_out = cur_in, end = subset->end();
 		size_t num_out = 0;
@@ -1143,7 +1142,7 @@ private:
 	{
 		if(elems->empty())
 		{ // just set common_str, tot_weight
-			std::cerr << "[empty subset]" << std::endl; // TEMP
+			LOG_WARN << "[empty subset]" ; // TEMP
 			// to defaults and return...
 			*common_str = _repository.EmptyString();
 			*tot_weight = FLOAT_INF;
@@ -1158,7 +1157,7 @@ private:
 			weight = weight < (*elems)[i]._weight ? weight : (*elems)[i]._weight;
 			_repository.ReduceToCommonPrefix((*elems)[i]._string, &common_prefix);
 		}
-		assert(weight != FLOAT_INF); // we made sure to ignore arcs with zero
+		LOG_ASSERT(weight != FLOAT_INF); // we made sure to ignore arcs with zero
 		// weights on them, so we shouldn't have zero here.
 		size_t prefix_len = common_prefix.size();
 		for(size_t i = 0; i < size; ++i)
@@ -1187,7 +1186,7 @@ private:
 			*remaining_weight = elem._weight;
 			*common_prefix = elem._string;
 			if(elem._weight == FLOAT_INF)
-				std::cerr << "Zero weight!" << std::endl;// TEMP
+				LOG_WARN << "Zero weight!" ;// TEMP
 			return elem._state;
 		}
 		// else no matching subset-- have to work it out.
@@ -1209,7 +1208,7 @@ private:
 		*remaining_weight = elem._weight;
 		*common_prefix = elem._string;
 		if(elem._weight == FLOAT_INF)
-			std::cerr << "Zero weight!" << std::endl; // TEMP
+			LOG_WARN << "Zero weight!" ; // TEMP
 
 		// Before returning "ans", add the initial subset to the hash,
 		// so that we can bypass the epsilon-closure etc., next time
@@ -1246,7 +1245,7 @@ private:
 	// info and exits.
 	void Debug()
 	{
-		std::cerr << "Debug function called (probably SIGUSR1 caught)" << std::endl;
+		LOG_WARN << "Debug function called (probably SIGUSR1 caught)" ;
 		// free up memory from the hash as we need a little memory
 		{
 			MinimalSubsetHash hash_tmp; 
@@ -1254,7 +1253,7 @@ private:
 		}
 		if(_output_arcs.size() <= 2)
 		{
-			std::cerr << "Nothing to trace back" << std::endl;
+			LOG_WARN << "Nothing to trace back" ;
 		}
 
 		// Don't take the last
@@ -1293,14 +1292,14 @@ private:
 					break;
 				}
 			}
-			assert(i != _output_arcs[last_state].size()); // Or fell off loop.
+			LOG_ASSERT(i != _output_arcs[last_state].size()); // Or fell off loop.
 			cur_state = last_state;
 		}// while
 
 		if(cur_state == kNoStateId)
 		{ 
-			std::cerr << "Traceback did not reach start state " 
-				<< "(possibly debug-code error)" << std::endl;
+			LOG_WARN << "Traceback did not reach start state " 
+				<< "(possibly debug-code error)" ;
 		}
 		std::stringstream ss;
 		ss << "Traceback follows in format "
@@ -1314,7 +1313,7 @@ private:
 				ss << seq[j] << ' ';
 			ss << ')';
 		}
-		std::cerr << ss.str() << std::endl;
+		LOG_WARN << ss.str() ;
 	}
 	bool CheckMemoryUsage()
 	{
@@ -1330,17 +1329,17 @@ private:
 			int new_repo_size = _repository.MemSize(),
 				new_total_size = new_repo_size + arcs_size + elems_size;
 
-			std::cout << "Rebuilt repository in determinize-lattice: repository shrank from "
-				<< repo_size << " to " << new_repo_size << " bytes (approximately)" << std::endl;
+			LOG_WARN << "Rebuilt repository in determinize-lattice: repository shrank from "
+				<< repo_size << " to " << new_repo_size << " bytes (approximately)" ;
 
 			if (new_total_size > static_cast<int>(_opts._max_mem * 0.8))
 			{
 				// Rebuilding didn't help enough-- we need a margin to stop
 				// having to rebuild too often.
-				std::cout << "Failure in determinize-lattice: size exceeds maximum "
+				LOG_WARN << "Failure in determinize-lattice: size exceeds maximum "
 					<< _opts._max_mem << " bytes; (repo,arcs,elems) = ("
 					<< repo_size << "," << arcs_size << "," << elems_size
-					<< "), after rebuilding, repo size was " << new_repo_size << std::endl;
+					<< "), after rebuilding, repo size was " << new_repo_size ;
 				return false;
 			}
 		}

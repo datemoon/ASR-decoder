@@ -1,11 +1,11 @@
-#include <cassert>
 #include "lm/compose-arpalm.h"
+#include "util/log-message.h"
 
 FsaStateId ComposeArpaLm::Start()
 {
 	FsaStateId start = _lm->Start();
 	FsaArc *arc = NULL;
-	assert(_lm->GetArc(start, _lm->BosSymbol(), arc));
+	LOG_ASSERT(_lm->GetArc(start, _lm->BosSymbol(), arc));
 	return arc->tostateid;
 }
 
@@ -15,7 +15,7 @@ float ComposeArpaLm::Final(FsaStateId s)
 	float weight = 0.0;
 	while(_lm->GetArc(s, _lm->EosSymbol(), arc) == false)
 	{
-		assert(_lm->GetArc(s, 0, arc));
+		LOG_ASSERT(_lm->GetArc(s, 0, arc));
 		s = arc->tostateid;
 		weight += arc->weight;
 	}
@@ -29,7 +29,7 @@ bool ComposeArpaLm::GetArc(FsaStateId s, Label ilabel, StdArc* oarc)
 	oarc->_w = 0;
 	while(_lm->GetArc(s, ilabel, arc) == false)
 	{
-		assert(_lm->GetArc(s, 0, arc));
+		LOG_ASSERT(_lm->GetArc(s, 0, arc));
 		s = arc->tostateid;
 		oarc->_w += arc->weight;
 	}
@@ -77,11 +77,11 @@ bool ArpaLmScore::ComputerText(char *text)
 		while(_fsa.GetArc(state, ids[i], arc) == false)
 		{
 			s_ngram--;
-			assert(s_ngram >= 0);
+			LOG_ASSERT(s_ngram >= 0);
 			// search back off
 			if(_fsa.GetArc(state, 0, arc) == false)
 			{
-				std::cerr << "It shouldn't be happen." << std::endl;
+				LOG_WARN << "It shouldn't be happen." ;
 				return false;
 			}
 			state = arc->tostateid;
@@ -92,11 +92,11 @@ bool ArpaLmScore::ComputerText(char *text)
 		s_ngram++;
 		if(s_ngram > e_ngram) 
 			s_ngram = e_ngram;
-		std::cout << logprob << " " << _map_syms[ids[i]] << " " 
-			<< backoff << " " <<  logprob+backoff << " " << s_ngram << std::endl;
+		VLOG(2) << logprob << " " << _map_syms[ids[i]] << " " 
+			<< backoff << " " <<  logprob+backoff << " " << s_ngram ;
 		tot_score += logprob+backoff;
 	}
-	std::cout << tot_score << std::endl;
+	VLOG(2) << tot_score;
 	return true;
 }
 

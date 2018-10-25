@@ -9,7 +9,7 @@
 #include <cstring>
 #include "util/config-parse-options.h"
 #include "util/text-util.h"
-#include "util/log-message.h"
+
 /*
 ConfigParseOptions::ConfigParseOptions(const std::string &prefix,OptionsItf *other):
 	 _print_args(false), _help(false), _usage(""), _argc(0), _argv(NULL)

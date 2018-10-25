@@ -11,6 +11,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "util/log-message.h"
 
 // the class ConfigParseOption is for parsing command-line options
 
@@ -26,6 +27,10 @@ public:
 		RegisterStandard("print-args", &_print_args,
 				"Print the command line arguments (to stderr)");
 		RegisterStandard("help", &_help, "Print out usage message");
+		RegisterStandard("verbose", &g_verbose_level,
+				"Verbose level (higher->more logging)");
+		RegisterStandard("log-file", &g_log_file,
+				"Log file , default print stderr.");
    	}
 
 	~ConfigParseOptions() {}

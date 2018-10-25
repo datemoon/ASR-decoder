@@ -5,7 +5,6 @@
 #include "fst/connect-fst.h"
 #include "fst/topsort.h"
 
-#include <cassert>
 #include <unordered_map>
 #include <iostream>
 
@@ -21,7 +20,7 @@ void NShortestPath(Lattice &ifst, Lattice *ofst,
 	if(!TopCheck(ifst))
 	{
 		TopSort(&ifst);
-		assert(TopCheck(ifst));
+		LOG_ASSERT(TopCheck(ifst));
 	}
 
 	AddSuperFinalState(ifst);
@@ -35,7 +34,7 @@ void NShortestPath(Lattice &ifst, Lattice *ofst,
 	ofst->DeleteStates();
 	if(ifst.Start() == kNoStateId)
 		return ;
-	assert(ifst.Start() == 0);
+	LOG_ASSERT(ifst.Start() == 0);
 
 	vector<float> best_cost_and_back(ifst.NumStates());
 
@@ -60,7 +59,7 @@ void NShortestPath(Lattice &ifst, Lattice *ofst,
 			Arc *arc = cur_state->GetArc(i);
 			float arc_cost = arc->_w;
 			StateId nextstate = arc->_to;
-			assert(s < nextstate); // because it's topologically sort
+			LOG_ASSERT(s < nextstate); // because it's topologically sort
 			float next_cost = arc_cost + best_cost_and_back[nextstate];
 			if(best_cost_and_back[s] > next_cost)
 				best_cost_and_back[s] = next_cost;
@@ -109,15 +108,15 @@ void NShortestPath(Lattice &ifst, Lattice *ofst,
 		LatticeState * cur_state = ifst.GetState(p.first);
 		for(unsigned i = 0; i < cur_state->GetArcSize(); ++i)
 		{
-			assert(!cur_state->IsFinal());
+			LOG_ASSERT(!cur_state->IsFinal());
 			Arc *arc = cur_state->GetArc(i);
 #ifdef TEST
 			if(hash_arc.find(arc) != hash_arc.end())
 				hash_arc[arc] = true;
 			else
 			{
-				std::cerr << "it's not a bug." << std::endl;
-//				assert(false);
+				LOG_WARN << "it's not a bug." ;
+//				LOG_ASSERT(false);
 			}
 #endif
 			Weight w = p.second + arc->_w; // it's forward score.
@@ -125,7 +124,7 @@ void NShortestPath(Lattice &ifst, Lattice *ofst,
 			pairs.push_back(Pair(arc->_to, w));
 			//Arc oarc(arc->_input, arc->_output, next, arc->_w);
 			//ofst->AddArc(state ,oarc);
-			assert(arc->_to != p.first);
+			LOG_ASSERT(arc->_to != p.first);
 			ofst->AddArc(state ,Arc(arc->_input, arc->_output, next, arc->_w));
 			heap.push_back(next);
 			push_heap(heap.begin(), heap.end(), compare);
@@ -173,7 +172,7 @@ void ConvertNbestToVector(Lattice &fst, vector<Lattice> *fsts_out)
 			LatticeState *cur_state = rfst.GetState(cur_stateid);
 			unsigned this_n_arcs = cur_state->GetArcSize();
 
-			assert(this_n_arcs <= 1); // or it violates our assumptions about the input.
+			LOG_ASSERT(this_n_arcs <= 1); // or it violates our assumptions about the input.
 			if (this_n_arcs == 1)
 			{
 				Arc *arc = cur_state->GetArc(0);

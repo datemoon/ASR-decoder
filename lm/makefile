@@ -5,9 +5,10 @@ CXXFLAGS+=-I. -I.. -lm
 
 OBJ=arpa2fsa.o compose-arpalm.o
 
-LIB=../lm/liblm.a  ../fst/liblatfst.a
+LIB=../lm/liblm.a  ../fst/liblatfst.a ../util/libutil.a
 
-all:liblm.a arpa2fsa-bin lmscore compose-text
+BIN= arpa2fsa-bin lmscore compose-text
+all:liblm.a $(BIN)
 
 liblm.a:$(OBJ)
 	$(AR) -rc $@ $^
@@ -32,5 +33,5 @@ compose-text:compose-text.o
 
 
 clean:
-	rm -f *.o liblm.a arpa2fsa-bin lmscore
+	rm -f *.o liblm.a $(BIN)
 

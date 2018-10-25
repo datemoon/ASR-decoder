@@ -154,8 +154,8 @@ LogHandler SetLogHandler(LogHandler new_handler)
 }
 
 /***** LOG FILE SET *****/
-const char *g_log_file = NULL;
 FILE *g_log_file_pointer = NULL;
+std::string g_log_file;
 
 void ProcessLogHandler(const LogMessageEnvelope &envelope,
 		const char *message)
@@ -206,20 +206,26 @@ void ProcessLogHandler(const LogMessageEnvelope &envelope,
 
 void CreateLogHandler(const char *log_file)
 {
-	g_log_file_pointer = fopen(log_file,"a");
+	if(g_log_file.empty())
+	{
+		if(log_file == NULL)
+			return;
+		else
+			g_log_file = log_file;
+	}
+	g_log_file_pointer = fopen(g_log_file.c_str(),"a");
 	if(g_log_file_pointer == NULL)
 	{
-		fprintf(stderr,"fopen %s failed.\n",log_file);
+		fprintf(stderr,"fopen %s failed.\n",g_log_file.c_str());
 		abort();
 	}
-	g_log_file = log_file;
 	g_log_handler = ProcessLogHandler;
 }
 
 void CloseLogHandler()
 {
 	fclose(g_log_file_pointer);
+	g_log_file.clear();
 	g_log_file_pointer = NULL;
-	g_log_file = NULL;
 	g_log_handler = NULL;
 }

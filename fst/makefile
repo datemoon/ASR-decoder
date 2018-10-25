@@ -6,17 +6,17 @@ include ../hubo.mk
 
 CXXFLAGS+=-I../
 
-BIN=test-connect-fst
+TESTFILES=test-connect-fst
 
-LIBS=../fst/liblatfst.a
-
+LIBS=../fst/liblatfst.a ../util/libutil.a
 
 OBJ=lattice-fst.o lattice-functions.o lattice-to-nbest.o \
 	dfs-visit-fst.o connect-fst.o reverse.o rmepsilon.o invert.o topsort.o \
 	compose-lat.o
 
-all:liblatfst.a $(BIN)
+all:liblatfst.a 
 
+test:$(TESTFILES)
 
 test-connect-fst:test-connect-fst.o
 	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
@@ -38,4 +38,4 @@ liblatfst.a:$(OBJ)
 .PHONY:
 
 clean:
-	rm -f *.o $(BIN) liblatfst.a
+	rm -f *.o $(TESTFILES) liblatfst.a

@@ -64,7 +64,7 @@ void DfsVisit(Lattice *fst, vector<bool> *access, vector<bool> *coaccess, vector
 	StateId startid = fst->Start();
 	if(startid == kNoStateId)
 	{
-		std::cerr << "The lattice is no state." << std::endl;
+		LOG_WARN << "The lattice is no state." ;
 		return ;
 	}
 

@@ -55,7 +55,7 @@ void RmEpsilon(Lattice &ifst, int ilabel)
 						}*/
 						cur_state_queue.push_back(Pair(arc->_to, w + arc->_w));
 						cur_state->DeleteArc(i);
-//						std::cout << "state " << s << " delete arc " << i << std::endl;
+//						VLOG(3) << "state " << s << " delete arc " << i ;
 						delete_arc_num++;
 						// beacuse delete this arc, so I need i--.
 						i--;
@@ -92,6 +92,6 @@ void RmEpsilon(Lattice &ifst, int ilabel)
 		rmeps_state[s] = true;
 	} // all state
 
-	std::cout << "delete arc input " << ilabel << " num:" << delete_arc_num << std::endl;
+	VLOG(2) << "delete arc input " << ilabel << " num:" << delete_arc_num ;
 	Connect(&ifst);
 }

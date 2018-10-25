@@ -146,7 +146,7 @@ public:
 	/// it will treat all final-probs as one.
 	/// The raw lattice will be topologically sorted.
 	bool GetRawLattice(Lattice *ofst,
-			bool use_final_probs) const;
+			bool use_final_probs) ;
 private:
 	Token * FindOrAddToken(ClgTokenStateId stateid,int frame_plus_one, float tot_cost, 
 			Token *backpointer, bool *changed);
