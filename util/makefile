@@ -5,7 +5,7 @@ CXXFLAGS+=-I. -I..
 
 
 
-all:test-config-parse-options test-text-util hash-list-test libutil.a
+all:test-config-parse-options test-text-util hash-list-test log-message-test libutil.a
 
 test-config-parse-options:test-config-parse-options.o config-parse-options.o text-util.o
 	$(GXX) $(CXXFLAGS) -o $@ $^
@@ -14,6 +14,9 @@ test-text-util:test-text-util.o text-util.o
 	$(GXX) $(CXXFLAGS) -o $@ $^
 
 hash-list-test:hash-list-test.o
+	$(GXX) $(CXXFLAGS) -o $@ $^
+
+log-message-test:log-message-test.o log-message.o
 	$(GXX) $(CXXFLAGS) -o $@ $^
 
 %.o:%.cpp
