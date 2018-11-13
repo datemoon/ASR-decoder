@@ -12,6 +12,7 @@
 void MemOptimizeClgLatticeFasterOnlineDecoder::InitDecoding()
 {
 	ClearActiveTokens();
+	DeletePool();
 	// clean up from last time:
 	_toks.DeleteElems();
 //	_prev_toks.clear();

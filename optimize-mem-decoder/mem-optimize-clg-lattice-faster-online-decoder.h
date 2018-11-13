@@ -354,7 +354,7 @@ private:
 
 	void DeletePool();
 
-	static const size_t _allocate_block_size = 1024;
+	static const size_t _allocate_block_size = 1024 * 128;
 	// Numbers of Elements to allocate in one block. Must be largish so storing
 	//_allocated doesn't become a problem.
 	// Pool end
