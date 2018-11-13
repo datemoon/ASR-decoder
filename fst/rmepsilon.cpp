@@ -9,7 +9,7 @@ void RmEpsilon(Lattice &ifst, int ilabel)
 {
 	// first delete no use arc and state
 	Connect(&ifst);
-	typedef float Weight;
+	typedef LatticeWeight Weight;
 	typedef pair<StateId ,Weight> Pair;
 	// the ifst must be no eps loop, here I don't check.default it's.
 	StateId start_state = ifst.Start();
@@ -29,7 +29,7 @@ void RmEpsilon(Lattice &ifst, int ilabel)
 		StateId s = state_queue.back();
 		state_queue.pop_back();
 		cur_state_queue.clear();
-		cur_state_queue.push_back(Pair(s, 0));
+		cur_state_queue.push_back(Pair(s, Weight::One()));
 		LatticeState *cur_state = ifst.GetState(s);
 		// delete this state all eps, and add equal arc , and can be arrive state.
 		while(!cur_state_queue.empty())
@@ -42,7 +42,7 @@ void RmEpsilon(Lattice &ifst, int ilabel)
 			// the i muset be int ,because it can be -1.
 			for(int i = 0 ; i< (int)state->GetArcSize();++i)
 			{
-				Arc *arc = state->GetArc(i);
+				LatticeArc *arc = state->GetArc(i);
 				if(arc->_input == ilabel && arc->_output == 0 && !ifst.Final(arc->_to))
 				{
 					if(s == cur_stateid) // delete this arc
@@ -53,7 +53,8 @@ void RmEpsilon(Lattice &ifst, int ilabel)
 							arc->_w += w;
 							continue;
 						}*/
-						cur_state_queue.push_back(Pair(arc->_to, w + arc->_w));
+						cur_state_queue.push_back(Pair(arc->_to, 
+									Times(w, arc->_w)));
 						cur_state->DeleteArc(i);
 //						VLOG(3) << "state " << s << " delete arc " << i ;
 						delete_arc_num++;
@@ -61,7 +62,8 @@ void RmEpsilon(Lattice &ifst, int ilabel)
 						i--;
 					}
 					else
-						cur_state_queue.push_back(Pair(arc->_to, w + arc->_w));
+						cur_state_queue.push_back(Pair(arc->_to, 
+									Times(w, arc->_w)));
 					//if(ifst.Final(arc->_to))
 					//	ifst.SetFinal(s);
 					continue;
@@ -80,7 +82,8 @@ void RmEpsilon(Lattice &ifst, int ilabel)
 						continue;
 					}
 					// eps arrive state, so nextstate should be add state_queue
-					cur_state->AddArc(Arc(arc->_input,arc->_output,arc->_to,arc->_w + w));
+					cur_state->AddArc(LatticeArc(arc->_input,arc->_output,arc->_to,
+								Times(arc->_w, w)));
 					if(rmeps_state[arc->_to] != true)
 					{
 						state_queue.push_back(arc->_to);

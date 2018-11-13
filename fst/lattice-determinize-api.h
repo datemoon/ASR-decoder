@@ -5,8 +5,9 @@
 #include <map>
 #include <set>
 #include <vector>
+#include "fst/lattice-fst.h"
 
-const float kDelta = 1.0/1024;
+//const float kDelta = 1.0/1024;
 
 struct DeterminizeLatticeOptions
 {

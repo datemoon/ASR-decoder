@@ -392,8 +392,12 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 				else
 					arc = tmpstate->SearchArc(arpaline->words[i]);
 				if(arc == NULL)
+				{	
 					PrintArpaLine(*arpaline);
-				assert(arc != NULL && "arc shouldn't NULL");
+					std::cout <<  "arc shouldn't NULL" << std::endl;
+					//assert(arc != NULL && "arc shouldn't NULL");
+					return true;
+				}
 				FsaStateId tostateid = arc->tostateid;
 				prev_gram_stateid = tostateid;
 				tmpstate = _fsa.GetState(tostateid);
@@ -426,7 +430,7 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 					{
 						if(arpaline->backoff_logprob != 0)
 						{	
-							std::cerr << "No search arc,shouldn't happen." << std::endl;
+							std::cerr << "No search arc." << std::endl;
 							PrintArpaLine(*arpaline);
 						}
 						break;

@@ -13,7 +13,7 @@ public:
 
 	virtual float Final(I s) = 0;
 
-	virtual bool GetArc(I s, Label ilabel, StdArc* oarc) = 0;
+	virtual bool GetArc(I s, Label ilabel, LatticeArc* oarc) = 0;
 };
 
 template <typename I>

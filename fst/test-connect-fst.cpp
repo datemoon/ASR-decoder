@@ -11,12 +11,12 @@ int main(int argc,char *argv[])
 	lat.SetStart(0);
 	for(int i=0;i<6;++i)
 	   	lat.AddState();
-	Arc arc1(1,0,1,0.5);
-	Arc arc2(2,0,2,0.5);
-	Arc arc3(3,0,3,0.5);
-	Arc arc4(4,0,4,0.5);
-	Arc arc5(5,0,5,0.5);
-	Arc arc6(6,0,3,0.5);
+	LatticeArc arc1(1,0,1,LatticeWeight(0.5,0));
+	LatticeArc arc2(2,0,2,LatticeWeight(0.5,0));
+	LatticeArc arc3(3,0,3,LatticeWeight(0.5,0));
+	LatticeArc arc4(4,0,4,LatticeWeight(0.5,0));
+	LatticeArc arc5(5,0,5,LatticeWeight(0.5,0));
+	LatticeArc arc6(6,0,3,LatticeWeight(0.5,0));
 	lat.AddArc(0,arc1);
 	lat.AddArc(1,arc2);
 	lat.AddArc(1,arc3);

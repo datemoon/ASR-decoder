@@ -3,7 +3,6 @@
 #include "lm/arpa2fsa.h"
 #include "fst/compose-lat.h"
 
-
 class ComposeArpaLm:public LatticeComposeItf<FsaStateId>
 {
 private:
@@ -17,7 +16,7 @@ public:
 	// not const.
 	virtual float Final(FsaStateId s);
 
-	virtual bool GetArc(FsaStateId s, Label ilabel, StdArc* oarc);
+	virtual bool GetArc(FsaStateId s, Label ilabel, LatticeArc* oarc);
 
 };
 

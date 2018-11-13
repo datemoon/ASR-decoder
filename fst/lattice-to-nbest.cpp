@@ -27,7 +27,7 @@ void NShortestPath(Lattice &ifst, Lattice *ofst,
 
 //#define TEST
 #ifdef TEST
-	unordered_map<Arc *, bool> hash_arc;
+	unordered_map<LatticeArc *, bool> hash_arc;
 #endif
 	// here ifst must be topologically sort fst
 	// don't check
@@ -56,8 +56,8 @@ void NShortestPath(Lattice &ifst, Lattice *ofst,
 
 		for(unsigned i = 0; i < cur_state->GetArcSize(); ++i)
 		{
-			Arc *arc = cur_state->GetArc(i);
-			float arc_cost = arc->_w;
+			LatticeArc *arc = cur_state->GetArc(i);
+			float arc_cost = arc->_w.Value();
 			StateId nextstate = arc->_to;
 			LOG_ASSERT(s < nextstate); // because it's topologically sort
 			float next_cost = arc_cost + best_cost_and_back[nextstate];
@@ -109,7 +109,7 @@ void NShortestPath(Lattice &ifst, Lattice *ofst,
 		for(unsigned i = 0; i < cur_state->GetArcSize(); ++i)
 		{
 			LOG_ASSERT(!cur_state->IsFinal());
-			Arc *arc = cur_state->GetArc(i);
+			LatticeArc *arc = cur_state->GetArc(i);
 #ifdef TEST
 			if(hash_arc.find(arc) != hash_arc.end())
 				hash_arc[arc] = true;
@@ -119,13 +119,13 @@ void NShortestPath(Lattice &ifst, Lattice *ofst,
 //				LOG_ASSERT(false);
 			}
 #endif
-			Weight w = p.second + arc->_w; // it's forward score.
+			Weight w = p.second + arc->_w.Value(); // it's forward score.
 			StateId next = ofst->AddState();
 			pairs.push_back(Pair(arc->_to, w));
 			//Arc oarc(arc->_input, arc->_output, next, arc->_w);
 			//ofst->AddArc(state ,oarc);
 			LOG_ASSERT(arc->_to != p.first);
-			ofst->AddArc(state ,Arc(arc->_input, arc->_output, next, arc->_w));
+			ofst->AddArc(state ,LatticeArc(arc->_input, arc->_output, next, arc->_w));
 			heap.push_back(next);
 			push_heap(heap.begin(), heap.end(), compare);
 		}
@@ -162,9 +162,9 @@ void ConvertNbestToVector(Lattice &fst, vector<Lattice> *fsts_out)
 		// add start state
 		StateId start = ofst.AddState();
 		ofst.SetStart(start);
-		Arc *arc = start_state->GetArc(i);
+		LatticeArc *arc = start_state->GetArc(i);
 		StateId next_ostateid = ofst.AddState();
-		ofst.AddArc(start, Arc(arc->_input, arc->_output, next_ostateid , arc->_w));
+		ofst.AddArc(start, LatticeArc(arc->_input, arc->_output, next_ostateid , arc->_w));
 		StateId cur_stateid = arc->_to;
 		StateId cur_ostateid = next_ostateid;
 		while(1)
@@ -175,9 +175,9 @@ void ConvertNbestToVector(Lattice &fst, vector<Lattice> *fsts_out)
 			LOG_ASSERT(this_n_arcs <= 1); // or it violates our assumptions about the input.
 			if (this_n_arcs == 1)
 			{
-				Arc *arc = cur_state->GetArc(0);
+				LatticeArc *arc = cur_state->GetArc(0);
 				next_ostateid = ofst.AddState();
-				ofst.AddArc(cur_ostateid, Arc(arc->_input, arc->_output, next_ostateid, arc->_w));
+				ofst.AddArc(cur_ostateid, LatticeArc(arc->_input, arc->_output, next_ostateid, arc->_w));
 				cur_stateid = arc->_to;
 				cur_ostateid = next_ostateid;
 			}

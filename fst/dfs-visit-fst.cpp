@@ -25,7 +25,7 @@ bool DfsSearch(Lattice *fst, StateId root ,vector<char> *state_color,
 	LatticeState *state = fst->GetState(root);
 	for(size_t i = 0 ; i < state->GetArcSize(); ++i)
 	{
-		Arc *arc = state->GetArc(i);
+		LatticeArc *arc = state->GetArc(i);
 		StateId nextstate = arc->_to;
 		switch((*state_color)[nextstate])
 		{

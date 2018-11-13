@@ -23,20 +23,21 @@ float ComposeArpaLm::Final(FsaStateId s)
 	return (-1.0 * weight);
 }
 
-bool ComposeArpaLm::GetArc(FsaStateId s, Label ilabel, StdArc* oarc)
+bool ComposeArpaLm::GetArc(FsaStateId s, Label ilabel, LatticeArc* oarc)
 {
 	FsaArc *arc = NULL;
-	oarc->_w = 0;
+	float weight = 0.0;
 	while(_lm->GetArc(s, ilabel, arc) == false)
 	{
 		LOG_ASSERT(_lm->GetArc(s, 0, arc));
 		s = arc->tostateid;
-		oarc->_w += arc->weight;
+		weight += arc->weight;
 	}
 	oarc->_input = arc->wordid;
 	oarc->_output = arc->wordid;
-	oarc->_w += arc->weight;
-	oarc->_w *= -1.0;
+	weight += arc->weight;
+	oarc->_w.SetValue1((float)0.0);
+	oarc->_w.SetValue2(-1 * weight);
 	oarc->_to = arc->tostateid;
 	return true;
 }
@@ -112,7 +113,7 @@ void ArpaLmScore::ConvertText2Lat(char *text,Lattice *lat)
 	for(size_t i=0;i<ids.size();++i)
 	{
 		StateId nextstate = lat->AddState();
-		Arc arc(ids[i],ids[i], nextstate, 0.0);
+		LatticeArc arc(ids[i],ids[i], nextstate, LatticeWeight::One());
 		lat->AddArc(stateid, arc);
 		stateid = nextstate;
 	}

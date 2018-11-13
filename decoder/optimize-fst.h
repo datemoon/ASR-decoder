@@ -4,7 +4,9 @@
 #include <assert.h>
 #include <iostream>
 #include <cmath>
-
+#include "fst/arc.h"
+#include "decoder/log.h"
+/*
 typedef int StateId;
 typedef int Label;
 //typedef float Weight;
@@ -93,6 +95,9 @@ public:
 			<< _input << " " << _output << " " << _w << std::endl;
 	}
 };
+*/
+
+typedef ArcTpl<float> Arc;
 
 class State
 {
@@ -161,11 +166,11 @@ public:
 	}
 
 
-	bool ReadFst(const char *file);
-	bool ReadFst(FILE *fp);
-	void PrintFst();
-	bool WriteFst(const char *file);
-	void RmOlalel();
+	//bool ReadFst(const char *file);
+	//bool ReadFst(FILE *fp);
+	//void PrintFst();
+	//bool WriteFst(const char *file);
+	//void RmOlalel();
 	State* GetState(StateId stateid)
 	{
 		if(stateid <_total_states)
@@ -203,142 +208,89 @@ public:
 	{
 		return _total_arcs;
 	}
-};
 
-typedef Arc StdArc;
-typedef State StdState;
-/*
-class LatticeState
+/*#endif
+#include <stdio.h>
+#include <string.h>
+#include "decoder/optimize-fst.h"
+*/
+bool ReadFst(const char *file)
 {
-public:
-	LatticeState():_final(0){}
-	LatticeState(int final):_final(final){}
-	LatticeState(const LatticeState &A):_final(A._final),_arc(A._arc) {}
-	~LatticeState(){}
-
-	void SetFinal(){ _final = 1;}
-
-	void AddArc(Arc const &arc)
+	FILE *fp = fopen(file,"rb");
+	if(NULL == fp)
 	{
-		_arc.push_back(arc);
+		LOGERR("fopen %s failed.\n",file);
+		return false;
 	}
-	LatticeState operator=(const LatticeState &A)
-	{
-		_final = A._final;
-		_arc = A._arc;
-		return *this;
-	}
+	ReadFst(fp);
+	fclose(fp);
+	return true;
+}
+bool ReadFst(FILE *fp)
+{
+	if(1 != fread(&(_start_stateid),sizeof(int),1,fp))
+		return false;
+	if(1 != fread(&(_final_stateid),sizeof(int),1,fp))
+		return false;
+	if(1 != fread(&(_total_states),sizeof(int),1,fp))
+		return false;
+	if(1 != fread(&(_total_arcs),sizeof(int),1,fp))
+		return false;
+	if(1 != fread(&(_total_niepsilons),sizeof(int),1,fp))
+		return false;
+	if(1 != fread(&(_total_noepsilons),sizeof(int),1,fp))
+		return false;
 
-	bool IsFinal()
+	// malloc memery
+	_state_arr = new State[_total_states];
+	_arc_arr = new Arc[_total_arcs];
+	int i = 0;
+	int arc_offset = 0;
+	for(i = 0 ; i < _total_states ; ++i)
 	{
-		if(_final != 0)
-			return true;
-		else
+		unsigned int num_arc = 0;
+		if(1 != fread(&num_arc,sizeof(int),1,fp))
 			return false;
-	}
-
-	Arc *GetArc(unsigned int arcid)
-	{
-		if(arcid < _arc.size())
-			return &_arc[arcid];
-		else
-			return NULL;
-	}
-
-	unsigned int GetArcSize() { return _arc.size();}
-
-	
-	//  Here use quick sort.
-	 
-	void SortArc(int start,int end)
-	{
-		if(start >= end)
-			return ;
-		int mid = start;
-		int tail = end;
-		int head = start;
-		Arc arc = _arc[mid];
-		while(head < tail)
+		_state_arr[i]._num_arcs = num_arc;
+		_state_arr[i]._arcs = &_arc_arr[arc_offset];
+		if(num_arc > 0)
 		{
-			while(head < tail && arc <= _arc[tail] )
-				tail--;
-			if(head < tail)
+			if(num_arc != fread(_state_arr[i]._arcs,sizeof(Arc),num_arc,fp))
 			{
-				_arc[head] = _arc[tail];
-			 	head++;
-			}
-			while(head < tail && _arc[head] < arc)
-				head++;
-			if(head < tail)
-			{
-				_arc[tail] = _arc[head];
-				tail--;
+				LOGERR("fread arc error!\n");
+				return false;
 			}
 		}
-		_arc[head] = arc;
-		SortArc(start,head-1);
-		SortArc(head+1,end);
+		arc_offset += num_arc;
 	}
-private:
-	int _final;
-	vector<Arc> _arc;
-};
+	assert(arc_offset == _total_arcs && "arc read is error.\n");
+	return true;
+}
 
-class Lattice
+void PrintFst()
 {
-public:
-	Lattice():_startid(0) { }
-	~Lattice() { }
-	
-	int NumStates()
+	for(int i =0 ; i < _total_states ; ++i)
 	{
-		return _state.size();
+		Arc* arc = _state_arr[i]._arcs;
+		for(int j = 0; j < _state_arr[i]._num_arcs ; ++j)
+		{
+			printf("%d\t%d\t%d\t%d\t%f\n", i, arc[j]._to, arc[j]._input, arc[j]._output, arc[j]._w);
+		}
 	}
+}
 
-	void SetFinal(StateId stateid,float prob = 0)
+void RmOlalel()
+{
+	for(int i =0 ; i < _total_states ; ++i)
 	{
-		assert(stateid < static_cast<StateId>(_state.size()) &&
-				"stateid big then state number.");
-		_state[stateid].SetFinal();
+		Arc* arc = _state_arr[i]._arcs;
+		for(int j = 0; j < _state_arr[i]._num_arcs ; ++j)
+		{
+			arc[j]._output=0;
+		}
 	}
-	
-	void AddArc(StateId stateid, Arc &arc)
-	{
-		assert(stateid < static_cast<StateId>(_state.size()) && "stateid big then state number.");
-		_state[stateid].AddArc(arc);
-	}
-
-	StateId AddState()
-	{
-		StateId size = static_cast<StateId>(_state.size());
-		_state.resize(size+1);
-		return size;
-	}
-
-	void SetStart(int stateid)
-	{
-		_startid = stateid;
-	}
-
-	void DeleteStates()
-	{
-		_state.clear();
-	}
-	
-	LatticeState *GetState(StateId stateid)
-	{
-		assert(stateid < _state.size());
-		return &(_state[stateid]);
-	}
-
-	// invert input and ouput
-	void Invert();
-
-	// sort by input.
-	void ArcSort();
-private:
-	int _startid;
-	vector<LatticeState> _state;
+}
 };
-*/
+typedef Arc StdArc;
+typedef State StdState;
 #endif

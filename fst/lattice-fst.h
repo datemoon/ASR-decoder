@@ -4,11 +4,15 @@
 #include <assert.h>
 #include <iostream>
 #include <vector>
-#include "decoder/optimize-fst.h"
+//#include "decoder/optimize-fst.h"
 #include "util/util-common.h"
+#include "fst/arc.h"
 
 using namespace std;
 using std::vector;
+
+typedef LatticeWeightTpl<float> LatticeWeight;
+typedef ArcTpl<LatticeWeightTpl<float> > LatticeArc;
 
 class LatticeState
 {
@@ -22,7 +26,7 @@ public:
 
 	void UnsetFinal(){_final = 0;}
 
-	void AddArc(Arc const &arc)
+	void AddArc(LatticeArc const &arc)
 	{
 		_arc.push_back(arc);
 	}
@@ -41,7 +45,7 @@ public:
 			return false;
 	}
 
-	Arc *GetArc(size_t arcid)
+	LatticeArc *GetArc(size_t arcid)
 	{
 		if(arcid < _arc.size())
 			return &(_arc[arcid]);
@@ -85,7 +89,7 @@ public:
 		int mid = start;
 		int tail = end;
 		int head = start;
-		Arc arc = _arc[mid];
+		LatticeArc arc = _arc[mid];
 		while(head < tail)
 		{
 			while(head < tail && arc <= _arc[tail] )
@@ -118,7 +122,7 @@ public:
 	}
 
 	int _final;
-	vector<Arc> _arc;
+	vector<LatticeArc> _arc;
 };
 
 const int  kNoStateId = -1;
@@ -144,7 +148,7 @@ public:
 		_state[stateid]->SetFinal();
 	}
 	
-	void AddArc(StateId stateid,const Arc &arc)
+	void AddArc(StateId stateid,const LatticeArc &arc)
 	{
 		assert(stateid < static_cast<StateId>(_state.size()) && "stateid big then state number.");
 		_state[stateid]->AddArc(arc);
@@ -216,7 +220,7 @@ public:
 		_state.resize(nstates);
 		for(StateId s= 0; s< static_cast<StateId>(_state.size());++s)
 		{
-			vector<Arc> &arcs = _state[s]->_arc;
+			vector<LatticeArc> &arcs = _state[s]->_arc;
 			size_t narcs = 0;
 			for(size_t i = 0; i < arcs.size();++i)
 			{

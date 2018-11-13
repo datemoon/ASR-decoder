@@ -126,7 +126,7 @@ public:
 	// the ilabel and olabel, and the (graph and acoustic) weight to the "arc" pointer,
 	// while leaving its "nextstate" variable unchanged.
 	BestPathIterator TraceBackBestPath(
-			BestPathIterator iter, Arc *arc) const;
+			BestPathIterator iter, LatticeArc *arc) const;
 
 
 

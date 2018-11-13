@@ -53,8 +53,10 @@ void TopSort(Lattice *fst)
 		LatticeState *state = fst->GetState(id);
 		for(size_t i = 0 ; i < state->GetArcSize(); ++i)
 		{
-			Arc *arc = state->GetArc(i);
-			arc->_to = order[arc->_to];
+			//LatticeArc *arc = state->GetArc(i);
+			//arc->_to = order[arc->_to];
+			StateId nextstate = state->GetArc(i)->_to;
+			state->GetArc(i)->_to = order[nextstate];
 		}
 	}
 }

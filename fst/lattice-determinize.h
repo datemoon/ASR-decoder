@@ -344,9 +344,9 @@ public:
 					for (size_t i = 0; i < seq.size(); i++)
 					{
 						OutputStateId next_state = ofst->AddState();
-						Arc arc;
+						LatticeArc arc;
 						arc._to = next_state;
-						arc._w = (i == 0 ? temp_arc._weight : 0);
+						arc._w = (i == 0 ? temp_arc._weight : Weight::One());
 						arc._input = 0;  // eps
 						arc._output = seq[i];
 						ofst->AddArc(cur_state, arc);
@@ -356,9 +356,9 @@ public:
 					if(seq.size() == 0)
 					{
 						OutputStateId next_state = ofst->AddState();
-						Arc arc;
+						LatticeArc arc;
 						arc._to = next_state;
-						arc._w = 0;
+						arc._w = Weight::One();
 						arc._input = 0;  // eps
 						arc._output = 0;
 						ofst->AddArc(cur_state, arc);
@@ -374,18 +374,18 @@ public:
 					for( size_t i = 0;i+1 < seq.size();++i)
 					{ // for all but the last element of seq, create new state.
 						OutputStateId next_state = ofst->AddState();
-						Arc arc;
+						LatticeArc arc;
 						arc._to = next_state;
-						arc._w = (i == 0 ? temp_arc._weight : 0);
+						arc._w = (i == 0 ? temp_arc._weight : Weight::One());
 						arc._input = (i == 0 ? temp_arc._ilabel : 0); // put ilabel on first element of seq.
 						arc._output = seq[i];
 						ofst->AddArc(cur_state,arc);
 						cur_state = next_state;
 					}
 					// Add the final arc in the sequence.
-					Arc arc;
+					LatticeArc arc;
 					arc._to = temp_arc._nextstate;
-					arc._w = (seq.size() <= 1 ? temp_arc._weight : 0);
+					arc._w = (seq.size() <= 1 ? temp_arc._weight : Weight::One());
 					arc._input = (seq.size() <= 1 ? temp_arc._ilabel : 0);
 					arc._output = (seq.size() > 0 ? seq.back() : 0);
 					ofst->AddArc(cur_state,arc);
@@ -517,8 +517,8 @@ public:
 
 private:
 
-	typedef typename Arc::StateId InputStateId;
-	typedef typename Arc::StateId OutputStateId;
+	typedef typename LatticeArc::StateId InputStateId;
+	typedef typename LatticeArc::StateId OutputStateId;
 
 	typedef LatticeStringRepository<IntType> StringRepositoryType;
 	typedef const typename StringRepositoryType::Entry* StringId;
@@ -599,7 +599,8 @@ private:
 			{
 				if(iter1->_state != iter2->_state ||
 						iter1->_string != iter2->_string ||
-						fabs(iter1->_weight - iter2->_weight) > _delta)
+						! ApproxEqual(iter1->_weight, iter2->_weight, _delta))
+						//fabs(iter1->_weight - iter2->_weight) > _delta)
 					return false;
 			}
 			return true;
@@ -740,7 +741,7 @@ private:
 			*/
 			Element elem;
 			elem._state = start_id;
-			elem._weight = 0;
+			elem._weight = Weight::One();
 			elem._string = _repository.EmptyString(); // Id of empty sequence NULL.
 			vector<Element> subset;
 			subset.push_back(elem);
@@ -808,15 +809,15 @@ private:
 			LatticeState *lstate = _ifst->GetState(elem._state);
 			for(int i = 0; i < (int)(lstate->GetArcSize()); ++i)
 			{
-				Arc *arciter = lstate->GetArc(i);
+				LatticeArc *arciter = lstate->GetArc(i);
 				if(sorted && arciter->_input != 0)
 					break; // Break from the loop: due to sorting there will be no
 				           // more transitions with epsilons as input labels.
-				if(arciter->_input == 0 && arciter->_w != FLOAT_INF)
+				if(arciter->_input == 0 && arciter->_w != Weight::Zero())
 				{
 					Element next_elem;
 					next_elem._state = arciter->_to;
-					next_elem._weight = elem._weight + arciter->_w;
+					next_elem._weight = Times(elem._weight, arciter->_w);
 					// noew must append strings
 					if(arciter->_output == 0)
 						next_elem._string = elem._string;
@@ -889,10 +890,13 @@ private:
 	inline int Compare(const Weight &a_w, StringId a_str,
 			const Weight &b_w, StringId b_str) const
 	{
-		if(a_w > b_w)
-			return -1;
-		else if(a_w < b_w)
-			return 1;
+		int weight_comp = LatticeWeightCompare(a_w, b_w);
+		if(weight_comp != 0)
+			return weight_comp;
+//		if(a_w > b_w)
+//			return -1;
+//		else if(a_w < b_w)
+//			return 1;
 		// now comparing strings
 		if(a_str == b_str)
 			return 0;
@@ -935,8 +939,8 @@ private:
 		LatticeState *lstate = _ifst->GetState(state);
 		for(int i = 0;i < (int)(lstate->GetArcSize()); ++i)
 		{
-			Arc *arciter = lstate->GetArc(i);
-			if(arciter->_input != 0 && arciter->_w != FLOAT_INF)
+			LatticeArc *arciter = lstate->GetArc(i);
+			if(arciter->_input != 0 && arciter->_w != Weight::Zero())
 			{
 				_isymbol_or_final[state] = static_cast<char>(OSF_YES);
 				return true;
@@ -965,7 +969,7 @@ private:
 		// I think, do don't check that it's nonempty.
 		bool is_final = false;
 		StringId final_string = NULL; // = NULL to keep comploer happy.
-		Weight final_weight = FLOAT_INF;
+		Weight final_weight = Weight::Zero();
 		typename vector<Element>::const_iterator iter = minimal_subset.begin(), 
 				 end = minimal_subset.end();
 		for(; iter != end; ++iter)
@@ -1023,14 +1027,14 @@ private:
 				LatticeState *lstate = _ifst->GetState(elem._state);
 				for(int i=0; i < (int)(lstate->GetArcSize()); ++i)
 				{
-					Arc *arciter = lstate->GetArc(i);
-					if(arciter->_input != 0 && arciter->_w != FLOAT_INF)
+					LatticeArc *arciter = lstate->GetArc(i);
+					if(arciter->_input != 0 && arciter->_w != Weight::Zero())
 					{ // Non-epsilon transition -- ignore epsilons here.
 						pair<Label, Element> this_pr;
 						this_pr.first = arciter->_input;
 						Element &next_elem(this_pr.second);
 						next_elem._state = arciter->_to;
-						next_elem._weight = elem._weight + arciter->_w;
+						next_elem._weight = Times(elem._weight, arciter->_w);
 						if(arciter->_output == 0) // output epsilon
 							next_elem._string = elem._string;
 						else
@@ -1085,7 +1089,7 @@ private:
 			StringId next_common_str;
 			nextstate = InitialToStateId(*subset, &next_tot_weight, &next_common_str);
 			common_str = _repository.Concatenate(common_str, next_common_str);
-			tot_weight = tot_weight + next_tot_weight;
+			tot_weight = Times(tot_weight, next_tot_weight);
 		}
 
 		// Now add an arc to the next state (would have been created if necessqry by
@@ -1145,7 +1149,7 @@ private:
 			LOG_WARN << "[empty subset]" ; // TEMP
 			// to defaults and return...
 			*common_str = _repository.EmptyString();
-			*tot_weight = FLOAT_INF;
+			*tot_weight = Weight::Zero();
 			return ;
 		}
 		size_t size = elems->size();
@@ -1154,10 +1158,11 @@ private:
 		Weight weight = (*elems)[0]._weight;
 		for(size_t i = 1;i < size; ++i)
 		{
-			weight = weight < (*elems)[i]._weight ? weight : (*elems)[i]._weight;
+			//weight = weight < (*elems)[i]._weight ? weight : (*elems)[i]._weight;
+			weight = Plus(weight, (*elems)[i]._weight);
 			_repository.ReduceToCommonPrefix((*elems)[i]._string, &common_prefix);
 		}
-		LOG_ASSERT(weight != FLOAT_INF); // we made sure to ignore arcs with zero
+		LOG_ASSERT(weight != Weight::Zero()); // we made sure to ignore arcs with zero
 		// weights on them, so we shouldn't have zero here.
 		size_t prefix_len = common_prefix.size();
 		for(size_t i = 0; i < size; ++i)
@@ -1169,11 +1174,11 @@ private:
 		*tot_weight = weight;
 	}
 
-	float Divide(float w1, float w2)
+/*	float Divide(float w1, float w2)
 	{
 		return (w1-w2);
 	}
-
+*/
 	// Given a normalized initial subset of elements (i.e. before epsilon closure),
 	// compute the corresponding output-state.
 	OutputStateId InitialToStateId(const vector<Element> &subset_in,
@@ -1185,7 +1190,7 @@ private:
 			const Element &elem = iter->second;
 			*remaining_weight = elem._weight;
 			*common_prefix = elem._string;
-			if(elem._weight == FLOAT_INF)
+			if(elem._weight == Weight::Zero())
 				LOG_WARN << "Zero weight!" ;// TEMP
 			return elem._state;
 		}
@@ -1207,7 +1212,7 @@ private:
 		OutputStateId ans = MinimalToStateId(subset);
 		*remaining_weight = elem._weight;
 		*common_prefix = elem._string;
-		if(elem._weight == FLOAT_INF)
+		if(elem._weight == Weight::Zero())
 			LOG_WARN << "Zero weight!" ; // TEMP
 
 		// Before returning "ans", add the initial subset to the hash,
@@ -1392,7 +1397,7 @@ bool DeterminizeLatticeWrapper(Lattice *ifst, Lattice *ofst,
 	// second ifst input must be sort.
 	ifst->ArcSort();
 	// third determinize.
-	LatticeDeterminizer<float ,int> det(ifst, opts);
+	LatticeDeterminizer<LatticeWeight ,int> det(ifst, opts);
 
 	if(!det.Determinize(debug_ptr))
 		return false;

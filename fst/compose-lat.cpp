@@ -48,8 +48,8 @@ void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat)
 		LatticeState *state1 = clat->GetState(s1);
 		for(size_t i = 0; i<state1->GetArcSize(); i++)
 		{
-			StdArc *arc1 = state1->GetArc(i);
-			StdArc arc2;
+			LatticeArc *arc1 = state1->GetArc(i);
+			LatticeArc arc2;
 			StateId next_state1 = arc1->_to;
 			I next_state2 = 0;
 			bool matched = false;
@@ -107,13 +107,17 @@ void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat)
 				// Adds arc to <olat>.
 				if (arc1->_output == 0)
 				{
-					olat->AddArc(state_map[s], StdArc(arc1->_input,
-								0, next_state, arc1->_w + final_score));
+					float am_score = arc1->_w.Value1();
+					float lm_score = arc1->_w.Value2() + final_score;
+					olat->AddArc(state_map[s], LatticeArc(arc1->_input,
+								0, next_state, LatticeWeight(am_score, lm_score)));
 				}
 				else
 				{
-					olat->AddArc(state_map[s], StdArc(arc1->_input, arc2._output,
-							   	next_state, arc1->_w + arc2._w + final_score));
+					float am_score = arc1->_w.Value1() + arc2._w.Value1();
+					float lm_score = arc1->_w.Value2() + arc2._w.Value2() + final_score;
+					olat->AddArc(state_map[s], LatticeArc(arc1->_input, arc2._output,
+							   	next_state, LatticeWeight(am_score, lm_score)));
 				}
 			}
 		}

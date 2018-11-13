@@ -35,8 +35,8 @@ void LatticeShortestPath(Lattice *ilat, Lattice *shortest_lat)
 		LatticeState * cur_state = ilat->GetState(s);
 		for(unsigned i = 0; i < cur_state->GetArcSize(); ++i)
 		{
-			Arc *arc = cur_state->GetArc(i);
-			float arc_cost = arc->_w;
+			LatticeArc *arc = cur_state->GetArc(i);
+			float arc_cost = arc->_w.Value();
 			float next_cost = my_cost + arc_cost;
 			if (next_cost < best_cost_and_pred[arc->_to].first)
 			{
@@ -79,14 +79,14 @@ void LatticeShortestPath(Lattice *ilat, Lattice *shortest_lat)
 		if (static_cast<size_t>(s + 1) < states.size())
 		{ // transition to next state.
 			bool have_arc = false;
-			Arc cur_arc;
+			LatticeArc cur_arc;
 			LatticeState * cur_state = ilat->GetState(states[s]);
 			for(unsigned i = 0; i < cur_state->GetArcSize(); ++i)
 			{
-				Arc *arc = cur_state->GetArc(i);
+				LatticeArc *arc = cur_state->GetArc(i);
 				if(arc->_to == states[s+1])
 				{
-					if(!have_arc || arc->_w < cur_arc._w)
+					if(!have_arc || arc->_w.Value() < cur_arc._w.Value())
 					{
 						cur_arc = *arc;
 						have_arc = true;
@@ -113,7 +113,7 @@ bool TopCheck(Lattice &fst)
 		LatticeState * cur_state = fst.GetState(s);
 		for(unsigned i = 0 ; i < cur_state->GetArcSize(); ++i)
 		{
-			Arc *arc = cur_state->GetArc(i);
+			LatticeArc *arc = cur_state->GetArc(i);
 			if(s >= arc->_to)
 				return false;
 		}
@@ -129,7 +129,7 @@ void LatticeRmInput(Lattice &fst)
 		LatticeState * cur_state = fst.GetState(s);
 		for(unsigned i = 0 ; i < cur_state->GetArcSize(); ++i)
 		{
-			Arc *arc = cur_state->GetArc(i);
+			LatticeArc *arc = cur_state->GetArc(i);
 			arc->_input = 0;
 		}
 	}
@@ -171,7 +171,7 @@ void AddSuperFinalState(Lattice &fst)
 		if(cur_state->IsFinal() && s != final_state)
 		{
 			cur_state->UnsetFinal();
-			Arc arc(0,0,final_state,0.0);
+			LatticeArc arc(0,0,final_state,LatticeWeight(0.0, 0.0));
 			cur_state->AddArc(arc);
 		}
 	}

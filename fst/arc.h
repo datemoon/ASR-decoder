@@ -98,6 +98,12 @@ public:
 };
 
 template<class FloatType>
+class LatticeWeightTpl;
+
+template <class FloatType>
+inline ostream &operator <<(ostream &strm, const LatticeWeightTpl<FloatType> &w);
+
+template<class FloatType>
 class LatticeWeightTpl
 {
 public:
@@ -105,11 +111,12 @@ public:
 
 	inline T Value1() const { return _value1;}
 	inline T Value2() const { return _value2;}
+	inline T Value() const { return _value1 + _value2; }
 
 	inline void SetValue1(T f) { _value1 = f; }
 	inline void SetValue2(T f) { _value2 = f; }
 
-	LatticeWeightTpl(): _value1(0.0), _value1(0.0) { }
+	LatticeWeightTpl(): _value1(0.0), _value2(0.0) { }
 
 	LatticeWeightTpl(T a, T b): _value1(a), _value2(b) {}
 
@@ -143,7 +150,7 @@ private:
 template <class FloatType>
 inline ostream &operator <<(ostream &strm, const LatticeWeightTpl<FloatType> &w)
 {
-	strm << w._value1 << "," << w._value2;
+	strm << w.Value1() << "," << w.Value2();
 	return strm;
 }
 
@@ -172,7 +179,7 @@ inline bool operator==(const LatticeWeightTpl<FloatType> &wa,
 /// Compare returns -1 if w1 < w2, +1 if w1 > w2, and 0 if w1 == w2.
 
 template<class FloatType>
-inline int Compare (const LatticeWeightTpl<FloatType> &w1,
+inline int LatticeWeightCompare (const LatticeWeightTpl<FloatType> &w1,
 		const LatticeWeightTpl<FloatType> &w2) 
 {
 	FloatType f1 = w1.Value1() + w1.Value2(),
@@ -192,8 +199,36 @@ template<class FloatType>
 inline LatticeWeightTpl<FloatType> Plus(const LatticeWeightTpl<FloatType> &w1,
 		const LatticeWeightTpl<FloatType> &w2) 
 {
-	return (Compare(w1, w2) >= 0 ? w1 : w2);
+	return (LatticeWeightCompare(w1, w2) >= 0 ? w1 : w2);
 }
+
+template<class FloatType>
+inline LatticeWeightTpl<FloatType> Times(const LatticeWeightTpl<FloatType> &w1,
+		const LatticeWeightTpl<FloatType> &w2) 
+{
+	return LatticeWeightTpl<FloatType>(w1.Value1()+w2.Value1(), w1.Value2()+w2.Value2());
+}
+
+// divide w1 by w2 (on left/right/any doesn't matter as
+// commutative).
+template<class FloatType>
+inline LatticeWeightTpl<FloatType> Divide(const LatticeWeightTpl<FloatType> &w1,
+		const LatticeWeightTpl<FloatType> &w2)
+{
+	typedef FloatType T;
+	T a = w1.Value1() - w2.Value1(), b = w1.Value2() - w2.Value2();
+	if (a != a || b != b || a == -numeric_limits<T>::infinity()
+			|| b == -numeric_limits<T>::infinity()) {
+		std::cout << "LatticeWeightTpl::Divide, NaN or invalid number produced. "
+			<< "[dividing by zero?]  Returning zero" << std::endl;
+		return LatticeWeightTpl<T>::Zero();
+	}
+	if (a == numeric_limits<T>::infinity() ||
+			b == numeric_limits<T>::infinity())
+		return LatticeWeightTpl<T>::Zero(); // not a valid number if only one is infinite.
+	return LatticeWeightTpl<T>(a, b);
+}
+
 
 
 template<class FloatType>
@@ -206,8 +241,5 @@ inline bool ApproxEqual(const LatticeWeightTpl<FloatType> &w1,
 	return (fabs((w1.Value1() + w1.Value2()) - (w2.Value1() + w2.Value2())) <= delta);
 }
 
-
-typedef ArcTpl<float> Arc;
-typedef ArcTpl<LatticeWeightTpl<float> > LatticeArc;
 
 #endif

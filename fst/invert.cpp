@@ -9,8 +9,8 @@ void Invert(Lattice &fst)
 		LatticeState *state = fst.GetState(s);
 		for(unsigned i = 0; i < state->GetArcSize();++i)
 		{
-			Arc *arc = state->GetArc(i);
-			arc->Invert();
+			//LatticeArc *arc = state->GetArc(i);
+			state->GetArc(i)->Invert();
 		}
 	}
 }

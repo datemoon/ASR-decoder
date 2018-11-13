@@ -9,7 +9,7 @@ void Lattice::Invert()
 		LatticeState *state = _state[i];
 		for(size_t j = 0; j < static_cast<size_t>(state->GetArcSize()); ++j)
 		{
-			Arc *arc = state->GetArc(j);
+			LatticeArc *arc = state->GetArc(j);
 			arc->Invert();
 		}
 	}
