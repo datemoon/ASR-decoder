@@ -16,7 +16,8 @@ public:
 	virtual bool GetArc(I s, Label ilabel, LatticeArc* oarc) = 0;
 };
 
+// fst w.Value2() * scale
 template <typename I>
-void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat);
+void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat, float scale = 1.0);
 
 #endif

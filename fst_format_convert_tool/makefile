@@ -21,4 +21,4 @@ readhmm:readhmm.o read_fst.o write_fst.o
 .PHONY:clean
 
 clean:
-	rm -f *.o main
+	rm -f *.o main readhmm

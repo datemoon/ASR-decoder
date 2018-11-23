@@ -953,7 +953,7 @@ bool MemOptimizeClgLatticeFasterOnlineDecoder::GetRawLattice(Lattice *ofst,
 				}
 				*/
 				Arc arc(l->_ilabel, l->_olabel, nextstate, 
-						Weight(l->_graph_cost,l->_acoustic_cost - cost_offset));
+						Weight(l->_graph_cost, l->_acoustic_cost - cost_offset));
 				ofst->AddArc(cur_state, arc);
 			}
 
@@ -1092,7 +1092,7 @@ bool MemOptimizeClgLatticeFasterOnlineDecoder::GetBestPath(Lattice &best_path,
 			best_phones_arr.push_back(arc->_input);
 		if(arc->_output != 0)
 			best_words_arr.push_back(arc->_output);
-		best_lm_score += arc->_w.Value2();
+		best_lm_score += arc->_w.Value1();
 		best_tot_score += arc->_w.Value1() + arc->_w.Value2();
 		cur_state = best_path.GetState(next_stateid);
 	}/*
@@ -1144,8 +1144,13 @@ MemOptimizeClgLatticeFasterOnlineDecoder::BestPathIterator MemOptimizeClgLattice
 		LOG_ERR << "You cannot call FinalizeDecoding() and then call "
 			<< "BestPathEnd() with use_final_probs == false";
 
-	LOG_ASSERT(NumFramesDecoded() > 0 &&
-			"You cannot call BestPathEnd if no frames were decoded.");
+	if (NumFramesDecoded() <= 0)
+	{
+		LOG_WARN << "You cannot call BestPathEnd if no frames were decoded.";
+		return BestPathIterator(NULL, 0);
+	}
+	//LOG_ASSERT(NumFramesDecoded() > 0 &&
+	//		"You cannot call BestPathEnd if no frames were decoded.");
 	unordered_map<Token*, float> final_costs_local;
 
 	const unordered_map<Token*, float> &final_costs =
@@ -1217,7 +1222,7 @@ MemOptimizeClgLatticeFasterOnlineDecoder::BestPathIterator MemOptimizeClgLattice
 				{
 					ret_t--;
 				}
-				oarc->_w = LatticeWeight(graph_cost, acoustic_cost);
+				oarc->_w = LatticeWeight( graph_cost, acoustic_cost);
 				break;
 			}
 		}

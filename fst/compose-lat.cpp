@@ -15,7 +15,7 @@ struct PairHasher {  // hashing function for pair<int, long long int>
 	PairHasher() { }
 };
 template <typename I>
-void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat)
+void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat, float scale)
 {
 	typedef std::pair<StateId, I> StatePair;
 	typedef std::unordered_map<StatePair, StateId, PairHasher<StateId, I> > MapType;
@@ -107,17 +107,17 @@ void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat)
 				// Adds arc to <olat>.
 				if (arc1->_output == 0)
 				{
-					float am_score = arc1->_w.Value1();
-					float lm_score = arc1->_w.Value2() + final_score;
+					float am_score = arc1->_w.Value2();
+					float lm_score = arc1->_w.Value1() + final_score * scale;
 					olat->AddArc(state_map[s], LatticeArc(arc1->_input,
-								0, next_state, LatticeWeight(am_score, lm_score)));
+								0, next_state, LatticeWeight(lm_score, am_score)));
 				}
 				else
 				{
-					float am_score = arc1->_w.Value1() + arc2._w.Value1();
-					float lm_score = arc1->_w.Value2() + arc2._w.Value2() + final_score;
+					float am_score = arc1->_w.Value2() + arc2._w.Value2();
+					float lm_score = arc1->_w.Value1() + (arc2._w.Value1() + final_score) * scale;
 					olat->AddArc(state_map[s], LatticeArc(arc1->_input, arc2._output,
-							   	next_state, LatticeWeight(am_score, lm_score)));
+							   	next_state, LatticeWeight(lm_score, am_score)));
 				}
 			}
 		}
@@ -127,7 +127,10 @@ void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat)
 
 // instantiate templates
 template void ComposeLattice(Lattice *clat,
-		LatticeComposeItf<long long int> *fst, Lattice *olat);
+		LatticeComposeItf<unsigned long long int> *fst, Lattice *olat, float scale);
 template void ComposeLattice(Lattice *clat,
-		LatticeComposeItf<int> *fst, Lattice *olat);
-
+		LatticeComposeItf<long long int> *fst, Lattice *olat, float scale);
+template void ComposeLattice(Lattice *clat,
+		LatticeComposeItf<int> *fst, Lattice *olat, float scale);
+template void ComposeLattice(Lattice *clat,
+		LatticeComposeItf<unsigned int> *fst, Lattice *olat, float scale);

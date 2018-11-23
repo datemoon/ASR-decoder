@@ -36,8 +36,8 @@ bool ComposeArpaLm::GetArc(FsaStateId s, Label ilabel, LatticeArc* oarc)
 	oarc->_input = arc->wordid;
 	oarc->_output = arc->wordid;
 	weight += arc->weight;
-	oarc->_w.SetValue1((float)0.0);
-	oarc->_w.SetValue2(-1 * weight);
+	oarc->_w.SetValue1(-1 * weight); // graph cost, lm.
+	oarc->_w.SetValue2((float)0.0);
 	oarc->_to = arc->tostateid;
 	return true;
 }

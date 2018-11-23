@@ -5,7 +5,7 @@ CXXFLAGS+=-I. -I..
 
 LIBS=../util/libutil.a
 
-TESTFILES=test-config-parse-options test-text-util hash-list-test log-message-test
+TESTFILES=test-config-parse-options test-text-util hash-list-test log-message-test hash-key-test
 
 OBJFILES=config-parse-options.o text-util.o io-funcs.o read-vector.o log-message.o
 
@@ -24,6 +24,9 @@ hash-list-test:hash-list-test.o
 
 log-message-test:log-message-test.o 
 	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+
+hash-key-test:hash-key-test.o
+	$(GXX) $(CXXFLAGS) -o $@ $^
 
 %.o:%.cpp
 	$(GXX) $(CXXFLAGS) -c -o $@ $<

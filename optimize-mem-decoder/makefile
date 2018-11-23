@@ -7,7 +7,7 @@ CXXFLAGS+= -I ../ -I ../nnet -I ../lib #-DPHONEQUEUE #-DDEBUGPRINT #-DTOKEN_ACTI
 
 BIN=
 
-LIBS=../hmm/libhmm.a ../nnet/libnnet.a ../decoder/libdecode.a \
+LIBS=../hmm/libhmm.a ../nnet/libnnet.a \
 	  $(CBLASLIB) ../align/libalign.a ../util/libutil.a ../fst/liblatfst.a $(FEATLIB)
 
 all:liboptimizedecode.a $(BIN)
