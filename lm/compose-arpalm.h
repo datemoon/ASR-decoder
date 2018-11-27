@@ -1,6 +1,6 @@
 #ifndef __COMPOSE_ARPALM_H__
 #define __COMPOSE_ARPALM_H__
-#include "lm/arpa2fsa.h"
+#include "arpa2fsa.h"
 #include "fst/compose-lat.h"
 
 class ComposeArpaLm:public LatticeComposeItf<FsaStateId>
@@ -19,6 +19,7 @@ public:
 	virtual bool GetArc(FsaStateId s, Label ilabel, LatticeArc* oarc);
 
 	virtual bool GetArc(FsaStateId s, Label ilabel, FsaStateId *nextstate, LatticeWeight *lweight, Label *olabel);
+
 };
 
 class ArpaLmScore:public ArpaLm
