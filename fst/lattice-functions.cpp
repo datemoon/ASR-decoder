@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vector>
-#include <cassert>
 #include <utility>
 #include <algorithm>
 #include <limits>
@@ -15,12 +14,12 @@ void LatticeShortestPath(Lattice *ilat, Lattice *shortest_lat)
 	if(!TopCheck(*ilat))
 	{
 		TopSort(ilat);
-		assert(TopCheck(*ilat));
+		LOG_ASSERT(TopCheck(*ilat));
 	}
 	shortest_lat->DeleteStates();
 	if (ilat->Start() == kNoStateId) 
 		return;
-	assert(ilat->Start() == 0);
+	LOG_ASSERT(ilat->Start() == 0);
 	vector<std::pair<float, StateId> > best_cost_and_pred(ilat->NumStates() + 1);
 	StateId superfinal = ilat->NumStates();
 	for(StateId s =0; s <= ilat->NumStates(); ++s)
@@ -66,7 +65,7 @@ void LatticeShortestPath(Lattice *ilat, Lattice *shortest_lat)
 			return ; // return empty best-path.
 		}
 		states.push_back(prev_state);
-		assert(cur_state != prev_state && "Lattice with cycles");
+		LOG_ASSERT(cur_state != prev_state && "Lattice with cycles");
 		cur_state = prev_state;
 	}
 	std::reverse(states.begin(), states.end());
@@ -93,7 +92,7 @@ void LatticeShortestPath(Lattice *ilat, Lattice *shortest_lat)
 					}
 				}
 			}
-			assert(have_arc && "Code error.");
+			LOG_ASSERT(have_arc && "Code error.");
 			cur_arc._to = s+1;
 			shortest_lat->AddArc(s, cur_arc);
 		}

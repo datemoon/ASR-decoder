@@ -9,7 +9,6 @@ using std::stack;
 using namespace std;
 using std::vector;
 
-#include <assert.h>
 #include "fst/lattice-fst.h"
 const int kDfsWhite = 0;   // Undiscovered
 const int kDfsGrey =  1;   // Discovered & unfinished

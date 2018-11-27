@@ -5,7 +5,8 @@ FsaStateId ComposeArpaLm::Start()
 {
 	FsaStateId start = _lm->Start();
 	FsaArc *arc = NULL;
-	LOG_ASSERT(_lm->GetArc(start, _lm->BosSymbol(), arc));
+	if(_lm->GetArc(start, _lm->BosSymbol(), arc) == false)
+		LOG_ERR << "get <s> arc failed." ;
 	return arc->tostateid;
 }
 
@@ -15,7 +16,8 @@ float ComposeArpaLm::Final(FsaStateId s)
 	float weight = 0.0;
 	while(_lm->GetArc(s, _lm->EosSymbol(), arc) == false)
 	{
-		LOG_ASSERT(_lm->GetArc(s, 0, arc));
+		if(_lm->GetArc(s, 0, arc) == false)
+			LOG_ERR << "get backoff failed." ;
 		s = arc->tostateid;
 		weight += arc->weight;
 	}
@@ -29,7 +31,8 @@ bool ComposeArpaLm::GetArc(FsaStateId s, Label ilabel, LatticeArc* oarc)
 	float weight = 0.0;
 	while(_lm->GetArc(s, ilabel, arc) == false)
 	{
-		LOG_ASSERT(_lm->GetArc(s, 0, arc));
+		if(_lm->GetArc(s, 0, arc) == false)
+			LOG_ERR << "get backoff failed." ;
 		s = arc->tostateid;
 		weight += arc->weight;
 	}
@@ -48,7 +51,8 @@ bool ComposeArpaLm::GetArc(FsaStateId s, Label ilabel, FsaStateId *nextstate, La
 	float weight = 0.0;
 	while(_lm->GetArc(s, ilabel, arc) == false)
 	{
-		LOG_ASSERT(_lm->GetArc(s, 0, arc));
+		if(_lm->GetArc(s, 0, arc) == false)
+			LOG_ERR << "get backoff failed." ;
 		s = arc->tostateid;
 		weight += arc->weight;
 	}

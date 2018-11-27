@@ -21,7 +21,7 @@ void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat, flo
 	typedef std::unordered_map<StatePair, StateId, PairHasher<StateId, I> > MapType;
 	typedef typename MapType::iterator IterType;
 
-	assert(olat != NULL);
+	LOG_ASSERT(olat != NULL);
 	olat->DeleteStates();
 
 	MapType state_map;
@@ -33,7 +33,7 @@ void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat, flo
 	state_queue.push(start_pair);
 	std::pair<IterType, bool> result =
 		state_map.insert(std::make_pair(start_pair, start_state));
-	assert(result.second == true);
+	LOG_ASSERT(result.second == true);
 
 	// Starts composition here.
 	while (!state_queue.empty())
@@ -86,7 +86,7 @@ void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat, flo
 					std::pair<const StatePair, StateId> next_state_map(next_state_pair,
 							next_state);
 					std::pair<IterType, bool> result = state_map.insert(next_state_map);
-					assert(result.second);
+					LOG_ASSERT(result.second);
 					state_queue.push(next_state_pair);
 				}
 				else

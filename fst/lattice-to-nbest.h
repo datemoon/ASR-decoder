@@ -24,7 +24,7 @@ public:
 	{
 		const Pair &px = _pairs[x];
 		const Pair &py = _pairs[y];
-		assert((unsigned)px.first < _distance.size() && (unsigned)py.first < _distance.size() && "distance is error.\n");
+		LOG_ASSERT((unsigned)px.first < _distance.size() && (unsigned)py.first < _distance.size() && "distance is error.\n");
 		Weight dx = (unsigned)px.first < _distance.size() ? _distance[px.first] : numeric_limits<float>::infinity();
 		Weight dy = (unsigned)py.first < _distance.size() ? _distance[py.first] : numeric_limits<float>::infinity();
 
@@ -53,7 +53,7 @@ void NShortestPath(Lattice &ifst, Lattice *ofst, size_t n);
 	ofst->DeleteStates();
 	if(ifst.Start() == KNoStateId)
 		return ;
-	assert(ifst.Start() == 0);
+	LOG_ASSERT(ifst.Start() == 0);
 
 	vector<float> best_cost_and_back(ifst.NumStates());
 
@@ -78,7 +78,7 @@ void NShortestPath(Lattice &ifst, Lattice *ofst, size_t n);
 			Arc *arc = cur_state->GetArc(i);
 			float arc_cost = arc->_w;
 			StateId nextstate = arc->_to;
-			assert(s < nextstate); // because it's topologically sort
+			LOG_ASSERT(s < nextstate); // because it's topologically sort
 			float next_cost = arc->_w + best_cost_and_back[nextstate];
 			if(best_cost_and_back[s] > next_cost)
 				best_cost_and_back[s] = next_cost;

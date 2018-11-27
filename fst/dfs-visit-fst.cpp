@@ -7,7 +7,6 @@ using std::stack;
 using namespace std;
 using std::vector;
 
-#include <assert.h>
 #include "fst/lattice-fst.h"
 #include "fst/dfs-visit-fst.h"
 
@@ -35,7 +34,7 @@ bool DfsSearch(Lattice *fst, StateId root ,vector<char> *state_color,
 					(*coaccess)[root] = true;
 				break;
 			case kDfsGrey:
-				assert(false || "this shouldn't append in lattice, beacuse it's no loop in graph.");
+				LOG_ASSERT(false || "this shouldn't append in lattice, beacuse it's no loop in graph.");
 				// this shouldn't append in lattice, beacuse it's no loop in graph.
 			case kDfsBlack:
 				if((*coaccess)[nextstate] == true)
@@ -79,14 +78,14 @@ void DfsVisit(Lattice *fst, vector<bool> *access, vector<bool> *coaccess, vector
 		order->resize(nstates, -1);
 		StateId curstateid = nstates-1;
 		ret = DfsSearch(fst, startid, &state_color, access, coaccess, order,&curstateid);
-		assert(curstateid == -1);
+		LOG_ASSERT(curstateid == -1);
 	}
 	else
 	{
 		// here only check start state
 		ret = DfsSearch(fst, startid, &state_color, access, coaccess,NULL,NULL);
 	}
-	assert(ret == true);
+	LOG_ASSERT(ret == true);
 }
 
 #ifdef FST_NEW

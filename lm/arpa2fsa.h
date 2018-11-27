@@ -7,6 +7,7 @@
 #include <cstring>
 #include <vector>
 #include <iostream>
+#include "util/util-common.h"
 /*
  * This class change arpa lm to fsa.
  * */

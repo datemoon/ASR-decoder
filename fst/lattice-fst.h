@@ -1,7 +1,6 @@
 #ifndef __LATTICE_FST_H__
 #define __LATTICE_FST_H__
 
-#include <assert.h>
 #include <iostream>
 #include <vector>
 //#include "decoder/optimize-fst.h"
@@ -72,8 +71,7 @@ public:
 		{
 			if(_arc[i] == _arc[i-1])
 			{
-				bool del = DeleteArc(i);
-				assert(del);
+				DeleteArc(i);
 			}
 		}
 	}
@@ -143,14 +141,14 @@ public:
 
 	void SetFinal(StateId stateid,float prob = 0)
 	{
-		assert(stateid < static_cast<StateId>(_state.size()) &&
+		LOG_ASSERT(stateid < static_cast<StateId>(_state.size()) &&
 				"stateid big then state number.");
 		_state[stateid]->SetFinal();
 	}
 	
 	void AddArc(StateId stateid,const LatticeArc &arc)
 	{
-		assert(stateid < static_cast<StateId>(_state.size()) && "stateid big then state number.");
+		LOG_ASSERT(stateid < static_cast<StateId>(_state.size()) && "stateid big then state number.");
 		_state[stateid]->AddArc(arc);
 	}
 
@@ -177,7 +175,7 @@ public:
 
 	LatticeState *GetState(StateId stateid)
 	{
-		assert(stateid < static_cast<StateId>(_state.size()));
+		LOG_ASSERT(stateid < static_cast<StateId>(_state.size()));
 		return _state[stateid];
 	}
 

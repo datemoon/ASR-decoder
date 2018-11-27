@@ -1,6 +1,5 @@
 
 #include <iostream>
-#include <cassert>
 #include <pthread.h>
 #include "lm/arpa2fsa.h"
 
@@ -85,7 +84,7 @@ bool Fsa::Read(FILE *fp)
 		std::cerr << "Read total arcs number failed." << std::endl;
 		return false;
 	}
-	assert(read_arcs_num == tot_arcs_num && "Read arc number error.");
+	LOG_ASSERT(read_arcs_num == tot_arcs_num && "Read arc number error.");
 	// read all arc info
 	arcs = new FsaArc[tot_arcs_num];
 	if(arcs == NULL)
@@ -250,7 +249,7 @@ FsaStateId Arpa2Fsa::AnasyArpa()
 			tot_line += _file_offset[i][j].line;
 			//std::cout << _file_offset[i][j].line << std::endl;
 		}
-	assert(tot_line == tot_gram_line);
+	LOG_ASSERT(tot_line == tot_gram_line);
 	return tot_gram_line;
 }
 
@@ -366,7 +365,7 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 			else if (arcnum-1 >= arpaline->words[0])
 			{
 				FsaArc *arc = start->SearchStartArc(arpaline->words[0]);
-				assert(arc->wordid == arpaline->words[0] && "this start arc wordid != arpaline->words[0]");
+				LOG_ASSERT(arc->wordid == arpaline->words[0] && "this start arc wordid != arpaline->words[0]");
 				arc->weight = arpaline->logprob;
 				// add backoff arc
 				// if backoff_logprob==0.0 ,add arc for search
@@ -395,7 +394,7 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 				{	
 					PrintArpaLine(*arpaline);
 					std::cout <<  "arc shouldn't NULL" << std::endl;
-					//assert(arc != NULL && "arc shouldn't NULL");
+					//LOG_ASSERT(arc != NULL && "arc shouldn't NULL");
 					return true;
 				}
 				FsaStateId tostateid = arc->tostateid;
@@ -441,7 +440,7 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 				if(i == num_words)
 					break;
 				back_start++;
-				assert(back_start<num_words);
+				LOG_ASSERT(back_start<num_words);
 			}
 			// add backoff arc
 			pthread_mutex_lock(&add_fsa_node_mutex);

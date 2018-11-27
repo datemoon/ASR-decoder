@@ -386,7 +386,10 @@ void ConfigParseOptions::SplitLongArg(std::string in,
 		std::string *value,
 		bool *has_equal_sign)
 {
-	LOG_ASSERT(in.substr(0, 2) == "--"); // precondition.
+	if(in.substr(0, 2) != "--")	// precondition.
+	{
+		LOG_ERR << in << " -conf isn\'t start --";
+	}
 	size_t pos = in.find_first_of('=', 0);
 	if (pos == std::string::npos)
 	{// we allow --option for bools
