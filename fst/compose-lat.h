@@ -14,6 +14,8 @@ public:
 	virtual float Final(I s) = 0;
 
 	virtual bool GetArc(I s, Label ilabel, LatticeArc* oarc) = 0;
+
+	virtual bool GetArc(I s, Label ilabel, I *nextstate, LatticeWeight *lweight, Label *olabel) = 0;
 };
 
 // fst w.Value2() * scale

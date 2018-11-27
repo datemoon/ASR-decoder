@@ -1015,7 +1015,8 @@ bool LatticeFasterDecoder::GetBestPath(Lattice &best_path,
 			best_phones_arr.push_back(arc->_input);
 		if(arc->_output != 0)
 			best_words_arr.push_back(arc->_output);
-		best_tot_score += arc->_w;
+		best_lm_score += arc->_w.Value1();
+		best_tot_score += arc->_w.Value();
 		cur_state = best_path.GetState(next_stateid);
 	}/*
 	for(StateId s = 0 ; s < best_path.NumStates(); ++s)

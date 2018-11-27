@@ -10,7 +10,7 @@ template<typename Int1, typename Int2>
 struct PairHasher {  // hashing function for pair<int, long long int>
 	size_t operator()(const std::pair<Int1, Int2> &x) const noexcept
 	{ // 7853 was chosen at random from a list of primes.
-		return x.first * 7853 + x.second;
+		return (size_t)x.first * 7853 + x.second;
 	}
 	PairHasher() { }
 };
@@ -49,7 +49,10 @@ void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat, flo
 		for(size_t i = 0; i<state1->GetArcSize(); i++)
 		{
 			LatticeArc *arc1 = state1->GetArc(i);
-			LatticeArc arc2;
+			//LatticeArc arc2;
+			//I next_state2 = 0;
+			LatticeWeight lweight;
+			Label olabel2=0;
 			StateId next_state1 = arc1->_to;
 			I next_state2 = 0;
 			bool matched = false;
@@ -62,9 +65,10 @@ void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat, flo
 			}
 			else
 			{ // Otherwise try to find the matched arc in <det_fst>.
-				matched = fst->GetArc(s2, arc1->_output, &arc2);
-				if(matched)
-					next_state2 = arc2._to;
+				//matched = fst->GetArc(s2, arc1->_output, &arc2);
+				matched = fst->GetArc(s2, arc1->_output, &next_state2, &lweight, &olabel2);
+				//if(matched)
+				//	next_state2 = arc2._to;
 			}
 
 			// If matched arc is found in <fst>, then we have to add new arcs to
@@ -114,9 +118,9 @@ void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat, flo
 				}
 				else
 				{
-					float am_score = arc1->_w.Value2() + arc2._w.Value2();
-					float lm_score = arc1->_w.Value1() + (arc2._w.Value1() + final_score) * scale;
-					olat->AddArc(state_map[s], LatticeArc(arc1->_input, arc2._output,
+					float am_score = arc1->_w.Value2() + lweight.Value2();
+					float lm_score = arc1->_w.Value1() + (lweight.Value1() + final_score) * scale;
+					olat->AddArc(state_map[s], LatticeArc(arc1->_input, olabel2,
 							   	next_state, LatticeWeight(lm_score, am_score)));
 				}
 			}

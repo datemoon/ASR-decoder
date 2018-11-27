@@ -42,11 +42,31 @@ bool ComposeArpaLm::GetArc(FsaStateId s, Label ilabel, LatticeArc* oarc)
 	return true;
 }
 
+bool ComposeArpaLm::GetArc(FsaStateId s, Label ilabel, FsaStateId *nextstate, LatticeWeight *lweight, Label *olabel)
+{
+	FsaArc *arc = NULL;
+	float weight = 0.0;
+	while(_lm->GetArc(s, ilabel, arc) == false)
+	{
+		LOG_ASSERT(_lm->GetArc(s, 0, arc));
+		s = arc->tostateid;
+		weight += arc->weight;
+	}
+	weight += arc->weight;
+	lweight->SetValue1(-1 * weight); // graph cost, lm.
+	lweight->SetValue2((float)0.0);
+	*olabel = arc->wordid;
+	*nextstate = arc->tostateid;
+	return true;
+}
+
 void CutLine(char *line, std::vector<std::string> &cut_line)
 {
 	char *curr_word=NULL;
 	char *str_thread = NULL;
 	curr_word = strtok_r( line , " \r\n\t" ,&str_thread) ;
+	if(curr_word == NULL)
+		return;
 	cut_line.push_back(std::string(curr_word));
 	while((curr_word = strtok_r( NULL , " \n\r\t" ,&str_thread )) != NULL)
 	{
@@ -95,8 +115,11 @@ bool ArpaLmScore::ComputerText(char *text)
 			s_ngram = e_ngram;
 		VLOG(2) << logprob << " " << _map_syms[ids[i]] << " " 
 			<< backoff << " " <<  logprob+backoff << " " << s_ngram ;
+		std::cout << logprob << " " << _map_syms[ids[i]] << " " 
+			<< backoff << " " <<  (logprob+backoff)/M_LN10 << " " << s_ngram <<std::endl;
 		tot_score += logprob+backoff;
 	}
+	std::cout << tot_score/M_LN10 << std::endl;
 	VLOG(2) << tot_score;
 	return true;
 }

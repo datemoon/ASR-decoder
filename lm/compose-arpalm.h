@@ -18,6 +18,7 @@ public:
 
 	virtual bool GetArc(FsaStateId s, Label ilabel, LatticeArc* oarc);
 
+	virtual bool GetArc(FsaStateId s, Label ilabel, FsaStateId *nextstate, LatticeWeight *lweight, Label *olabel);
 };
 
 class ArpaLmScore:public ArpaLm
