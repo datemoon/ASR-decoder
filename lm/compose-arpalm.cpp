@@ -4,63 +4,67 @@
 FsaStateId ComposeArpaLm::Start()
 {
 	FsaStateId start = _lm->Start();
-	FsaArc *arc = NULL;
-	if(_lm->GetArc(start, _lm->BosSymbol(), arc) == false)
+	float w_arc = 0.0;
+	FsaStateId tostateid = 0;
+	if(false ==_lm->GetArc(start, _lm->BosSymbol(), &w_arc, &tostateid))
 		LOG_ERR << "get <s> arc failed." ;
-	return arc->tostateid;
+	return tostateid;
 }
 
 float ComposeArpaLm::Final(FsaStateId s)
 {
-	FsaArc *arc = NULL;
 	float weight = 0.0;
-	while(_lm->GetArc(s, _lm->EosSymbol(), arc) == false)
+	float w_arc = 0.0;
+	FsaStateId tostateid = 0;
+	while(_lm->GetArc(s, _lm->EosSymbol(), &w_arc, &tostateid) == false)
 	{
-		if(_lm->GetArc(s, 0, arc) == false)
+		if(_lm->GetArc(s, 0, &w_arc, &tostateid) == false)
 			LOG_ERR << "get backoff failed." ;
-		s = arc->tostateid;
-		weight += arc->weight;
+		s = tostateid;
+		weight += w_arc;
 	}
-	weight += arc->weight;
+	weight += w_arc;
 	return (-1.0 * weight);
 }
 
 bool ComposeArpaLm::GetArc(FsaStateId s, Label ilabel, LatticeArc* oarc)
 {
-	FsaArc *arc = NULL;
 	float weight = 0.0;
-	while(_lm->GetArc(s, ilabel, arc) == false)
+	float w_arc = 0.0;
+	FsaStateId tostateid = 0;
+	while(_lm->GetArc(s, ilabel, &w_arc, &tostateid) == false)
 	{
-		if(_lm->GetArc(s, 0, arc) == false)
+		if(_lm->GetArc(s, 0, &w_arc, &tostateid) == false)
 			LOG_ERR << "get backoff failed." ;
-		s = arc->tostateid;
-		weight += arc->weight;
+		s = tostateid;
+		weight += w_arc;
 	}
-	oarc->_input = arc->wordid;
-	oarc->_output = arc->wordid;
-	weight += arc->weight;
+	oarc->_input = ilabel;
+	oarc->_output = ilabel;
+	weight += w_arc;
 	oarc->_w.SetValue1(-1 * weight); // graph cost, lm.
 	oarc->_w.SetValue2((float)0.0);
-	oarc->_to = arc->tostateid;
+	oarc->_to = tostateid;
 	return true;
 }
 
 bool ComposeArpaLm::GetArc(FsaStateId s, Label ilabel, FsaStateId *nextstate, LatticeWeight *lweight, Label *olabel)
 {
-	FsaArc *arc = NULL;
 	float weight = 0.0;
-	while(_lm->GetArc(s, ilabel, arc) == false)
+	float w_arc = 0.0;
+	FsaStateId tostateid = 0;
+	while(_lm->GetArc(s, ilabel, &w_arc, &tostateid) == false)
 	{
-		if(_lm->GetArc(s, 0, arc) == false)
+		if(_lm->GetArc(s, 0, &w_arc, &tostateid) == false)
 			LOG_ERR << "get backoff failed." ;
-		s = arc->tostateid;
-		weight += arc->weight;
+		s = tostateid;
+		weight += w_arc;
 	}
-	weight += arc->weight;
+	weight += w_arc;
 	lweight->SetValue1(-1 * weight); // graph cost, lm.
 	lweight->SetValue2((float)0.0);
-	*olabel = arc->wordid;
-	*nextstate = arc->tostateid;
+	*olabel = ilabel;
+	*nextstate = tostateid;
 	return true;
 }
 
@@ -70,7 +74,7 @@ void CutLine(char *line, std::vector<std::string> &cut_line)
 	char *str_thread = NULL;
 	curr_word = strtok_r( line , " \r\n\t" ,&str_thread) ;
 	if(curr_word == NULL)
-		return;
+		return ;
 	cut_line.push_back(std::string(curr_word));
 	while((curr_word = strtok_r( NULL , " \n\r\t" ,&str_thread )) != NULL)
 	{
@@ -89,9 +93,10 @@ bool ArpaLmScore::ComputerText(char *text)
 		ids.push_back(InvertWord2Id(cut_text[i]));
 	ids.push_back(InvertWord2Id("</s>"));
 	FsaStateId state = _fsa.Start();
-	FsaArc *arc=NULL;
-	_fsa.GetArc(state, InvertWord2Id("<s>"), arc);
-	state = arc->tostateid;
+	float weight = 0;
+	FsaStateId tostateid = 0;
+	_fsa.GetArc(state, InvertWord2Id("<s>"), &weight, &tostateid);
+	state = tostateid;
 	int s_ngram = 1;
 	int e_ngram = (int)_num_gram.size();
 	float tot_score = 0.0;
@@ -99,32 +104,32 @@ bool ArpaLmScore::ComputerText(char *text)
 	{
 		float backoff = 0.0,
 			  logprob = 0.0;
-		while(_fsa.GetArc(state, ids[i], arc) == false)
+		while(_fsa.GetArc(state, ids[i], &weight, &tostateid) == false)
 		{
 			s_ngram--;
 			LOG_ASSERT(s_ngram >= 0);
 			// search back off
-			if(_fsa.GetArc(state, 0, arc) == false)
+			if(_fsa.GetArc(state, 0, &weight, &tostateid) == false)
 			{
 				LOG_WARN << "It shouldn't be happen." ;
 				return false;
 			}
-			state = arc->tostateid;
-			backoff += arc->weight;
+			state = tostateid;
+			backoff += weight;
 		}
-		logprob = arc->weight;
-		state = arc->tostateid;
+		logprob = weight;
+		state = tostateid;
 		s_ngram++;
 		if(s_ngram > e_ngram) 
 			s_ngram = e_ngram;
 		VLOG(2) << logprob << " " << _map_syms[ids[i]] << " " 
 			<< backoff << " " <<  logprob+backoff << " " << s_ngram ;
 		std::cout << logprob << " " << _map_syms[ids[i]] << " " 
-			<< backoff << " " <<  (logprob+backoff)/M_LN10 << " " << s_ngram <<std::endl;
+			<< backoff << " " <<  (logprob+backoff)/2.3025 << " " << s_ngram << std::endl;
 		tot_score += logprob+backoff;
 	}
-	std::cout << tot_score/M_LN10 << std::endl;
 	VLOG(2) << tot_score;
+	std::cout << tot_score/2.3025 << std::endl;
 	return true;
 }
 

@@ -8,6 +8,7 @@
 #include <vector>
 #include <iostream>
 #include "util/util-common.h"
+#include "util/hash-key.h"
 /*
  * This class change arpa lm to fsa.
  * */
@@ -15,7 +16,8 @@
 #define M_LN10 2.302585092994045684017991454684
 #endif
 struct FsaState;
-typedef long long int FsaStateId;
+typedef unsigned long long int FsaStateId;
+//typedef unsigned int FsaStateId;
 //typedef int FsaStateId;
 struct FsaArc
 {
@@ -32,19 +34,61 @@ struct FsaArc
 	}
 };
 
+// add arc pool
+struct ArcPool
+{
+	FsaArc * arcs_pool;
+	FsaStateId arcs_num;
+	FsaStateId total_num;
+	ArcPool(FsaStateId total_num=0):
+		arcs_pool(NULL),
+		arcs_num(0), total_num(total_num)
+	{
+		if(total_num !=0)
+			arcs_pool = new FsaArc[total_num];
+	}
+	~ArcPool()
+	{
+		if(arcs_pool != NULL)
+			delete[] arcs_pool;
+		arcs_num = 0;
+		total_num = 0;
+	}
+	FsaArc *New()
+	{
+		if(arcs_num >= total_num)
+		{
+			std::cout << "realloc fsaarc " << total_num << std::endl;
+			total_num += 1024*8;
+			FsaArc *tmp = new FsaArc[total_num];
+			if(arcs_pool != NULL)
+			{
+				memcpy(tmp, arcs_pool, sizeof(FsaArc)*arcs_num);
+				delete []arcs_pool;
+			}
+			arcs_pool = tmp;
+		}
+		arcs_num++;
+		return &(arcs_pool[arcs_num-1]);
+	}
+};
+
 struct FsaState
 {
 	FsaArc *arc;
 	int arc_num; // record arc real number
 	int max_len; // record arc max number
-	FsaState():arc(NULL),arc_num(0),max_len(0) { } 
+	float backoff_prob;
+	FsaStateId backoff_id;
+	FsaState():arc(NULL),arc_num(0),max_len(0),backoff_prob(0.0),backoff_id(0) { } 
+	/*
 	FsaState(int n):arc_num(0), max_len(n)
 	{
 		arc = new FsaArc[n];
-	}
+	}*/
 	~FsaState()
 	{
-		if(arc != NULL)
+		if(arc != NULL && max_len != 0)
 		{
 			Delete();
 		}
@@ -110,6 +154,41 @@ struct FsaState
 		arc_num++;
 	}
 
+	void AddArc(FsaStateId tostateid,int wordid,float weight, ArcPool *arc_pool)
+	{
+		// new arc
+		if(arc_num == 0)
+		{
+			arc = arc_pool->New();
+		}
+		else
+		{
+			FsaArc *arc_tmp = arc_pool->New();
+			if(arc_tmp - arc != arc_num)
+				std::cout << "arc offset " << arc_tmp - arc << " " << arc_num << std::endl;
+			LOG_ASSERT(arc_tmp - arc == arc_num);
+		}
+		// sort arc
+		int i = arc_num;
+		while(i>0)
+		{
+			if(arc[i-1].wordid > wordid)
+			{
+				arc[i].wordid = arc[i-1].wordid;
+				arc[i].weight = arc[i-1].weight;
+				arc[i].tostateid = arc[i-1].tostateid;
+				--i;
+			}
+			else
+				break;
+		}
+		// valuation
+		arc[i].wordid = wordid;
+		arc[i].weight = weight;
+		arc[i].tostateid = tostateid;
+		arc_num++;
+	}
+
 	// arc is sort, so binary search
 	FsaArc *SearchArc(int wordid)
 	{
@@ -144,6 +223,7 @@ private:
 	FsaStateId states_num;    // state real number
 	FsaStateId states_max_len;      // state max number
 	FsaStateId add_num;
+	FsaArc tmp_arc;
 public:
 	Fsa():
 		states(NULL), arcs(NULL), start(0), arcs_num(0), states_num(0), 
@@ -220,7 +300,7 @@ public:
 		return (states_num-1);
 	}
 
-	bool GetArc(FsaStateId id, int wordid, FsaArc *&arc);
+	bool GetArc(FsaStateId id, int wordid, float *weight, FsaStateId *tostateid);
 
 	bool Write(FILE *fp);
 	bool Write(const char *file)
@@ -236,6 +316,8 @@ public:
 		return ret;
 	}
 	bool Read(FILE *fp);
+//	bool ReadInfo(FILE *fp);
+
 	bool Read(const char *file)
 	{
 		FILE *fp = fopen(file, "rb");
@@ -261,17 +343,30 @@ protected:
 	int _unk_symbol; // <unk>
 	std::vector<size_t> _num_gram; // record ngram line number.
 	Fsa _fsa;
-	std::unordered_map<std::string, int> _symbols;
+	//typedef std::unordered_map<std::string, int, StringKey, StringEqual> WordHash;
+	typedef std::unordered_map<std::string, int> WordHash;
+	WordHash _symbols;
 	std::vector<std::string> _map_syms;
+	ArcPool *arc_pool;
+	void NewArcPool(FsaStateId size)
+	{
+		arc_pool = new ArcPool(size);
+	}
 public:
-	ArpaLm():_bos_symbol(-1), _eos_symbol(-1), _unk_symbol(-1) { }
+	ArpaLm():_bos_symbol(-1), _eos_symbol(-1), _unk_symbol(-1), arc_pool(NULL) { }
+
+	~ArpaLm()
+	{
+		if(arc_pool != NULL)
+			delete arc_pool;
+	}
 	// Read  word list.
 	int ReadSymbols(const char* file);
 	
 	// Invert word to wordid
 	inline int InvertWord2Id(std::string wordstr)
 	{
-		std::unordered_map<std::string, int>::const_iterator iter = _symbols.find(wordstr);
+		WordHash::const_iterator iter = _symbols.find(wordstr);
 		if(iter != _symbols.end())
 			return iter->second;
 		else
@@ -281,9 +376,9 @@ public:
 	void Rescale(float scale) { _fsa.Rescale(scale); }
 	FsaStateId Start() { return _fsa.Start(); }
 
-	bool GetArc(FsaStateId id, int wordid, FsaArc *&arc)
+	bool GetArc(FsaStateId id, int wordid, float *weight, FsaStateId * tostateid)
 	{
-		return _fsa.GetArc(id, wordid, arc);
+		return _fsa.GetArc(id, wordid, weight, tostateid);
 	}
 	int BosSymbol() const { return _bos_symbol; }
 	int EosSymbol() const { return _eos_symbol; }
@@ -386,7 +481,10 @@ class Arpa2Fsa:public ArpaLm
 	struct ArpaLine;
 public:
 	Arpa2Fsa(int nthread=1, std::string arpafile="", std::string wordlist=""):
-		_nthread(nthread), _arpafile(arpafile), _wordlist(wordlist){ }
+		_nthread(nthread), _arpafile(arpafile), _wordlist(wordlist)
+		{
+		   LOG_ASSERT(nthread == 1);	
+		}
 
 	// anasy Arpa file for thread
 	// know every threads read start position
@@ -404,6 +502,7 @@ public:
 
 	bool ConvertArpa2Fsa();
 private:
+	// Arpa line save in this struct.
 	struct ArpaLine 
 	{
 		std::vector<int> words; // Sequence of words to be printed.
@@ -428,6 +527,8 @@ private:
 			return true;
 		}
 	};
+
+	// Print one line arpa.
 	void PrintArpaLine(ArpaLine &arpaline)
 	{
 		std::cout << arpaline.logprob << " ";

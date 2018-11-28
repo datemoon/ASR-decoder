@@ -28,6 +28,18 @@ bool Fsa::Write(FILE *fp)
 			std::cerr << "Write arc number failed." << std::endl;
 			return false;
 		}
+		// write backoff_prob
+		if(fwrite((void*)&states[i].backoff_prob, sizeof(float),1 ,fp) != 1)
+		{
+			std::cerr << "Write backoff_prob failed." << std::endl;
+			return false;
+		}
+		if(fwrite((void*)&states[i].backoff_id, sizeof(FsaStateId), 1, fp) != 1)
+		{
+			std::cerr << "Write backoff_id failed." << std::endl;
+			return false;
+		}
+		// write backoff_id
 		tot_arcs_num += static_cast<FsaStateId>(states[i].arc_num);
 	}
 	// write total arc number
@@ -48,6 +60,12 @@ bool Fsa::Write(FILE *fp)
 	return true;
 }
 
+struct StateInfo
+{
+	int arc_num;
+	float backoff_prob;
+	FsaStateId backoff_id;
+};
 bool Fsa::Read(FILE *fp)
 {
 	if(fp == NULL)
@@ -61,6 +79,7 @@ bool Fsa::Read(FILE *fp)
 		return false;
 	}
 	states = new FsaState[states_num];
+	states_max_len = states_num;
 	if(states == NULL)
 	{
 		std::cerr << "New states failed." << std::endl;
@@ -69,13 +88,33 @@ bool Fsa::Read(FILE *fp)
 	FsaStateId tot_arcs_num = 0,
 			   read_arcs_num = 0;
 	// read state info
+	StateInfo state_info;
 	for(FsaStateId i=0; i<states_num; ++i)
 	{
-		if(fread((void*)&states[i].arc_num, sizeof(int),1 ,fp) != 1)
+		if(fread((void*)&state_info, sizeof(StateInfo), 1, fp) != 1)
+		{
+			std::cerr << "Read StateInfo failed." << std::endl;
+			return false;
+		}
+		states[i].arc_num = state_info.arc_num;
+		states[i].backoff_prob = state_info.backoff_prob;
+		states[i].backoff_id = state_info.backoff_id;
+		/*if(fread((void*)&states[i].arc_num, sizeof(int),1 ,fp) != 1)
 		{
 			std::cerr << "Read arc number failed." << std::endl;
 			return false;
 		}
+		if(fread((void*)&states[i].backoff_prob, sizeof(float),1 ,fp) != 1)
+		{
+			std::cerr << "Read backoff_prob failed." << std::endl;
+			return false;
+		}
+		if(fread((void*)&states[i].backoff_id, sizeof(FsaStateId),1 ,fp) != 1)
+		{
+			std::cerr << "Read backoff_id failed." << std::endl;
+			return false;
+		}
+		*/
 		tot_arcs_num += static_cast<FsaStateId>(states[i].arc_num);
 	}
 	// read tot arcs
@@ -84,9 +123,10 @@ bool Fsa::Read(FILE *fp)
 		std::cerr << "Read total arcs number failed." << std::endl;
 		return false;
 	}
-	LOG_ASSERT(read_arcs_num == tot_arcs_num && "Read arc number error.");
+	assert(read_arcs_num == tot_arcs_num && "Read arc number error.");
 	// read all arc info
 	arcs = new FsaArc[tot_arcs_num];
+	arcs_num = tot_arcs_num;
 	if(arcs == NULL)
 	{
 		std::cerr << "New arcs failed." << std::endl;
@@ -106,15 +146,90 @@ bool Fsa::Read(FILE *fp)
 	}
 	return true;
 }
-
-bool Fsa::GetArc(FsaStateId id, int wordid, FsaArc *&arc)
+/*
+bool Fsa::ReadInfo(FILE *fp)
 {
+	if(fp == NULL)
+	{
+		std::cerr << "FILE is NULL" << std::endl;
+		return false;
+	}
+	if(fread((void*)&states_num,sizeof(FsaStateId),1,fp) != 1)
+	{
+		std::cerr << "Read total states number failed." << std::endl;
+		return false;
+	}
+	states = new FsaState[states_num];
+	states_max_len = states_num;
+	if(states == NULL)
+	{
+		std::cerr << "New states failed." << std::endl;
+		return false;
+	}
+	FsaStateId tot_arcs_num = 0,
+			   read_arcs_num = 0;
+	// read state info
+	StateRead *stateinf = new StateRead[states_num];
+	if(fread((void*)stateinf,sizeof(StateRead),states_num,fp) != states_num)
+	{
+		std::cerr << "Read state info failed." << std::endl;
+		return false;
+	}
+	for(FsaStateId i=0; i<states_num; ++i)
+	{
+		states[i].arc_num = stateinf[i].arc_num;
+		states[i].backoff_prob = stateinf[i].backoff_prob;
+		states[i].backoff_id = stateinf[i].backoff_id;
+		tot_arcs_num += static_cast<FsaStateId>(states[i].arc_num);
+	}
+	delete []stateinf;
+	// read tot arcs
+	if(fread((void*)&read_arcs_num, sizeof(FsaStateId), 1, fp) != 1)
+	{
+		std::cerr << "Read total arcs number failed." << std::endl;
+		return false;
+	}
+	assert(read_arcs_num == tot_arcs_num && "Read arc number error.");
+	// read all arc info
+	arcs = new FsaArc[tot_arcs_num];
+	arcs_num = tot_arcs_num;
+	if(arcs == NULL)
+	{
+		std::cerr << "New arcs failed." << std::endl;
+		return false;
+	}
+	if(fread((void*)arcs, sizeof(FsaArc), tot_arcs_num, fp) != static_cast<size_t>(tot_arcs_num))
+	{
+		std::cerr << "Read arc failed." << std::endl;
+		return false;
+	}
+	// assignment arc
+	FsaStateId offset_arc_point = 0;
+	for(FsaStateId i=0; i<states_num; ++i)
+	{
+		states[i].arc = arcs+offset_arc_point;
+		offset_arc_point += states[i].arc_num;
+	}
+	return true;
+}
+*/
+bool Fsa::GetArc(FsaStateId id, int wordid, float *weight, FsaStateId *tostateid)
+{
+	if(wordid == 0)
+	{
+		*weight = states[id].backoff_prob;
+		*tostateid = states[id].backoff_id;
+		return true;
+	}
+	FsaArc *arc = NULL;
 	if(id == start)
 		arc = states[id].SearchStartArc(wordid);
 	else
 		arc = states[id].SearchArc(wordid);
 	if(arc == NULL)
 		return false;
+	*weight = arc->weight;
+	*tostateid = arc->tostateid;
 	return true;
 }
 
@@ -132,6 +247,7 @@ void Fsa::Rescale(float scale)
 		FsaState *state = GetState(s);
 		int n = 0;
 		FsaArc *arc = NULL;
+		state->backoff_prob *= scale;
 		while((arc = state->GetArc(n)) != NULL)
 		{
 			arc->weight *= scale;
@@ -211,6 +327,7 @@ FsaStateId Arpa2Fsa::AnasyArpa()
 				int tmp1 = 0;
 			   	FsaStateId tmp2 = 0;
 				if ( sscanf( line , "%*s %d=%lld" , &tmp1 , &tmp2 ) != 2 )
+				//if ( sscanf( line , "%*s %d=%u" , &tmp1 , &tmp2 ) != 2 )
 				{
 					std::cerr << "arpa file format error when reading ngram n=count" 
 						<< std::endl;
@@ -249,7 +366,7 @@ FsaStateId Arpa2Fsa::AnasyArpa()
 			tot_line += _file_offset[i][j].line;
 			//std::cout << _file_offset[i][j].line << std::endl;
 		}
-	LOG_ASSERT(tot_line == tot_gram_line);
+	assert(tot_line == tot_gram_line);
 	return tot_gram_line;
 }
 
@@ -341,6 +458,11 @@ bool Arpa2Fsa::AnalyLine(char *line, ArpaLine *arpaline,int gram)
 	else
 		arpaline->backoff_logprob = 0;
 	arpaline->backoff_logprob *= M_LN10;
+	if(arpaline->logprob/M_LN10 < -98.0)
+	{
+		std::cerr << "logprob is " << arpaline->logprob << std::endl;
+		return false;
+	}
 	return true;
 }
 
@@ -359,18 +481,20 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 			if(arcnum-1 < arpaline->words[0])
 			{	
 				FsaStateId id = _fsa.AddState();
-				start->AddArc(id, arcnum, 0.0,1000);
+				assert(startid < id);
+				start->AddArc(id, arcnum, 0.0, arc_pool);
 				pthread_mutex_unlock(&add_fsa_node_mutex);
 			}
 			else if (arcnum-1 >= arpaline->words[0])
 			{
 				FsaArc *arc = start->SearchStartArc(arpaline->words[0]);
-				LOG_ASSERT(arc->wordid == arpaline->words[0] && "this start arc wordid != arpaline->words[0]");
+				assert(arc->wordid == arpaline->words[0] && "this start arc wordid != arpaline->words[0]");
 				arc->weight = arpaline->logprob;
 				// add backoff arc
 				// if backoff_logprob==0.0 ,add arc for search
 				FsaState* tostate = _fsa.GetState(arc->tostateid);
-				tostate->AddArc(startid, 0, arpaline->backoff_logprob);
+				tostate->backoff_id = startid; tostate->backoff_prob = arpaline->backoff_logprob;
+				//tostate->AddArc(startid, 0, arpaline->backoff_logprob, arc_pool);
 				pthread_mutex_unlock(&add_fsa_node_mutex);
 				break;
 			}
@@ -392,10 +516,11 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 					arc = tmpstate->SearchArc(arpaline->words[i]);
 				if(arc == NULL)
 				{	
+					// no A B, but have A B C, so I don't add this gram.
+					std::cout <<  "Arc shouldn't NULL, so I don't add this gram. -->" ;
 					PrintArpaLine(*arpaline);
-					std::cout <<  "arc shouldn't NULL" << std::endl;
-					//LOG_ASSERT(arc != NULL && "arc shouldn't NULL");
-					return true;
+					//assert(arc != NULL && "arc shouldn't NULL");
+					return false;
 				}
 				FsaStateId tostateid = arc->tostateid;
 				prev_gram_stateid = tostateid;
@@ -405,7 +530,8 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 		// add line
 		pthread_mutex_lock(&add_fsa_node_mutex);
 		FsaStateId toid = _fsa.AddState();
-		tmpstate->AddArc(toid, arpaline->words[num_words-1], arpaline->logprob);
+		assert(prev_gram_stateid < toid);
+		tmpstate->AddArc(toid, arpaline->words[num_words-1], arpaline->logprob, arc_pool);
 		pthread_mutex_unlock(&add_fsa_node_mutex);
 
 		// add back off
@@ -428,8 +554,9 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 					if(arc == NULL )
 					{
 						if(arpaline->backoff_logprob != 0)
-						{	
-							std::cerr << "No search arc." << std::endl;
+						{
+							// have A B C, but no B C.	
+							std::cerr << "No search arc. "  << i << " start.-->";
 							PrintArpaLine(*arpaline);
 						}
 						break;
@@ -440,11 +567,12 @@ bool Arpa2Fsa::AddLineToFsa(ArpaLine *arpaline,
 				if(i == num_words)
 					break;
 				back_start++;
-				LOG_ASSERT(back_start<num_words);
+				assert(back_start<num_words);
 			}
 			// add backoff arc
 			pthread_mutex_lock(&add_fsa_node_mutex);
-			laststate->AddArc(tostateid, 0 , arpaline->backoff_logprob);
+			laststate->backoff_id = tostateid; laststate->backoff_prob = arpaline->backoff_logprob;
+			//laststate->AddArc(tostateid, 0 , arpaline->backoff_logprob, arc_pool);
 			pthread_mutex_unlock(&add_fsa_node_mutex);
 		}
 	}
@@ -493,6 +621,8 @@ bool Arpa2Fsa::NgramToFsa(int gram,int nt)
 		if(AddLineToFsa(cur_arpaline, prev_stateid, gram) != true)
 		{
 			std::cerr << "AddLineToFsa " << line << " failed." << std::endl;
+			prev_stateid = _fsa.Start(); // it's must be reset.
+			continue;
 			return false;
 		}
 
@@ -516,7 +646,12 @@ bool Arpa2Fsa::ConvertArpa2Fsa()
 	//int numwords = 
 	ReadSymbols(_wordlist.c_str());
 	FsaStateId tot_grammer_line = AnasyArpa();
-	_fsa.InitMem(tot_grammer_line+1000, 0);
+	std::cout << "AnasyArpa OK" << std::endl;
+	_fsa.InitMem(tot_grammer_line+1024, 0);
+
+	// beacuse arc pool now it's realloc ,
+	// so it start must be alloc enough memory
+	NewArcPool(tot_grammer_line+1024);
 	FsaStateId startstate = _fsa.AddState();
 	_fsa.SetStart(startstate);
 

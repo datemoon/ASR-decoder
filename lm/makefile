@@ -5,9 +5,9 @@ CXXFLAGS+=-I. -I.. -lm
 
 OBJ=arpa2fsa.o compose-arpalm.o
 
-LIB=../lm/liblm.a  ../fst/liblatfst.a ../util/libutil.a
+LIB=liblm.a  ../fst/liblatfst.a ../util/libutil.a
 
-BIN= arpa2fsa-bin lmscore compose-text
+BIN= arpa2fsa-bin lmscore compose-text lmrescale
 all:liblm.a $(BIN)
 
 liblm.a:$(OBJ)
@@ -20,6 +20,9 @@ arpa2fsa-bin:arpa2fsa-bin.o
 	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB)
 
 compose-text:compose-text.o
+	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB)
+
+lmrescale:lmrescale.o
 	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB)
 
 %.o:%.cpp
