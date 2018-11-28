@@ -2,8 +2,8 @@
 
 
 CXXFLAGS=-msse -msse2 -Wall -I.. -pthread \
-		 -std=c++0x \
-		 -O2 #-gdwarf-2 #-gstabs+ #-DDEBUGTOKEN -g #-pg #-DDEBUG #-DDEBUGGRAPH
+		 -std=c++0x -fpermissive  -Wunused-but-set-variable \
+		 -O3 -DNDEBUG #-gstabs+ #-DDEBUGTOKEN -g #-pg #-DDEBUG #-DDEBUGGRAPH
 
 CXXFLAGS += -fPIC
 

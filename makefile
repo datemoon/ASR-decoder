@@ -4,7 +4,7 @@
 
 SUBDIRS=util hmm align lib pitch nnet \
 	fst lm \
-	decoder fst_format_convert_tool 
+	decoder fst_format_convert_tool optimize-mem-decoder
 
 all:ex
 
