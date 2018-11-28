@@ -6,7 +6,7 @@ FsaStateId ComposeArpaLm::Start()
 	FsaStateId start = _lm->Start();
 	float w_arc = 0.0;
 	FsaStateId tostateid = 0;
-	LOG_ASSERT(_lm->GetArc(start, _lm->BosSymbol(), &w_arc, &tostateid));
+	_lm->GetArc(start, _lm->BosSymbol(), &w_arc, &tostateid);
 	return tostateid;
 }
 
@@ -17,7 +17,7 @@ float ComposeArpaLm::Final(FsaStateId s)
 	FsaStateId tostateid = 0;
 	while(_lm->GetArc(s, _lm->EosSymbol(), &w_arc, &tostateid) == false)
 	{
-		LOG_ASSERT(_lm->GetArc(s, 0, &w_arc, &tostateid));
+		_lm->GetArc(s, 0, &w_arc, &tostateid);
 		s = tostateid;
 		weight += w_arc;
 	}
@@ -32,7 +32,7 @@ bool ComposeArpaLm::GetArc(FsaStateId s, Label ilabel, LatticeArc* oarc)
 	FsaStateId tostateid = 0;
 	while(_lm->GetArc(s, ilabel, &w_arc, &tostateid) == false)
 	{
-		LOG_ASSERT(_lm->GetArc(s, 0, &w_arc, &tostateid));
+		_lm->GetArc(s, 0, &w_arc, &tostateid);
 		s = tostateid;
 		weight += w_arc;
 	}
@@ -52,7 +52,7 @@ bool ComposeArpaLm::GetArc(FsaStateId s, Label ilabel, FsaStateId *nextstate, La
 	FsaStateId tostateid = 0;
 	while(_lm->GetArc(s, ilabel, &w_arc, &tostateid) == false)
 	{
-		LOG_ASSERT(_lm->GetArc(s, 0, &w_arc, &tostateid));
+		_lm->GetArc(s, 0, &w_arc, &tostateid);
 		s = tostateid;
 		weight += w_arc;
 	}
