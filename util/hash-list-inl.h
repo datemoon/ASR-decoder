@@ -53,7 +53,7 @@ void HashList<I, T>::DeleteElems()
 {
 	for(Elem *e = this->Clear(), *e_tail = NULL; e != NULL; e = e_tail)
 	{
-		e = e->tail;
+		e_tail = e->tail;
 		this->Delete(e);
 	}
 }
@@ -104,7 +104,7 @@ template<class I, class T>
 HashList<I, T>::~HashList()
 { // First test whether we had any memory leak within the
 	// HashList, i.e. things for which the user did not call Delete().
-	this->DeleteElems();
+	//this->DeleteElems();
 	size_t num_in_list = 0, num_allocated = 0;
 	for(Elem *e = _freed_head; e != NULL; e=e->tail)
 		num_in_list++;

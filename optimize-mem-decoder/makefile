@@ -7,11 +7,18 @@ CXXFLAGS+= -I ../ -I ../nnet -I ../lib #-DPHONEQUEUE #-DDEBUGPRINT #-DTOKEN_ACTI
 
 BIN=
 
-LIBS=../hmm/libhmm.a ../nnet/libnnet.a \
+LIBS=../hmm/libhmm.a ../nnet/libnnet.a ../optimize-mem-decoder/liboptimizedecode.a \
 	  $(CBLASLIB) ../align/libalign.a ../util/libutil.a ../fst/liblatfst.a $(FEATLIB)
+
+TESTFILES=optimize-clg-lattice-online-faster-decoder-kaldifeature-test
 
 all:liboptimizedecode.a $(BIN)
 
+
+test:$(TESTFILES)
+
+optimize-clg-lattice-online-faster-decoder-kaldifeature-test:optimize-clg-lattice-online-faster-decoder-kaldifeature-test.o
+	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) 
 
 liboptimizedecode.a:mem-optimize-clg-lattice-faster-online-decoder.o
 	$(AR) -rcu $@ $^
@@ -27,4 +34,4 @@ liboptimizedecode.a:mem-optimize-clg-lattice-faster-online-decoder.o
 .PHONY:
 
 clean:
-	rm -f *.o $(BIN) liboptimizedecode.a
+	rm -f *.o $(BIN) liboptimizedecode.a $(TESTFILES)

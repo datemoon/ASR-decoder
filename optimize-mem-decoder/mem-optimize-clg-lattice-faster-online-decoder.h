@@ -7,7 +7,7 @@
 #include <limits>
 #include <algorithm>
 #include "nnet/nnet-nnet.h"
-#include "decoder/clg-fst.h"
+#include "optimize-mem-decoder/clg-fst.h"
 #include "decoder/lattice-faster-decoder.h"
 #include "fst/lattice-fst.h"
 #include "util/config-parse-options.h"

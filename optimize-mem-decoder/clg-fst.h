@@ -163,6 +163,15 @@ public:
 			}
 		}
 	}
+	inline StateId TotState()
+	{
+		return _clg_fst->TotState();
+	}
+	inline int TotArc()
+	{
+		return _clg_fst->TotArc();
+	}
+
 private:
 	Fst *_clg_fst;
 	vector<Fst *> _hmm_fst;

@@ -6,7 +6,6 @@
 #include "decoder/lattice-faster-decoder.h"
 #include "optimize-mem-decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
 #include "fst/lattice-fst.h"
-#include "decoder/clg-fst.h"
 #include "util/log-message.h"
 
 void MemOptimizeClgLatticeFasterOnlineDecoder::InitDecoding()
