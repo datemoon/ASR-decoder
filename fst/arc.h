@@ -36,6 +36,56 @@ public:
 
 	~ArcTpl() {}
 
+	bool Read(FILE *fp)
+	{
+		if(fread((void *)&_input, sizeof(_input), 1, fp) != 1)
+		{
+			std::cerr << "Read arc input error." << std::endl;
+			return false;
+		}
+		if(fread((void *)&_output, sizeof(_output), 1, fp) != 1)
+		{
+			std::cerr << "Read arc output error." << std::endl;
+			return false;
+		}
+		if(fread((void *)&_to, sizeof(_to), 1, fp) != 1)
+		{
+			std::cerr << "Read arc nextstate error." << std::endl;
+			return false;
+		}
+		if(_w.Read(fp) != true)
+		{
+			std::cerr << "Read arc weight error." << std::endl;
+			return false;
+		}
+		return true;
+
+	}
+	bool Write(FILE *fp)
+	{
+		if(fwrite((const void *)&_input, sizeof(_input), 1, fp) != 1)
+		{
+			std::cerr << "Write arc input error." << std::endl;
+			return false;
+		}
+		if(fwrite((const void *)&_output, sizeof(_output), 1, fp) != 1)
+		{
+			std::cerr << "Write arc output error." << std::endl;
+			return false;
+		}
+		if(fwrite((const void *)&_to, sizeof(_to), 1, fp) != 1)
+		{
+			std::cerr << "Write arc nextstate error." << std::endl;
+			return false;
+		}
+		if(_w.Write(fp) != true)
+		{
+			std::cerr << "Write arc weight error." << std::endl;
+			return false;
+		}
+		return true;
+	}
+
 	Label GetInput() { return _input; }
 	Label GetOutput() { return _output; }
 	Weight Value()
@@ -140,7 +190,35 @@ public:
 		return *this;
 	}
 
+	bool Read(FILE *fp)
+	{
+		if(fread((void *)&_value1, sizeof(_value1), 1, fp) != 1)
+		{
+			std::cerr << "Read value1 error." << std::endl;
+			return false;
+		}
+		if(fread((void *)&_value2, sizeof(_value2), 1, fp) != 1)
+		{
+			std::cerr << "Read value2 error." << std::endl;
+			return false;
+		}
+		return true;
+	}
 
+	bool Write(FILE *fp)
+	{
+		if(fwrite((const void *)&_value1, sizeof(_value1), 1, fp) != 1)
+		{
+			std::cerr << "Write value1 error." << std::endl;
+			return false;
+		}
+		if(fwrite((const void *)&_value2, sizeof(_value2), 1, fp) != 1)
+		{
+			std::cerr << "Write value2 error." << std::endl;
+			return false;
+		}
+		return true;
+	}
 	friend ostream &operator<< <FloatType>(ostream&, const LatticeWeightTpl<FloatType>&);
 private:
 	T _value1;

@@ -2,6 +2,7 @@
 #define __LATTICE_FST_H__
 
 #include <iostream>
+#include <stdio.h>
 #include <vector>
 //#include "decoder/optimize-fst.h"
 #include "util/util-common.h"
@@ -116,7 +117,57 @@ public:
 			_arc[i].Print(stateid);
 		}
 		if(_final != 0)
-			LOG << stateid << " " << -1 ;
+			std::cout << stateid << " " << -1 << std::endl;
+	}
+
+	bool Read(FILE *fp)
+	{
+		if(fread((void *)&_final, sizeof(_final), 1, fp) != 1)
+		{
+			std::cerr << "Read state error." << std::endl;
+			return false;
+		}
+		// Read arc number
+		size_t size= 0;
+		if(fread((void *)&size, sizeof(_arc.size()), 1, fp) != 1)
+		{
+			std::cerr << "Read state arc number error." << std::endl;
+			return false;
+		}
+		_arc.resize(size);
+		for(size_t i =0 ; i< _arc.size(); ++i)
+		{
+			if(_arc[i].Read(fp) != true)
+			{
+				std::cerr << "Read state arc " << i << " error." << std::endl;
+				return false;
+			}
+		}
+		return true;
+	}
+	bool Write(FILE *fp)
+	{
+		if(fwrite((const void *)&_final, sizeof(_final), 1, fp) != 1)
+		{
+			std::cerr << "Write state error." << std::endl;
+			return false;
+		}
+		// write arc number
+		size_t size = _arc.size();
+		if(fwrite((const void *)&size, sizeof(_arc.size()), 1, fp) != 1)
+		{
+			std::cerr << "Write state arc number error." << std::endl;
+			return false;
+		}
+		for(size_t i =0 ; i< _arc.size(); ++i)
+		{
+			if(_arc[i].Write(fp) != true)
+			{
+				std::cerr << "Write state arc error." << std::endl;
+				return false;
+			}
+		}
+		return true;
 	}
 
 	int _final;
@@ -254,6 +305,41 @@ public:
 	{
 		_startid = fst._startid;
 		_state.swap(fst._state);
+	}
+
+	bool Read(FILE *fp);
+	bool Read(std::string &file)
+	{
+		FILE *fp = fopen(file.c_str(), "rb");
+		if(NULL == fp)
+		{
+			std::cerr << "Open " << file << " failed." << std::endl;
+			return false;
+		}
+		if(Read(fp) != true)
+		{
+			std::cerr << "Read " << file << " failed." << std::endl;
+			return false;
+		}
+		fclose(fp);
+		return true;
+	}
+	bool Write(FILE *fp);
+	bool Write(std::string &file)
+	{
+		FILE *fp = fopen(file.c_str(), "wb");
+		if(NULL == fp)
+		{
+			std::cerr << "Write " << file << " failed." << std::endl;
+			return false;
+		}
+		if(Write(fp) != true)
+		{
+			std::cerr << "Write " << file << " failed." << std::endl;
+			return false;
+		}
+		fclose(fp);
+		return true;
 	}
 private:
 	int _startid;

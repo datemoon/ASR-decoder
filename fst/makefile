@@ -6,7 +6,7 @@ include ../hubo.mk
 
 CXXFLAGS+=-I../
 
-TESTFILES=test-connect-fst
+TESTFILES=test-connect-fst lattice-test
 
 LIBS=../fst/liblatfst.a ../util/libutil.a
 
@@ -21,6 +21,8 @@ test:$(TESTFILES)
 test-connect-fst:test-connect-fst.o
 	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
 
+lattice-test:lattice-test.o
+	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
 
 liblatfst.a:$(OBJ)
 	$(AR) -rcu $@ $^
