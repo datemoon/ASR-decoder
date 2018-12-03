@@ -186,7 +186,7 @@ int main(int argc,char *argv[])
 		Lattice best_path;
 		decode.GetBestPath(&best_path);
 //		best_path.Print();
-/*
+		{
 		// get raw lattice
 		Lattice best_path;
 		vector<Lattice> nbest_paths;
@@ -219,7 +219,7 @@ int main(int argc,char *argv[])
 				//ofst.Print();
 				Lattice nbest_lat;
 				//NShortestPath(ofst, &nbest_lat, 5);
-				NShortestPath(detfst, &nbest_lat, 5);
+				NShortestPath(detfst, &nbest_lat, 10);
 //				nbest_lat.Print();
 				ConvertNbestToVector(nbest_lat, &nbest_paths);
 
@@ -266,7 +266,7 @@ int main(int argc,char *argv[])
 				}
 			}
 		} // nbest ok
-*/
+		}
 		vector<int> best_words_arr;
 		vector<int> best_phones_arr;
 		printf("%s	",linefeat);
@@ -305,7 +305,7 @@ int main(int argc,char *argv[])
 		}
 		else
 			printf("no result.\n");
-
+		
 		//decode.PrintBestPath();
 		// the last do align
 		if(prondict.size() != 0)
