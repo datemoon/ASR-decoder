@@ -7,7 +7,7 @@
 #include "decoder/lattice-faster-decoder.h"
 #include "decoder/clg-lattice-faster-online-decoder.h"
 #include "fst/lattice-fst.h"
-#include "decoder/clg-fst.h"
+//#include "decoder/clg-fst.h"
 
 
 void ClgLatticeFasterOnlineDecoder::InitDecoding()
@@ -850,6 +850,9 @@ void ClgLatticeFasterOnlineDecoder::FinalizeDecoding()
 bool ClgLatticeFasterOnlineDecoder::GetRawLattice(Lattice *ofst,
 		bool use_final_probs) const
 {
+	typedef LatticeArc Arc;
+	typedef Arc::Weight Weight;
+
 	// Note: you can't use the old interface (Decode()) if you want to
 	// get the lattice with use_final_probs = false.  You'd have to do
 	// InitDecoding() and then AdvanceDecoding().
@@ -920,7 +923,7 @@ bool ClgLatticeFasterOnlineDecoder::GetRawLattice(Lattice *ofst,
 					cost_offset = _cost_offsets[f];
 				}
 				*/
-				Arc arc(l->_ilabel, l->_olabel, nextstate, l->_graph_cost + l->_acoustic_cost - cost_offset);
+				Arc arc(l->_ilabel, l->_olabel, nextstate, Weight(l->_graph_cost, l->_acoustic_cost - cost_offset));
 				ofst->AddArc(cur_state, arc);
 			}
 
@@ -1046,19 +1049,21 @@ bool ClgLatticeFasterOnlineDecoder::GetBestPath(Lattice &best_path,
 	if(best_path.Start() == kNoStateId)
 		return false;
 	best_tot_score = 0;
+	best_lm_score = 0;
 	// here best_path can't be top sort
 	StateId start_start = best_path.Start();
 	LatticeState * cur_state = best_path.GetState(start_start);
 	while(!cur_state->IsFinal())
 	{
 		// beacause one best path , so every state have only one arc.
-		Arc *arc = cur_state->GetArc(0);
+		LatticeArc *arc = cur_state->GetArc(0);
 		StateId next_stateid = arc->_to;
 		if(arc->_input != 0)
 			best_phones_arr.push_back(arc->_input);
 		if(arc->_output != 0)
 			best_words_arr.push_back(arc->_output);
-		best_tot_score += arc->_w;
+		best_lm_score += arc->_w.Value1();
+		best_tot_score += arc->_w.Value1() + arc->_w.Value2();
 		cur_state = best_path.GetState(next_stateid);
 	}/*
 	for(StateId s = 0 ; s < best_path.NumStates(); ++s)
@@ -1090,7 +1095,7 @@ bool ClgLatticeFasterOnlineDecoder::GetBestPath(Lattice *ofst,
 	ofst->SetFinal(state);
 	while (!iter.Done())
 	{
-		Arc arc;
+		LatticeArc arc;
 		iter = TraceBackBestPath(iter, &arc);
 		arc._to = state;
 		StateId new_state = ofst->AddState();
@@ -1161,7 +1166,7 @@ ClgLatticeFasterOnlineDecoder::BestPathIterator ClgLatticeFasterOnlineDecoder::B
 }
 
 ClgLatticeFasterOnlineDecoder::BestPathIterator ClgLatticeFasterOnlineDecoder::TraceBackBestPath(
-		BestPathIterator iter, Arc *oarc) const
+		BestPathIterator iter, LatticeArc *oarc) const
 {
 	assert(!iter.Done() && oarc != NULL);
 	Token *tok = static_cast<Token*>(iter.tok);
@@ -1176,12 +1181,13 @@ ClgLatticeFasterOnlineDecoder::BestPathIterator ClgLatticeFasterOnlineDecoder::T
 			{// this is the link to "tok"
 				oarc->_input = link->_ilabel;
 				oarc->_output = link->_olabel;
-				float arc_cost = link->_graph_cost + link->_acoustic_cost;
+				float graph_cost = link->_graph_cost,
+					  acoustic_cost = link->_acoustic_cost;
 				if (link->_ilabel != 0)
 				{
 					ret_t--;
 				}
-				oarc->_w = arc_cost;
+				oarc->_w = LatticeWeight( graph_cost, acoustic_cost);
 				break;
 			}
 		}
@@ -1195,7 +1201,7 @@ ClgLatticeFasterOnlineDecoder::BestPathIterator ClgLatticeFasterOnlineDecoder::T
 	{
 		oarc->_input = 0;
 		oarc->_output = 0;
-		oarc->_w = 0; // zero costs.
+		oarc->_w = LatticeWeight::One(); // zero costs.
 	}
 	return BestPathIterator(tok->_backpointer, ret_t);
 }

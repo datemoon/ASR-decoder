@@ -808,6 +808,10 @@ void LatticeFasterDecoder::FinalizeDecoding()
 bool LatticeFasterDecoder::GetRawLattice(Lattice *ofst,
 		bool use_final_probs) const
 {
+	typedef LatticeArc Arc;
+	//typedef Arc::StateId StateId;
+	typedef Arc::Weight Weight;
+	
 	// Note: you can't use the old interface (Decode()) if you want to
 	// get the lattice with use_final_probs = false.  You'd have to do
 	// InitDecoding() and then AdvanceDecoding().
@@ -878,7 +882,8 @@ bool LatticeFasterDecoder::GetRawLattice(Lattice *ofst,
 					cost_offset = _cost_offsets[f];
 				}
 				*/
-				Arc arc(l->_ilabel, l->_olabel, nextstate, l->_graph_cost + l->_acoustic_cost - cost_offset);
+				Arc arc(l->_ilabel, l->_olabel, nextstate, 
+						Weight(l->_graph_cost, l->_acoustic_cost - cost_offset));
 				ofst->AddArc(cur_state, arc);
 			}
 
@@ -1009,14 +1014,14 @@ bool LatticeFasterDecoder::GetBestPath(Lattice &best_path,
 	while(!cur_state->IsFinal())
 	{
 		// beacause one best path , so every state have only one arc.
-		Arc *arc = cur_state->GetArc(0);
+		LatticeArc *arc = cur_state->GetArc(0);
 		StateId next_stateid = arc->_to;
 		if(arc->_input != 0)
 			best_phones_arr.push_back(arc->_input);
 		if(arc->_output != 0)
 			best_words_arr.push_back(arc->_output);
 		best_lm_score += arc->_w.Value1();
-		best_tot_score += arc->_w.Value();
+		best_tot_score += arc->_w.Value1() + arc->_w.Value2();
 		cur_state = best_path.GetState(next_stateid);
 	}/*
 	for(StateId s = 0 ; s < best_path.NumStates(); ++s)
