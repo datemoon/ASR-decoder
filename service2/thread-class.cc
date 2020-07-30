@@ -5,6 +5,7 @@ void* ThreadBase::ThreadFunc(void *para)
 {
 	ThreadBase *th = static_cast<ThreadBase *>(para);
 	th->Run();
+	return NULL;
 }
 
 ThreadBase::int32 ThreadBase::Join(void **ret)

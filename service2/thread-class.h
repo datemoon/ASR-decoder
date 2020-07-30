@@ -10,13 +10,13 @@ public:
 	enum ThreadRetVal
 	{
 		TERROR = -1,
-		ThOK = 0
+		TOK = 0
 	};
 public:
 	ThreadBase(){}
 	ThreadBase(int32 index):_index(index){ }
 
-	virtual ~CThread() {}
+	virtual ~ThreadBase() {}
 	static void* ThreadFunc(void* para); // thread function
 	virtual void Run() = 0;             // real process data 
 	int32 Create();                      // create thread

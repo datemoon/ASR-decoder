@@ -108,9 +108,10 @@ public:
 
 	int32 AddThread(T *th);
 
-	int32 Init();
+	int32 Init(std::vector<T *> &t_v);
 };
 
-template class ThreadPoolBase<ThreadBase>;
+#include "service2/thread-pool-inl.h"
+//template class ThreadPoolBase<ThreadBase>;
 
 #endif

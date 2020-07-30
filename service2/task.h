@@ -56,7 +56,7 @@ public:
 
 	int32 Stop()
 	{
-		char *str = "no idle thread.";
+		const char *str = "no idle thread.";
 		send(_connfd, str, strlen(str), 0);
 		printf("send |%d| : %s ok\n",_connfd, str);
 		return 0;

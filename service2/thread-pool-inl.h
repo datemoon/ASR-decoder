@@ -2,24 +2,24 @@
 #include "util/log-message.h"
 
 template<class T>
-ThreadPoolBase<T>::ThreadPoolBase(ThreadPoolBase::int32 thread_num):
+ThreadPoolBase<T>::ThreadPoolBase(int32 thread_num):
 	_shutdown(false),
 	_thread_num(thread_num)
 {
 	if(pthread_mutex_init(&_pthread_pool_mutex, NULL) != 0)
 	{
-		LOG_ERROR << "pthread_mutex_init failed.";
+		LOG_ERR << "pthread_mutex_init failed.";
 		return ;
 	}
 	if(pthread_cond_init(&_pthread_pool_cond, NULL) != 0)
 	{
-		LOG_ERROR << "pthread_cond_init failed.";
+		LOG_ERR << "pthread_cond_init failed.";
 		return ;
 	}
 }
 
 template<class T>
-ThreadPoolBase<T>::int32 ThreadPoolBase<T>::AddThread(T *th)
+typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::AddThread(T *th)
 {
 	_all_threads.push_back(th);
 	_idle_pthread_id.push_back(th->GetThreadId());
@@ -27,14 +27,14 @@ ThreadPoolBase<T>::int32 ThreadPoolBase<T>::AddThread(T *th)
 }
 
 template<class T>
-ThreadPoolBase<T>::int32 ThreadPoolBase<T>::Init(std::vector<T *> &t_v)
+typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::Init(std::vector<T *> &t_v)
 {
 	for(int i=0; i<t_v.size(); ++i)
 	{
 		int ret = AddThread(t_v[i]);
-		if(ret != i)
+		if(ret != i+1)
 		{
-			LOG_ERROR << "Init thread pool error!!!";
+			LOG_ERR << "Init thread pool error!!!";
 			return TPERROR;
 		}
 	}
@@ -57,7 +57,7 @@ ThreadPoolBase<T>::~ThreadPoolBase()
 }
 
 template<class T>
-ThreadPoolBase<T>::int32 ThreadPoolBase<T>::AddTask(TaskBase *task)
+typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::AddTask(TaskBase *task)
 {
 	// judge queue full or not and process
 	pthread_mutex_lock(&_pthread_pool_mutex);
@@ -77,7 +77,7 @@ ThreadPoolBase<T>::int32 ThreadPoolBase<T>::AddTask(TaskBase *task)
 }
 
 template<class T>
-ThreadPoolBase<T>::int32 ThreadPoolBase<T>::StopAll()
+typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::StopAll()
 {
 	if(_shutdown)
 		return TPERROR;
@@ -89,7 +89,7 @@ ThreadPoolBase<T>::int32 ThreadPoolBase<T>::StopAll()
 	pthread_cond_broadcast(&_pthread_pool_cond);
 	for(int32 i =0 ; i< _thread_num ; ++i)
 	{
-		pthread_join(_all_threads.GetThreadId(), NULL);
+		pthread_join(_all_threads[i]->GetThreadId(), NULL);
 	}
 
 	pthread_mutex_destroy(&_pthread_pool_mutex);
