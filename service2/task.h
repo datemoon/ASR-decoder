@@ -59,6 +59,7 @@ public:
 		const char *str = "no idle thread.";
 		send(_connfd, str, strlen(str), 0);
 		printf("send |%d| : %s ok\n",_connfd, str);
+		close(_connfd);
 		return 0;
 	}
 	void GetInfo()

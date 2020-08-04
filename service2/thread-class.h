@@ -18,7 +18,7 @@ public:
 
 	virtual ~ThreadBase() {}
 	static void* ThreadFunc(void* para); // thread function
-	virtual void Run() = 0;             // real process data 
+	virtual void Run() = 0;              // real process data 
 	int32 Create();                      // create thread
 	int32 Join(void **ret);              // join thread
 	int32 GetThreadId() const;           // get pthread id

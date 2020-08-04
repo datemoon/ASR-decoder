@@ -68,6 +68,7 @@ typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::AddTask(TaskBase *task)
 	else
 	{
 		LOG_WARN << "No idle pthread wait...";
+		task->Stop();
 		// task cancel
 	}
 	pthread_mutex_unlock(&_pthread_pool_mutex);

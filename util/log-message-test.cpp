@@ -15,7 +15,7 @@ int main(int argc,char *argv[])
 	{
 		LOG << "it's log test code";
 		LOG_WARN << "it's warning test code";
-		LOG_ASSERT(0);
+		LOG_ASSERT(1);
 		LOG_ERR << "it's error test code";
 	}
 	return 0;

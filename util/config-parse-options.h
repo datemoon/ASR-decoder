@@ -41,6 +41,8 @@ public:
 	void Register(const std::string &name,
 			int *ptr, const std::string &doc);
 	void Register(const std::string &name,
+			short *ptr, const std::string &doc);
+	void Register(const std::string &name,
 			unsigned int *ptr, const std::string &doc);
 	void Register(const std::string &name,
 			float *ptr, const std::string &doc);

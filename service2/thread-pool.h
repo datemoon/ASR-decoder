@@ -10,6 +10,7 @@
 class TaskBase
 {
 public:
+	friend class ASRWorkThread;
 	typedef int int32;
 protected:
 	std::string _task_name;
@@ -105,7 +106,8 @@ public:
 	{
 		return _task_list.size();
 	}
-
+	
+	// it's only at start use ,because isn't use mutex.
 	int32 AddThread(T *th);
 
 	int32 Init(std::vector<T *> &t_v);

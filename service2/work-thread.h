@@ -1,7 +1,6 @@
 #ifndef __WORK_THREAD_H__
 #define __WORK_THREAD_H__
 
-
 #include "service2/thread-class.h"
 #include "service2/thread-pool.h"
 
@@ -15,9 +14,13 @@ public:
 		_thread_pool = tp;
 	}
 	void Run();
+	int32 InitASRSource();
 private:
 	ThreadPoolBase<ThreadBase> *_thread_pool;
-	int32 InitASRSource(std::string conf);
+	// feature
+	// nnet
+	// fst
+	
 };
 
 #endif
