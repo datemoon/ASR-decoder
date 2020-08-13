@@ -15,6 +15,11 @@
 
 // ASR relation option.
 // include feature, nnet, decoder, endpoint.
+using namespace kaldi;
+using namespace fst;
+//typedef kaldi::int32 int32;
+//typedef kaldi::int64 int64;
+
 class ASROpts
 {
 public:
@@ -27,13 +32,22 @@ public:
 	// end point option
 	OnlineEndpointConfig _endpoint_opts;
 
-	ASROpts() { }
-	ASROpts(const ASROpt &asr_opt):
+	BaseFloat _samp_freq;
+	BaseFloat _chunk_length_secs;
+	BaseFloat _output_period;
+	bool _produce_time;
+
+	ASROpts():
+		_samp_freq(16000.0), _chunk_length_secs(0.15),
+		_output_period(1.0),_produce_time(false) { }
+/*	ASROpts(const ASROpts &asr_opt):
+		_samp_freq(16000.0), _chunk_length_secs(0.15),
+		_output_period(1.0),_produce_time(false),
 		_feature_opts(asr_opt._feature_opts),
 		_decodable_opts(asr_opt._decodable_opts),
 		_decoder_opts(asr_opt._decoder_opts),
 		_endpoint_opts(asr_opt._endpoint_opts) { }
-
+*/
 	~ASROpts() { }
 
 	void Register(ParseOptions *conf)
@@ -42,6 +56,15 @@ public:
 		_decodable_opts.Register(conf);
 		_decoder_opts.Register(conf);
 		_endpoint_opts.Register(conf);
+		conf->Register("samp-freq", &_samp_freq,
+				"Sampling frequency of the input signal (coded as 16-bit slinear).");
+		conf->Register("chunk-length", &_chunk_length_secs,
+				"Length of chunk size in seconds, that we process.");
+		conf->Register("output-period", &_output_period,
+				"How often in seconds, do we check for changes in output.");
+		conf->Register("produce-time", &_produce_time,
+				"Prepend begin/end times between endpoints (e.g. '5.46 6.81 <text_output>', in seconds)");
+
 	}
 };
 
@@ -99,9 +122,9 @@ private:
 	nnet3::AmNnetSimple _am_nnet;
 	TransitionModel _trans_model;
 };
-typedef ASTType::int32 int32;
-typedef ASTType::BaseFloat BaseFloat;
-using namespace kaldi;
+//typedef ASTType::int32 int32;
+//typedef ASTType::BaseFloat BaseFloat;
+//using namespace kaldi;
 std::string LatticeToString(const Lattice &lat, const fst::SymbolTable &word_syms) 
 {
 	kaldi::LatticeWeight weight;
@@ -115,7 +138,7 @@ std::string LatticeToString(const Lattice &lat, const fst::SymbolTable &word_sym
 		std::string s = word_syms.Find(words[i]);
 		if (s.empty()) 
 		{
-			LOG_WARN << "Word-id " << words[i] << " not in symbol table.";
+			KALDI_LOG << "Word-id " << words[i] << " not in symbol table.";
 			msg << "<#" << std::to_string(i) << "> ";
 		} else
 			msg << s << " ";
@@ -139,7 +162,7 @@ int32 GetLatticeTimeSpan(const Lattice& lat)
 std::string LatticeToString(const CompactLattice &clat, const fst::SymbolTable &word_syms) 
 {
 	if (clat.NumStates() == 0) {
-		LOG_WARN << "Empty lattice.";
+		KALDI_LOG << "Empty lattice.";
 		return "";
 	}
 	CompactLattice best_path_clat;
@@ -154,94 +177,129 @@ std::string LatticeToString(const CompactLattice &clat, const fst::SymbolTable &
 class ASRWorker
 {
 public:
-	using namespace kaldi;
-	using namespace fst;
+	//using namespace kaldi;
+	//using namespace fst;
 
-	typedef ASTType::int32 int32;
-	typedef ASTType::BaseFloat BaseFloat;
-	ASRWorker();
-	~ASRWorker();
-	void Init()
+	//typedef ASTType::int32 int32;
+	//typedef ASTType::BaseFloat BaseFloat;
+	ASRWorker(ASROpts *asr_opts, ASRSource *asr_source):
+		_asr_opts(asr_opts), _asr_source(asr_source) {}
+	~ASRWorker() { }
+	void Init(size_t *chunk_len, int32 frame_offset=0)
 	{
-		_frame_offset = 0;
-		_samp_freq = 16000;
-		_samp_count = 0;
+		_produce_time = _asr_opts->_produce_time;
+		_samp_freq = _asr_opts->_samp_freq;
+		
+		_samp_count = 0;// this is used for output refresh rate
+		_chunk_len = static_cast<size_t>(_asr_opts->_chunk_length_secs * _samp_freq);
+		*chunk_len = _chunk_len;
+		_check_period = static_cast<int32>(_samp_freq * _asr_opts->_output_period);
+		_check_count = _check_period;
+
 		_decodable_info = new nnet3::DecodableNnetSimpleLoopedInfo(_asr_opts->_decodable_opts,
-				&_asr_source->_am_nnet);
+				(nnet3::AmNnetSimple*)&(_asr_source->_am_nnet));
 
 		_feature_info = new OnlineNnet2FeaturePipelineInfo(_asr_opts->_feature_opts);
 
 		
-		_feature_pipeline = new OnlineNnet2FeaturePipeline(*feature_info);
+		_feature_pipeline = new OnlineNnet2FeaturePipeline(*_feature_info);
 		_decoder = new SingleUtteranceNnet3Decoder(_asr_opts->_decoder_opts, 
 				_asr_source->_trans_model,
 				*_decodable_info,
-				*_decode_fst, _feature_pipeline);
+				*_asr_source->_decode_fst, _feature_pipeline);
+		_decoder->InitDecoding(frame_offset);
+
+	}
+	
+	void Reset()
+	{
 		_decoder->InitDecoding(_frame_offset);
-
-
+		_samp_count = 0;
+		_check_count = _check_period;
 	}
 
 	int32 ProcessData(char *data, int32 data_len, bool eos = false)
 	{
-		BaseFloat frame_shift = feature_info->FrameShiftInSeconds();
-		int32 frame_subsampling = decodable_opts->frame_subsampling_factor;
+		int32 data_type=4;
 		if(eos)
 		{
 			_feature_pipeline->InputFinished();
 			_decoder->AdvanceDecoding();
 			_decoder->FinalizeDecoding();
-			_frame_offset += decoder->NumFramesDecoded();
+			_frame_offset += _decoder->NumFramesDecoded();
 			if (_decoder->NumFramesDecoded() > 0)
 			{
-				CompactLattice lat;
-				_decoder->GetLattice(true, &lat);
-				std::string msg = GetProduceTime(lat);
+				std::string msg = GetProduceTime(true);
 			}
+			return 0; //语音结束,eos is true.
 		}
 		Vector<BaseFloat> wave_part;
-		wave_part.Resize(data_len/2);
-		for(int i=0;i<data_len/2;++i)
+		wave_part.Resize(data_len/data_type);
+		// convert input data
+		for(int i=0;i<data_len/data_type;++i)
 		{
-			wave_part(i) = static_cast<short*>(data)[i]
+			wave_part(i) = ((BaseFloat*)(data))[i];
 		}
 		_feature_pipeline->AcceptWaveform(_samp_freq, wave_part);
-		_samp_count += chunk_len;
+		_samp_count += _chunk_len;
 
 		_decoder->AdvanceDecoding();
+		if (_samp_count > _check_count)
 		{
 			if (_decoder->NumFramesDecoded() > 0)
 			{
-				Lattice lat;
-				_decoder->GetBestPath(false, &lat);
-				TopSort(&lat); // for LatticeStateTimes(),
-				std::string msg = GetProduceTime(lat);
+				std::string msg = GetProduceTime(false);
 			}
+			_check_count += _check_period;
 		}
 
 		if (_decoder->EndpointDetected(_asr_opts->_endpoint_opts))
 		{
 			_decoder->FinalizeDecoding();
 			_frame_offset += _decoder->NumFramesDecoded();
-			CompactLattice lat;
-			_decoder->GetLattice(true, &lat);
-			std::string msg = GetProduceTime(lat);
+			std::string msg = GetProduceTime(true);
+			return 1; // 语音中间截断
 		}
 
+		return 0; // eos is false.
 	}
-	std::string GetProduceTime(T &lat)
+	std::string GetProduceTime(bool end)
 	{
-		std::string msg = LatticeToString(lat, *_asr_source->_word_syms);
-		// get time-span after previous endpoint,
-		if(_produce_time)
+		BaseFloat frame_shift = _feature_info->FrameShiftInSeconds();
+		int32 frame_subsampling = _asr_opts->_decodable_opts.frame_subsampling_factor;
+		if(end == false)
 		{
-			int32 t_beg = frame_offset;
-			int32 t_end = frame_offset + GetLatticeTimeSpan(lat);
-			msg = GetTimeString(t_beg, t_end, frame_shift * frame_subsampling) + " " + msg;
+			Lattice lat;
+			_decoder->GetBestPath(false, &lat);
+			TopSort(&lat); // for LatticeStateTimes()
+			std::string msg = LatticeToString(lat, *_asr_source->_word_syms);
+			// get time-span after previous endpoint,
+			if(_produce_time)
+			{
+				int32 t_beg = _frame_offset;
+				int32 t_end = _frame_offset + GetLatticeTimeSpan(lat);
+				msg = GetTimeString(t_beg, t_end, frame_shift * frame_subsampling) + " " + msg;
+			}
+			KALDI_LOG << "Temporary transcript: " << msg;
+			return msg;
 		}
-		LOG << "Temporary transcript: " << msg;
-		return msg;
+		else
+		{
+			CompactLattice lat;
+			_decoder->GetLattice(true, &lat);
+			std::string msg = LatticeToString(lat, *_asr_source->_word_syms);
+			// get time-span after previous endpoint,
+			if(_produce_time)
+			{
+				int32 t_beg = _frame_offset - _decoder->NumFramesDecoded();
+				int32 t_end = _frame_offset;
+				msg = GetTimeString(t_beg, t_end, frame_shift * frame_subsampling) + " " + msg;
+			}
+			KALDI_LOG << "Temporary transcript: " << msg;
+			return msg;
+		}
 	}
+
 private:
 	const ASROpts *_asr_opts;
 	const ASRSource *_asr_source;
@@ -253,11 +311,16 @@ private:
 
 	OnlineNnet2FeaturePipelineInfo *_feature_info;
 	OnlineNnet2FeaturePipeline *_feature_pipeline;
-	int32 _frame_offset;
+	SingleUtteranceNnet3Decoder *_decoder;
 	// get time-span from previous endpoint to end of audio,
 	bool _produce_time;
 	BaseFloat _samp_freq;
 	int32 _samp_count;// this is used for output refresh rate
+	size_t _chunk_len;
+	int32 _check_period;
+	int32 _check_count;
+	int32 _frame_offset;
+
 };
 
 #endif

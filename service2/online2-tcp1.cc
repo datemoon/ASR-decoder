@@ -48,7 +48,7 @@ class TcpServer {
   pollfd client_set_[1];
   int read_timeout_;
 };
-
+}
 
 int main(int argc, char *argv[]) {
   try {
@@ -73,14 +73,10 @@ int main(int argc, char *argv[]) {
     // feature_opts includes configuration for the iVector adaptation,
     // as well as the basic features.
 	ASROpts asr_opts;
-	asr_opts.Register(&asr_opts);
+	asr_opts.Register(&po);
 
-    BaseFloat chunk_length_secs = 0.18;
-    BaseFloat output_period = 1;
-    BaseFloat samp_freq = 16000.0;
     int port_num = 5050;
     int read_timeout = 3;
-    bool produce_time = false;
 
     po.Register("read-timeout", &read_timeout,
                 "Number of seconds of timout for TCP audio data to appear on the stream. Use -1 for blocking.");
@@ -104,7 +100,8 @@ int main(int argc, char *argv[]) {
 
 	ASRWorker asr_work(&asr_opts, &asr_source);
 
-	asr_work.Init();
+	size_t chunk_len = 0;
+	asr_work.Init(&chunk_len);
 
     signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
 
@@ -124,7 +121,7 @@ int main(int argc, char *argv[]) {
           eos = !server.ReadChunk(chunk_len);
           Vector<BaseFloat> wave_part = server.GetChunk();
 
-		  int32 ret = asr_work.ProcessData(wave_part.Data(), wave_part.Size(), eos);
+		  int32 ret = asr_work.ProcessData((char*)wave_part.Data(), (int)wave_part.Dim(), eos);
 		  if(eos == true || ret == 1)
 			  break;
         }
