@@ -9,7 +9,7 @@ CXXFLAGS += -fPIC
 
 LDFLAGS = -rdynamic
 
-LDLIBS = #-lm -lpthread -ldl
+LDLIBS = -lm -lpthread -ldl
 
 
 LIBS = ../pitch/libpitch.a ../nnet/libnnet.a ../hmm/libhmm.a ../util/libutil.a \

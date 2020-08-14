@@ -29,4 +29,3 @@ FEATLIB=../lib/libfrontend_arm.a
 
 CXXFLAGS=-I.. -fpermissive -Wall -DKALDI_DOUBLEPRECISION=0 -DHAVE_MEMALIGN -Wno-sign-compare -Winit-self -rdynamic -DHAVE_CXXABI_H -DHAVE_ATLAS -O3 -mcpu=cortex-a8 -mtune=cortex-a8 -mfpu=neon -mfloat-abi=softfp -fno-expensive-optimizations -std=c++11 -fpermissive
 
-PACHIRA_SO=-fPIC -shared -Wl,--version-script SYMBOL

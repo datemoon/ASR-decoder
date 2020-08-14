@@ -12,6 +12,7 @@ typedef long long int int64;
 typedef unsigned short uint16;
 typedef unsigned int uint32;
 typedef unsigned long long int uint64;
+typedef float BaseFloat;
 enum RetVal
 {
 	ERROR = -1,

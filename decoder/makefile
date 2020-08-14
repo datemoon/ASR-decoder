@@ -17,10 +17,10 @@ LIBS=../hmm/libhmm.a ../nnet/libnnet.a ../decoder/libdecode.a \
 
 all:libdecode.a $(BIN)
 
-test-optimize-fst:test-optimize-fst.o optimize-fst.o
+test-optimize-fst:test-optimize-fst.o 
 	$(CXX) $(CXXFLAGS) -o  $@ $^
 
-libdecode.a:optimize-fst.o optimize-faster-decoder.o optimize-ctc-faster-decoder.o lattice-faster-decoder.o clg-lattice-faster-online-decoder.o
+libdecode.a:optimize-faster-decoder.o optimize-ctc-faster-decoder.o lattice-faster-decoder.o clg-lattice-faster-online-decoder.o
 	$(AR) -rcu $@ $^
 
 optimize-faster-decoder-test:optimize-faster-decoder-test.o
