@@ -98,11 +98,6 @@ int main(int argc, char *argv[]) {
 	ASRSource asr_source(nnet3_rxfilename, fst_rxfilename, word_syms_filename);
 
 
-	ASRWorker asr_work(&asr_opts, &asr_source);
-
-	size_t chunk_len = 0;
-	asr_work.Init(&chunk_len);
-
     signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
 
     TcpServer server(read_timeout);
@@ -112,20 +107,28 @@ int main(int argc, char *argv[]) {
     while (true) {
 
       server.Accept();
-
-      bool eos = false;
+	  
+	  ASRWorker asr_work(&asr_opts, &asr_source);
+  	  size_t chunk_len = 0;
+  	  asr_work.Init(&chunk_len);
+  
+  	  bool eos = false;
       while (!eos) {
-		asr_work.Reset();
 
         while (true) {
           eos = !server.ReadChunk(chunk_len);
           Vector<BaseFloat> wave_part = server.GetChunk();
 
-		  int32 ret = asr_work.ProcessData((char*)wave_part.Data(), (int)wave_part.Dim(), eos);
+		  int32 ret = asr_work.ProcessData((char*)wave_part.Data(), (int)wave_part.Dim()*sizeof(BaseFloat), eos);
+		  //std::cout << "eos is " << eos << std::endl; 
 		  if(eos == true || ret == 1)
+		  {
+			  asr_work.Reset(eos);
 			  break;
+		  }
         }
       }// while(!eos)
+      server.Disconnect();
     }// while(true)
   } catch (const std::exception &e) {
     std::cerr << e.what();

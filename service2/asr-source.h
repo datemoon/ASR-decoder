@@ -183,7 +183,7 @@ public:
 	//typedef ASTType::int32 int32;
 	//typedef ASTType::BaseFloat BaseFloat;
 	ASRWorker(ASROpts *asr_opts, ASRSource *asr_source):
-		_asr_opts(asr_opts), _asr_source(asr_source) {}
+		_asr_opts(asr_opts), _asr_source(asr_source),_feature_pipeline(NULL) {}
 	~ASRWorker() { }
 	void Init(size_t *chunk_len, int32 frame_offset=0)
 	{
@@ -191,6 +191,7 @@ public:
 		_samp_freq = _asr_opts->_samp_freq;
 		
 		_samp_count = 0;// this is used for output refresh rate
+		_frame_offset = 0;
 		_chunk_len = static_cast<size_t>(_asr_opts->_chunk_length_secs * _samp_freq);
 		*chunk_len = _chunk_len;
 		_check_period = static_cast<int32>(_samp_freq * _asr_opts->_output_period);
@@ -211,11 +212,15 @@ public:
 
 	}
 	
-	void Reset()
+	void Reset(bool eos)
 	{
+		if (eos)
+		{
+			_frame_offset = 0;
+			_samp_count = 0;
+			_check_count = _check_period;
+		}
 		_decoder->InitDecoding(_frame_offset);
-		_samp_count = 0;
-		_check_count = _check_period;
 	}
 
 	int32 ProcessData(char *data, int32 data_len, bool eos = false)
