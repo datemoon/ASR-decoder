@@ -66,7 +66,7 @@ bool C2SPackageAnalysis::C2SRead(int sockfd)
 	}
 	if(prev_n + 1 != _c2s_package_head._n)
 	{
-		std::cerr << "package loss : " << _c2s_package_head._n - prev_n << std::endl;
+		std::cerr << "Error: package loss : " << _c2s_package_head._n - prev_n << std::endl;
 	}
 	// new space.
 	if(_c2s_package_head._data_len > _data_buffer_capacity)
@@ -82,16 +82,19 @@ bool C2SPackageAnalysis::C2SRead(int sockfd)
 		//}
 		//_data_buffer = tmp;
 	}
-	// read data segment.
-	ret = read(sockfd, static_cast<void *>(_data_buffer), _c2s_package_head._data_len);
-	if(ret < 0)
+	if(_c2s_package_head._data_len > 0)
 	{
-		std::cerr << "read data failed." << std::endl;
-		return false;
-	}
-	if(ret != _c2s_package_head._data_len)
-	{
-		std::cerr << "Data loss. It shouldn't be happend." << std::endl;
+		// have data and read data segment.
+		ret = read(sockfd, static_cast<void *>(_data_buffer), _c2s_package_head._data_len);
+		if(ret < 0)
+		{
+			std::cerr << "read data failed." << std::endl;
+			return false;
+		}
+		if(ret != _c2s_package_head._data_len)
+		{
+			std::cerr << "Error: Data loss. It shouldn't be happend." << std::endl;
+		}
 	}
 	return true;
 }

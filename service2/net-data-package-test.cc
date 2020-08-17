@@ -32,11 +32,19 @@ bool C2SPackageAnalysisTest(char *infile, char *outfile)
 		n++;
 		if(ret == 0)
 		{
-			cli.C2SWrite(fd, cache, ret, n, 1);
+			if(cli.C2SWrite(fd, cache, ret, n, 1) != true)
+			{
+				std::cout << "C2SWrite failed." << std::endl;
+				return -1;
+			}
 			cli.Print("cli");
 			break;
 		}
-		cli.C2SWrite(fd, cache, ret, n, 0);
+		if(cli.C2SWrite(fd, cache, ret, n, 0) != true)
+		{
+			std::cout << "C2SWrite failed." << std::endl;
+			return -1;
+		}
 		cli.Print("cli");
 	}
 	close(fd);
@@ -54,7 +62,11 @@ bool C2SPackageAnalysisTest(char *infile, char *outfile)
 	}
 	while(true)
 	{
-		ser.C2SRead(fd);
+		if( true != ser.C2SRead(fd))
+		{
+			std::cerr << "C2SRead failed." << std::endl;
+			return -1;
+		}
 		ser.Print("ser");
 		uint data_len =0;
 		char *data = ser.GetData(&data_len);
