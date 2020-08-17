@@ -1,6 +1,9 @@
 #ifndef __NET_DATA_PACKAGE_H__
 #define __NET_DATA_PACKAGE_H__
 
+#include <vector>
+#include <string>
+
 typedef unsigned int uint;
 // _dtype           : short,float        -> short:0, float:1
 // _bit             : 16bit,8bit,32bit   -> 16bit:0, 8bit:1, 32bit:2
@@ -37,9 +40,9 @@ struct C2SPackageHead
 	uint _n                : 32;
 	uint _data_len         : 32;
 };
-
-// from client to service unpack.
-class C2SPackageHeadAnalysis
+void C2SPackageHeadPrint();
+// from client to service pack and unpack.
+class C2SPackageAnalysis
 {
 public:
 	enum DTYPE { DSHORT=0,DFLOAT=1 };
@@ -48,7 +51,7 @@ public:
 	enum SAMPLERATE { 16K=0,8K=8,32K=32 };
 	enum AUDIOTYPE { PCM=0,WAV=1,OPUS=2 };
 public:
-	C2SPackageHeadAnalysis(uint dtype=DSHORT, uint bit=16BIT, uint sample_rate=16K,
+	C2SPackageAnalysis(uint dtype=DSHORT, uint bit=16BIT, uint sample_rate=16K,
 			uint audio_type=PCM, uint audio_head_flage = 0, uint lattice=0, uint ali_info=0
 			uint score_info=0, uint nbest = 0, uint end_flag=0, uint keep=0,
 			uint n=0, uint data_len=0):
@@ -68,7 +71,15 @@ public:
 		_c2s_package_head._n = n;
 		_c2s_package_head._data_len = data_len;
 	}
-	~C2SPackageHeadAnalysis()  { }
+	~C2SPackageAnalysis()  
+	{
+		if(_data_buffer != NULL)
+		{
+			delete []_data_buffer;
+			_data_buffer = NULL;
+		}
+		_data_buffer_len = 0;
+	}
 public:
 	void Reset()
 	{
@@ -196,17 +207,222 @@ public:
 			uint n=0, uint end_flag=0);
 	// from client to service package unpack.
 	bool C2SRead(int sockfd);
+	void Print()
+	{
+		C2SPackageHeadPrint(_c2s_package_head);
+	}
 private:
 	struct C2SPackageHead _c2s_package_head;
 	char *_data_buffer;
 	uint _data_buffer_len;
 };
 
-class NetPackage
+// _end_flag: 0:not end, 1:vad end, 2:all end.
+struct S2CPackageHead
+{
+	uint _nbest        :6;
+	uint _lattice      :1;
+	uint _ali_info     :1;
+	uint _score_info   :1;
+	uint _end_flag     :2;     
+	uint _nres         :16;
+	unsigned int       :0;
+};
+
+template <class T>
+T* Renew(T *src, size_t old_size, size_t new_size)
+{
+	if(new_size == 0)
+		return src;
+	size_t size = new_size;
+	char * tmp = new T[size];
+	memset(tmp, 0x00, size*sizeof(T));
+	memcpy(tmp, src, size*sizeof(T));
+	delete [] src;
+	return tmp;
+}
+class S2CPackageNbest
 {
 public:
+	friend class S2CPackageAnalysis;
 private:
+	char *_nbest_res;         // nbest result.
+	uint _nbest_res_len;      // _nbest_res length.
+	uint _nbest_res_capacity; // _nbest_res capacity.
+	uint *_nbest_len;         // one result length.
+	uint _nbest_len_len;      // how many reuslt.
+	uint _nbest_len_capacity; // _nbest_len capacity.
+public:
+	S2CPackageNbest(uint nbest_res_capacity=1024,uint nbest_len_capacity=5):
+		_nbest_res(NULL), _nbest_res_len(0), 
+		_nbest_res_capacity(nbest_res_capacity),
+		_nbest_len(NULL), _nbest_len_len(0),
+		_nbest_len_capacity(nbest_len_capacity)
+	{
+		_nbest_res = new char[_nbest_res_capacity];
+		memset(_nbest_res, 0x00, _nbest_res_capacity*sizeof(char));
+		_nbest_res_len = 0;
 
+		_nbest_len = new uint[_nbest_len_capacity];
+		memset(_nbest_len, 0x00, _nbest_len_capacity*sizeof(uint));
+		_nbest_len_len = 0;
+	}
+	~S2CPackageNbest() 
+	{
+		if(_nbest_res != NULL)
+		{
+			delete [] _nbest_res;
+			_nbest_res = NULL;
+		}
+		_nbest_res_len = 0;
+		_nbest_res_capacity = 0;
+		if(_nbest_len != NULL)
+		{
+			delete []_nbest_len;
+			_nbest_len = NULL;
+		}
+		_nbest_len_len = 0;
+		_nbest_len_capacity = 0;
+	}
+
+	void SetNbest(std::string &result)
+	{
+		if(result.size() + _nbest_res_len > _nbest_res_capacity)
+		{ // realloc
+			_nbest_res_capacity = result.size() + _nbest_res_len + 128;
+			_nbest_res = Renew<char>(_nbest_res, _nbest_res_len, _nbest_res_capacity);
+		}
+		// copy result
+		memcpy(_nbest_res+nbest_res_len, result.c_str(), result.size());
+		nbest_res_len += result.size();
+
+		// set _nbest_len
+		if(_nbest_len_len + 1 > _nbest_len_capacity)
+		{
+			_nbest_len_capacity += 5;
+			_nbest_len = Renew<uint>(_nbest_len, _nbest_len_len, _nbest_len_capacity);
+		}
+		// add len
+		_nbest_len[_nbest_len_len] = result.size();
+		_nbest_len_len++;
+
+	}
+	ssize_t Write(int sockfd)
+	{
+		ssize_t ret1 = write(sockfd, static_cast<void*>(_nbest_len), 
+				_nbest_len_len*sizeof(uint));
+		if(ret1 < 0)
+		{
+			std::cout << "Write nbest_len failed." <<std::endl;
+			return ret1;
+		}
+		ssize_t ret2 = write(sockfd, static_cast<void*>(_nbest_res),
+				_nbest_res_len*sizeof(char));
+		if(ret2 < 0)
+		{
+			std::cout << "Write nbest_res failed." << std::endl;
+			return ret2;
+		}
+		return ret1+ret2;
+	}
+	ssize_t Read(int sockfd, uint n)
+	{
+		if (n <= 0)
+		{
+			return -1;
+		}
+		if(n > _nbest_len_capacity)
+		{ // realloc _nbest_len
+			_nbest_len_capacity = n+5;
+			_nbest_len = Renew<uint>(_nbest_len, 0, 
+					_nbest_len_capacity);
+		}
+		ssize_t ret1 = read(sockfd, static_cast<void *>(_nbest_len),
+			   	n*sizeof(uint));
+		if(ret1 < 0)
+		{
+			std::cerr << "Read _nbest_len failed."  << std::endl;
+			return ret1;
+		}
+		else if(ret1 != n*sizeof(uint))
+		{
+			std::cerr << "Read _nbest_len loss." << std::endl;
+			return ret1;
+		}
+		size_t total_len = 0;
+		for(int i=0;i<n;++i)
+		{
+			ssize_t ret2 = read(sockfd, static_cast<void *>(_nbest_res+offset),
+					_nbest_len[i]*sizeof(char));
+			if(ret2 != _nbest_len[i]*sizeof(char))
+			{
+				std::cerr << "Read _nbest_res error." << std::endl;
+				return ret2;
+			}
+			total_len += _nbest_len[i]*sizeof(char);
+		}
+		// realloc _nbest_res
+		if(total_len > _nbest_res_capacity)
+		{
+			_nbest_res_capacity = total_len +128;
+			_nbest_res = Renew<char>(_nbest_res, 0, _nbest_res_capacity);
+		}
+		ssize_t ret2 = read(sockfd, static_cast<void *>(_nbest_res),
+				_total_len*sizeof(char));
+		if(ret2 != _total_len*sizeof(char))
+		{
+			std::cerr << "Read _nbest_res loss." << std::endl;
+			return ret2;
+		}
+		return 0;
+	}
+	void Reset()
+	{
+		_nbest_res_len = 0;
+		_nbest_len_len = 0;
+	}
+};
+// from service to client pack and unpack.
+class S2CPackageAnalysis
+{
+public:
+	S2CPackageAnalysis(uint nbest=0,uint lattice=0,
+			uint ali_info=0, uint score_info=0, end_flag=0, nres=0)
+	{
+		_s2c_package_head._nbest = nbest;
+		_s2c_package_head._lattice = lattice;
+		_s2c_package_head._ali_info = ali_info;
+		_s2c_package_head._score_info = score_info;
+		_s2c_package_head._end_flag = end_flag;
+		_s2c_package_head._nres = nres;
+	}
+
+	void Reset()
+	{
+		_s2c_package_head._nbest = 0;
+		_s2c_package_head._end_flag = 0;
+		_s2c_package_head._nres = 0;
+	}
+	~S2CPackageAnalysis() { }
+	/*
+	 * Set nbest result.
+	 * */
+	void SetNbest(std::string &result)
+	{
+		_nbest_res.SetNbest(result);
+	}
+	// from service to client package write.
+	bool S2CWrite(int sockfd, uint end_flag);
+	// from service to client package unpack.
+	bool S2CRead(int sockfd);
+
+private:
+	struct S2CPackageHead _s2c_package_head;
+	// nbest
+	S2CPackageNbest _nbest_res;
+	// lattice
+	// ali
+	// score
 };
 
 #endif
