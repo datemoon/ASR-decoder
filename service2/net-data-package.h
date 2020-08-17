@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
+#include <unistd.h>
 
 typedef unsigned int uint;
 // _dtype           : short,float        -> short:0, float:1
@@ -40,22 +42,22 @@ struct C2SPackageHead
 	uint _n                : 32;
 	uint _data_len         : 32;
 };
-void C2SPackageHeadPrint();
+void C2SPackageHeadPrint(C2SPackageHead &c2s, std::string flag="");
 // from client to service pack and unpack.
 class C2SPackageAnalysis
 {
 public:
 	enum DTYPE { DSHORT=0,DFLOAT=1 };
-	enum AUDIOBIT { 16BIT=0,8BIT=1,32BIT=2 };
+	enum AUDIOBIT { BIT_16=0,BIT_8=1,BIT_32=2 };
 
-	enum SAMPLERATE { 16K=0,8K=8,32K=32 };
+	enum SAMPLERATE { K_16=0,K_8=8,K_32=32 };
 	enum AUDIOTYPE { PCM=0,WAV=1,OPUS=2 };
 public:
-	C2SPackageAnalysis(uint dtype=DSHORT, uint bit=16BIT, uint sample_rate=16K,
-			uint audio_type=PCM, uint audio_head_flage = 0, uint lattice=0, uint ali_info=0
+	C2SPackageAnalysis(uint dtype=DSHORT, uint bit=BIT_16, uint sample_rate=K_16,
+			uint audio_type=PCM, uint audio_head_flage = 0, uint lattice=0, uint ali_info=0,
 			uint score_info=0, uint nbest = 0, uint end_flag=0, uint keep=0,
 			uint n=0, uint data_len=0):
-		_data_buffer(NULL),_data_buffer_len(0)
+		_data_buffer(NULL),_data_buffer_capacity(0)
 	{
 		_c2s_package_head._dtype = dtype;
 		_c2s_package_head._bit = bit;
@@ -78,7 +80,7 @@ public:
 			delete []_data_buffer;
 			_data_buffer = NULL;
 		}
-		_data_buffer_len = 0;
+		_data_buffer_capacity = 0;
 	}
 public:
 	void Reset()
@@ -203,18 +205,30 @@ public:
 	 * n         : which one package
 	 * end_flag  : end flag
 	 * */
-	bool C2SWrite(int sockfd, char *data, uint data_size,
+	bool C2SWrite(int sockfd, const void *data, size_t data_size,
 			uint n=0, uint end_flag=0);
 	// from client to service package unpack.
 	bool C2SRead(int sockfd);
-	void Print()
+	void Print(std::string flag="")
 	{
-		C2SPackageHeadPrint(_c2s_package_head);
+		C2SPackageHeadPrint(_c2s_package_head, flag);
 	}
+
+	bool IsEnd()
+	{
+		return _c2s_package_head._end_flag == 1 ? true:false;
+	}
+
+	char* GetData(uint *data_len)
+	{
+		*data_len = _c2s_package_head._data_len;
+		return _data_buffer;
+	}
+
 private:
 	struct C2SPackageHead _c2s_package_head;
 	char *_data_buffer;
-	uint _data_buffer_len;
+	uint _data_buffer_capacity;
 };
 
 // _end_flag: 0:not end, 1:vad end, 2:all end.
@@ -235,10 +249,13 @@ T* Renew(T *src, size_t old_size, size_t new_size)
 	if(new_size == 0)
 		return src;
 	size_t size = new_size;
-	char * tmp = new T[size];
+	T* tmp = new T[size];
 	memset(tmp, 0x00, size*sizeof(T));
-	memcpy(tmp, src, size*sizeof(T));
-	delete [] src;
+	if(src != NULL)
+	{
+		memcpy(tmp, src, size*sizeof(T));
+		delete [] src;
+	}
 	return tmp;
 }
 class S2CPackageNbest
@@ -293,8 +310,8 @@ public:
 			_nbest_res = Renew<char>(_nbest_res, _nbest_res_len, _nbest_res_capacity);
 		}
 		// copy result
-		memcpy(_nbest_res+nbest_res_len, result.c_str(), result.size());
-		nbest_res_len += result.size();
+		memcpy(_nbest_res+_nbest_res_len, result.c_str(), result.size());
+		_nbest_res_len += result.size();
 
 		// set _nbest_len
 		if(_nbest_len_len + 1 > _nbest_len_capacity)
@@ -344,21 +361,15 @@ public:
 			std::cerr << "Read _nbest_len failed."  << std::endl;
 			return ret1;
 		}
-		else if(ret1 != n*sizeof(uint))
+		else if((uint)ret1 != n*sizeof(uint))
 		{
 			std::cerr << "Read _nbest_len loss." << std::endl;
 			return ret1;
 		}
+		// calculate total length
 		size_t total_len = 0;
-		for(int i=0;i<n;++i)
+		for(uint i=0;i<n;++i)
 		{
-			ssize_t ret2 = read(sockfd, static_cast<void *>(_nbest_res+offset),
-					_nbest_len[i]*sizeof(char));
-			if(ret2 != _nbest_len[i]*sizeof(char))
-			{
-				std::cerr << "Read _nbest_res error." << std::endl;
-				return ret2;
-			}
 			total_len += _nbest_len[i]*sizeof(char);
 		}
 		// realloc _nbest_res
@@ -368,8 +379,8 @@ public:
 			_nbest_res = Renew<char>(_nbest_res, 0, _nbest_res_capacity);
 		}
 		ssize_t ret2 = read(sockfd, static_cast<void *>(_nbest_res),
-				_total_len*sizeof(char));
-		if(ret2 != _total_len*sizeof(char))
+				total_len*sizeof(char));
+		if((uint)ret2 != total_len*sizeof(char))
 		{
 			std::cerr << "Read _nbest_res loss." << std::endl;
 			return ret2;
@@ -387,7 +398,7 @@ class S2CPackageAnalysis
 {
 public:
 	S2CPackageAnalysis(uint nbest=0,uint lattice=0,
-			uint ali_info=0, uint score_info=0, end_flag=0, nres=0)
+			uint ali_info=0, uint score_info=0, uint end_flag=0, uint nres=0)
 	{
 		_s2c_package_head._nbest = nbest;
 		_s2c_package_head._lattice = lattice;

@@ -2,21 +2,23 @@
 #include <string.h>
 #include "service2/net-data-package.h"
 
-void C2SPackageHeadPrint(C2SPackageHead c2s)
+void C2SPackageHeadPrint(C2SPackageHead &c2s, std::string flag)
 {
-	std::cout << "_dtype : " << c2s._dtype  << std::endl;
-	std::cout << "_bit : " << c2s._bit << std::endl;
-	std::cout << "_sample_rate : " << c2s._sample_rate << std::endl;
-	std::cout << "_audio_type : " << c2s._audio_type << std::endl;
-	std::cout << "_audio_head_flage : " << c2s._audio_head_flage << std::endl;
-	std::cout << "_lattice : " << c2s._lattice << std::endl;
-	std::cout << "_ali_info : " << c2s._ali_info << std::endl;
-	std::cout << "_score_info : " << c2s._score_info << std::endl;
-	std::cout << "_nbest : " << c2s._nbest << std::endl;
-	std::cout << "_end_flag : " << c2s._end_flag << std::endl;
-	std::cout << "_keep : " << c2s._keep << std::endl;
-	std::cout << "_n : " << c2s._n << std::endl;
-	std::cout << "_data_len : " << c2s._data_len << std::endl;
+	std::cout << "*************************************************" << std::endl;
+	std::cout << flag << "->" << "_dtype\t: " << c2s._dtype  << std::endl;
+	std::cout << flag << "->" << "_bit\t: " << c2s._bit << std::endl;
+	std::cout << flag << "->" << "_sample_rate\t: " << c2s._sample_rate << std::endl;
+	std::cout << flag << "->" << "_audio_type\t: " << c2s._audio_type << std::endl;
+	std::cout << flag << "->" << "_audio_head_flage\t: " << c2s._audio_head_flage << std::endl;
+	std::cout << flag << "->" << "_lattice\t: " << c2s._lattice << std::endl;
+	std::cout << flag << "->" << "_ali_info\t: " << c2s._ali_info << std::endl;
+	std::cout << flag << "->" << "_score_info\t: " << c2s._score_info << std::endl;
+	std::cout << flag << "->" << "_nbest\t: " << c2s._nbest << std::endl;
+	std::cout << flag << "->" << "_end_flag\t: " << c2s._end_flag << std::endl;
+	std::cout << flag << "->" << "_keep\t: " << c2s._keep << std::endl;
+	std::cout << flag << "->" << "_n\t: " << c2s._n << std::endl;
+	std::cout << flag << "->" << "_data_len\t: " << c2s._data_len << std::endl;
+	std::cout << "*************************************************" << std::endl;
 }
 bool C2SPackageAnalysis::C2SWrite(int sockfd, 
 		const void *data, size_t data_size, uint n, uint end_flag)
@@ -42,7 +44,7 @@ bool C2SPackageAnalysis::C2SWrite(int sockfd,
 	}
 	if(data_size > 0)
 	{
-		ret = write(sockfd, static_cast<void *>(data), data_size);
+		ret = write(sockfd, data, data_size);
 		if(ret < 0)
 		{
 			std::cerr << "write data failed." << std::endl;
@@ -54,7 +56,7 @@ bool C2SPackageAnalysis::C2SWrite(int sockfd,
 
 bool C2SPackageAnalysis::C2SRead(int sockfd)
 {
-	int prev_n = _c2s_package_head._n;
+	uint prev_n = _c2s_package_head._n;
 	ssize_t ret = read(sockfd, static_cast<void *>(&_c2s_package_head),
 		   	sizeof(C2SPackageHead));
 	if(ret < 0)
@@ -67,17 +69,18 @@ bool C2SPackageAnalysis::C2SRead(int sockfd)
 		std::cerr << "package loss : " << _c2s_package_head._n - prev_n << std::endl;
 	}
 	// new space.
-	if(_c2s_package_head._data_len > _data_buffer_len)
+	if(_c2s_package_head._data_len > _data_buffer_capacity)
 	{
-		_data_buffer_len = _c2s_package_head._data_len + 1024;
-		char *tmp = new char[_data_buffer_len];
-		memset(tmp,0x00,_data_buffer_len * sizeof(char));
-		if(_data_buffer != NULL)
-		{
-			delete []_data_buffer;
-			_data_buffer = NULL;
-		}
-		_data_buffer = tmp;
+		_data_buffer_capacity = _c2s_package_head._data_len + 1024;
+		_data_buffer = Renew<char>(_data_buffer, _c2s_package_head._data_len, _data_buffer_capacity);
+		//char *tmp = new char[_data_buffer_capacity];
+		//memset(tmp,0x00,_data_buffer_capacity * sizeof(char));
+		//if(_data_buffer != NULL)
+		//{
+		//	delete []_data_buffer;
+		//	_data_buffer = NULL;
+		//}
+		//_data_buffer = tmp;
 	}
 	// read data segment.
 	ret = read(sockfd, static_cast<void *>(_data_buffer), _c2s_package_head._data_len);
@@ -93,6 +96,8 @@ bool C2SPackageAnalysis::C2SRead(int sockfd)
 	return true;
 }
 
+
+/////////////////
 bool S2CPackageAnalysis::S2CWrite(int sockfd, uint end_flag)
 {
 	_s2c_package_head._nbest = _nbest_res._nbest_len_len;
@@ -128,7 +133,7 @@ bool S2CPackageAnalysis::S2CRead(int sockfd)
 		if(ret < 0)
 		{
 			std::cerr << "Read Nbest failed." << std::endl;
-			return false
+			return false;
 		}
 	}
 	return true;
