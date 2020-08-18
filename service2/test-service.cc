@@ -23,6 +23,9 @@
 
 using namespace std;
 
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 int main(int argc, char *argv[])
 {
 	const char *usage = "This is a test service code.\n";
@@ -67,7 +70,7 @@ int main(int argc, char *argv[])
 		}
 		pool.Init(tmp_threads);
 	}
-	LOG << "init thread pool ok";
+	LOG_COM << "init thread pool ok";
 	
 	while(1)
 	{

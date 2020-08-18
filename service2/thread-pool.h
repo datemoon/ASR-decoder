@@ -7,6 +7,9 @@
 #include <pthread.h>
 #include "service2/thread-class.h"
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
 class TaskBase
 {
 public:
@@ -111,7 +114,9 @@ public:
 
 	int32 Init(std::vector<T *> &t_v);
 };
-
+#ifdef NAMESPACE
+} // namespace datemoon
+#endif
 #include "service2/thread-pool-inl.h"
 //template class ThreadPoolBase<ThreadBase>;
 

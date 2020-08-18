@@ -6,6 +6,9 @@
 #include <iostream>
 #include <unistd.h>
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
 typedef unsigned int uint;
 // _dtype           : short,float        -> short:0, float:1
 // _bit             : 16bit,8bit,32bit   -> 16bit:0, 8bit:1, 32bit:2
@@ -490,5 +493,7 @@ private:
 	// ali
 	// score
 };
-
+#ifdef NAMESPACE
+} // namespace datemoon
+#endif
 #endif

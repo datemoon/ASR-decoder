@@ -9,6 +9,10 @@
 #include <string.h>
 #include <arpa/inet.h>
 
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
+
 int main(int argc, char *argv[])
 {
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);

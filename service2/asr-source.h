@@ -15,10 +15,10 @@
 
 // ASR relation option.
 // include feature, nnet, decoder, endpoint.
-using namespace kaldi;
-using namespace fst;
-//typedef kaldi::int32 int32;
-//typedef kaldi::int64 int64;
+// typedef kaldi::int32 int32;
+// typedef kaldi::int64 int64;
+
+namespace kaldi {
 
 class ASROpts
 {
@@ -90,7 +90,7 @@ public:
 				&(_am_nnet.GetNnet()));
 
 		// load fst
-		_decode_fst = ReadFstKaldiGeneric(_fst_filename);
+		_decode_fst = fst::ReadFstKaldiGeneric(_fst_filename);
 		
 		// load words list
 		_word_syms = fst::SymbolTable::ReadText(words_filename);
@@ -127,7 +127,7 @@ private:
 //using namespace kaldi;
 std::string LatticeToString(const Lattice &lat, const fst::SymbolTable &word_syms) 
 {
-	kaldi::LatticeWeight weight;
+	LatticeWeight weight;
 	std::vector<int32> alignment;
 	std::vector<int32> words;
 	GetLinearSymbolSequence(lat, &alignment, &words, &weight);
@@ -327,5 +327,5 @@ private:
 	int32 _frame_offset;
 
 };
-
+} // namespace kaldi
 #endif

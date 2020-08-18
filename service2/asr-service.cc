@@ -22,15 +22,34 @@
 #include "service2/socket-class.h"
 
 using namespace std;
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 
 int main(int argc, char *argv[])
 {
 	const char *usage = "This is a test service code.\n";
+	ParseOptions po(usage);
+	ASROpts asr_opts;
+	asr_opts.Register(&po);
+	po.Read(argc, argv);
+	if (po.NumArgs() != 3)
+   	{
+		po.PrintUsage();
+		return 1;
+	}
 
+	std::string nnet3_rxfilename = po.GetArg(1),
+		fst_rxfilename = po.GetArg(2),
+		word_syms_filename = po.GetArg(3);
 
+	ASRSource asr_source(nnet3_rxfilename, fst_rxfilename, word_syms_filename);
+
+	signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
 
 	ConfigParseOptions conf(usage);
-	SocketBase net_io(&conf);
+	SocketBase net_io;
+	net_io.Register(&conf);
 	conf.Read(argc, argv);
 	conf.PrintUsage();
 
@@ -59,7 +78,7 @@ int main(int argc, char *argv[])
 		vector<ThreadBase*> tmp_threads;
 		for(int i =0;i<nthread;++i)
 		{
-			ASRWorkThread *asr_t = new ASRWorkThread(&pool);
+			ASRWorkThread *asr_t = new ASRWorkThread(&pool, &asr_opts, &asr_source);
 			if (asr_t->Create() != 0)
 			{
 				printf("init thread failed.\n");
@@ -69,7 +88,7 @@ int main(int argc, char *argv[])
 		}
 		pool.Init(tmp_threads);
 	}
-	LOG << "init thread pool ok";
+	LOG_COM << "init thread pool ok";
 	
 	while(1)
 	{

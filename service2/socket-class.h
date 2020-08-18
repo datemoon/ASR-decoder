@@ -8,6 +8,9 @@
 #include "util/config-parse-options.h"
 #include "util/log-message.h"
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
 
 class SocketConf
 {
@@ -178,5 +181,7 @@ private:
 	struct timeval _rec_timeout; // recive timeout
 	int32 _sockfd;
 };
-
+#ifdef NAMESPACE
+} // namespace datemoon
+#endif
 #endif

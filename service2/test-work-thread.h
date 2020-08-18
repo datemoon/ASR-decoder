@@ -4,6 +4,9 @@
 #include "service2/thread-class.h"
 #include "service2/thread-pool.h"
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
 class TestWorkThread:public ThreadBase
 {
 public:
@@ -23,5 +26,7 @@ private:
 	// fst
 	
 };
-
+#ifdef NAMESPACE
+} // namespace datemoon
+#endif
 #endif

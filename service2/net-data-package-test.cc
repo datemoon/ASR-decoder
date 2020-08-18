@@ -7,6 +7,9 @@
 #define LEN 1024
 #define TEST_BEST 10
 #define PCM_LEN 10000
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 bool C2SPackageAnalysisTest(const char *infile, const char *outfile)
 {
 	C2SPackageAnalysis cli,ser;
@@ -113,7 +116,7 @@ bool S2CPackageAnalysisTest(const char *infile)
 		char *ret = fgets(cache, LEN, infp);
 		if(ret == NULL)
 		{
-			if(ser.S2CWrite(fd, 2) != true)
+			if(ser.S2CWrite(fd, S2CPackageAnalysis::S2CEND) != true)
 			{
 				std::cerr << "S2CWrite all end failed." << std::endl;
 				return false;
@@ -126,7 +129,7 @@ bool S2CPackageAnalysisTest(const char *infile)
 		n++;
 		if(n%3==0)
 		{
-			if(ser.S2CWrite(fd, 1) != true)
+			if(ser.S2CWrite(fd, S2CPackageAnalysis::S2CMIDDLEEND) != true)
 			{
 				std::cerr << "S2CWrite failed." << std::endl;
 				return false;

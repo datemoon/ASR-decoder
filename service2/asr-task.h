@@ -6,9 +6,13 @@
 #include "service2/thread-pool.h"
 #include "util/log-message.h"
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
 class ASRServiceTask:public TaskBase
 {
 public:
+	friend class ASRWorkThread;
 	typedef TaskBase::int32 int32;
 public:
 	ASRServiceTask(int32 connfd, std::string task_name = ""):
@@ -26,8 +30,8 @@ public:
 	}
 	void GetInfo()
 	{
-		LOG << "Task name is : " << _task_name ;
-		LOG << "Task connetid is : " << _connfd;
+		LOG_COM << "Task name is : " << _task_name ;
+		LOG_COM << "Task connetid is : " << _connfd;
 	}
 
 private:
@@ -37,42 +41,80 @@ private:
 
 int32 ASRServiceTask::Run(void *data)
 {
-	int n=0; // read times
+	ASRWorkThread * asr_work_thread = static_cast<ASRWorkThread *> data;
+	C2SPackageAnalysis &ser_c2s = asr_work_thread._ser_c2s_package_analysys;
+	S2CPackageAnalysis &ser_s2c = asr_work_thread._ser_s2c_package_analysys;
+	ASRWorker *asr_work = asr_work_thread._asr_work;
+	int n=0; // read timeout times
 	while(1)
 	{
-		char recvbuf[1024];
-		char sendbuf[1024];
-		memset(recvbuf,0x00,sizeof(recvbuf));
-		memset(sendbuf,0x00, sizeof(sendbuf));
 
-		int len = recv(_connfd, recvbuf, sizeof(recvbuf), 0 );
-		if(len <= 0)
+		if(true != ser_c2s.C2SRead(_connfd))
 		{
-			LOG << "on buf " << len << "!!!";
+			// read data
 			if(errno == EAGAIN || errno == EINPROGRESS)
 			{
-				LOG << "|" << _connfd << "| timeout and continue";
+				LOG_COM << "|" << _connfd << "| timeout and continue";
 				n++;
 				if(n>2)
+				{
+					LOG_COM << "|" << _connfd << "| timeout and disconnet";
 					break;
+				}
 				continue;
 			}
+			LOG_COM << "C2SRead error." << std::endl;
 			break;
 		}
-
 		n=0;
-		VLOG(0) << "from |" << _connfd << "| receive \"" << recvbuf << "\"";
-		if(strncmp(recvbuf,"end",3) == 0)
+		uint data_len;
+		char *data = ser_c2s.GetData(&data_len);
+		VLOG_COM(0) << "from |" << _connfd << "| receive \"" << data_len << "\"";
+		// 8k ,16bit
+		bool eos=false;
+		if(ser_c2s.IsEnd())
 		{
-			break;
+			eos = true;
 		}
-		sprintf(sendbuf, "from |%d| receive \"%s\" ", _connfd, recvbuf);
-		send(_connfd, sendbuf, sizeof(sendbuf), 0);
-		printf("send |%d| : %s ok\n",_connfd, sendbuf);
+		int32 ret = asr_work->ProcessData(data, data_len, eos);
+
+		if(eos == true || ret == 1)
+		{
+			if(eos == true)
+			{
+				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CEND))
+				{
+					LOG_COM << "S2CWrite all end error.";
+					break;
+				}
+			}
+			else
+			{
+				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CMIDDLEEND))
+				{
+					LOG_COM << "S2CWrite middle end error.";
+					break;
+				}
+			}
+			asr_work->Reset(eos);
+		}
+		else
+		{
+			if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CNOEND))
+			{
+				LOG_COM << "S2CWrite error.";
+				break;
+			}
+		}
+		ser_s2c.Reset();
+		if(eos == true)
+			break; // end
 	}
 	close(_connfd);
 	printf("close |%d| ok.\n",_connfd);
 	return 0;
 }
-
+#ifdef NAMESPACE
+} // namespace datemoon
+#endif
 #endif

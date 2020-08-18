@@ -1,6 +1,9 @@
 #include "service2/test-work-thread.h"
 #include "util/log-message.h"
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
 
 void TestWorkThread::Run()
 {
@@ -15,16 +18,16 @@ void TestWorkThread::Run()
 		pthread_mutex_lock(pthread_pool_mutex);
 		while(_thread_pool->GetTaskSize() == 0 && !_thread_pool->Shutdown())
 		{
-			LOG << "Thread " << tid << " wait task.";
+			LOG_COM << "Thread " << tid << " wait task.";
 			pthread_cond_wait(pthread_pool_cond, pthread_pool_mutex);
 		}
 		if(_thread_pool->Shutdown())
 		{
 			pthread_mutex_unlock(pthread_pool_mutex);
-			LOG << "Thread " << tid << " will exit.";
+			LOG_COM << "Thread " << tid << " will exit.";
 			pthread_exit(NULL);
 		}
-		LOG << "tid " << tid << " run.";
+		LOG_COM << "tid " << tid << " run.";
 
 		TaskBase *task = _thread_pool->GetTask();
 
@@ -38,3 +41,6 @@ void TestWorkThread::Run()
 		pthread_mutex_unlock(pthread_pool_mutex);
 	}
 }
+#ifdef NAMESPACE
+} // namespace datemoon
+#endif

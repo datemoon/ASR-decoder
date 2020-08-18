@@ -1,6 +1,9 @@
 #include "service2/thread-class.h"
 #include "util/log-message.h"
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
 void* ThreadBase::ThreadFunc(void *para)
 {
 	ThreadBase *th = static_cast<ThreadBase *>(para);
@@ -17,7 +20,7 @@ ThreadBase::int32 ThreadBase::Create()
 {
 	if(pthread_create(&_thread_id ,NULL ,&ThreadBase::ThreadFunc ,(void*)this) != 0)
 	{
-		LOG << "Create pthread failed!!!";
+		LOG_COM << "Create pthread failed!!!";
 		return TERROR;
 	}
 	return TOK;
@@ -32,3 +35,6 @@ ThreadBase::int32 ThreadBase::GetThreadIndex() const
 {
 	return _index;
 }
+#ifdef NAMESPACE
+} // namespace datemoon
+#endif
