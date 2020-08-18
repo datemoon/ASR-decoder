@@ -10,6 +10,10 @@
 #include "util/config-parse-options.h"
 #include "util/text-util.h"
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
+
 /*
 ConfigParseOptions::ConfigParseOptions(const std::string &prefix,OptionsItf *other):
 	 _print_args(false), _help(false), _usage(""), _argc(0), _argv(NULL)
@@ -531,3 +535,6 @@ template void ConfigParseOptions::RegisterStandard(const std::string &name,
 		std::string *ptr,
 		const std::string &doc);
 
+#ifdef NAMESPACE
+}
+#endif

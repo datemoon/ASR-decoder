@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include "util/hash-key.h"
 
+using namespace datemoon;
 int main(int argc,char*argv[])
 {
 	typedef std::unordered_map<const std::string, int, StringKey, StringEqual> WordHash;

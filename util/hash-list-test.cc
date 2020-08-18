@@ -3,6 +3,9 @@
 #include <iostream>
 #include "util/hash-list.h"
 
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 template<class Int, class T> void TestHashList() 
 {
   typedef typename HashList<Int, T>::Elem Elem;
@@ -80,5 +83,5 @@ int main() {
     TestHashList<char, unsigned char>();
     TestHashList<unsigned char, int>();
   }
-  LOG << "Test OK.\n";
+  LOG_COM << "Test OK.\n";
 }

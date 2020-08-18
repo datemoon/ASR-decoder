@@ -4,6 +4,9 @@
 #include <iostream>
 #include "text-util.h"
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
 bool ConvertStringToInteger(const std::string &str, int *out)
 {
 	sscanf(str.c_str(), "%d",out);
@@ -89,3 +92,6 @@ void CutLineToStr(std::string line,std::vector<std::string> &str)//, char ch)
 		str.push_back(s+i-j);
 	}
 }
+#ifdef NAMESPACE
+} // namespace datemoon
+#endif

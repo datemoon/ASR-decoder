@@ -1,6 +1,10 @@
 
 #include "util/log-message.h"
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
+
 int g_verbose_level = 0;
 const char *g_program_name = NULL;
 static LogHandler g_log_handler = NULL; // function pointer.
@@ -72,14 +76,14 @@ void MessageLogger::HandleMessage(const LogMessageEnvelope &envelope,
 		std::stringstream header;
 		if (envelope.severity > LogMessageEnvelope::kInfo)
 		{
-			header << "VLOG[" << envelope.severity << "] (";
+			header << "VLOG_COM[" << envelope.severity << "] (";
 		}
 		else
 		{
 			switch(envelope.severity)
 			{
 				case LogMessageEnvelope::kInfo :
-					header << "LOG (";
+					header << "LOG_COM (";
 					break;
 				case LogMessageEnvelope::kWarning :
 					header << "WARNING (";
@@ -101,7 +105,7 @@ void MessageLogger::HandleMessage(const LogMessageEnvelope &envelope,
 		// Printing the message,
 		if (envelope.severity >= LogMessageEnvelope::kWarning) 
 		{
-			// VLOG, LOG, WARNING:
+			// VLOG_COM, LOG_COM, WARNING:
 			fprintf(stderr, "%s %s\n", header.str().c_str(), message);
 		}
 		else
@@ -165,14 +169,14 @@ void ProcessLogHandler(const LogMessageEnvelope &envelope,
 	std::stringstream header;
 	if (envelope.severity > LogMessageEnvelope::kInfo)
 	{
-		header << "VLOG[" << envelope.severity << "] (";
+		header << "VLOG_COM[" << envelope.severity << "] (";
 	}
 	else
 	{
 		switch(envelope.severity)
 		{
 			case LogMessageEnvelope::kInfo :
-				header << "LOG (";
+				header << "LOG_COM (";
 				break;
 			case LogMessageEnvelope::kWarning :
 				header << "WARNING (";
@@ -194,7 +198,7 @@ void ProcessLogHandler(const LogMessageEnvelope &envelope,
 	// Printing the message,
 	if (envelope.severity >= LogMessageEnvelope::kWarning) 
 	{
-		// VLOG, LOG, WARNING:
+		// VLOG_COM, LOG_COM, WARNING:
 		fprintf(g_log_file_pointer, "%s %s\n", header.str().c_str(), message);
 	}
 	else
@@ -229,3 +233,6 @@ void CloseLogHandler()
 	g_log_file_pointer = NULL;
 	g_log_handler = NULL;
 }
+#ifdef NAMESPACE
+}
+#endif

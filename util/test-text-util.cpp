@@ -3,6 +3,9 @@
 #include <vector>
 #include <iostream>
 
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 int main(int argc,char *argv[])
 {
 	std::string line("hello.  \n  today is good day.   \n");

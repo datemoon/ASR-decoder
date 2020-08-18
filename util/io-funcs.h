@@ -6,6 +6,10 @@
 #include <fstream>
 #include <vector>
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
+
 bool ReadWordList(std::string file, std::vector<std::string> &wordlist, bool binary=false);
 
 void ExpectToken(std::istream &is, bool binary, const char *token);
@@ -39,5 +43,7 @@ template<> void ReadBasicType<double>(std::istream &is, bool binary, double *f);
 //template<> void ReadBasicType<int>(std::istream &is, bool binary, int *f);
 
 void CheckToken(const char *token);
-
+#ifdef NAMESPACE
+}
+#endif
 #endif

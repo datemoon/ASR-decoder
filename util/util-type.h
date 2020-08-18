@@ -1,8 +1,10 @@
 #ifndef __UTIL_TYPE_H__
 #define __UTIL_TYPE_H__
 
-namespace ASTType
-{
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
+
 typedef float BaseFloat;
 typedef float float32;
 typedef double double64;
@@ -18,6 +20,7 @@ enum RetVal
 	ERROR = -1,
 	OK = 0
 };
-} // end namespace
-
+#ifdef NAMESPACE
+} // namespace datemoon
+#endif
 #endif

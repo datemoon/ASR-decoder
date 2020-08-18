@@ -8,6 +8,10 @@
 #include <string>
 #include <vector>
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
+
 /* Important that this file does not depend on any other headers. */
 
 // By adding 'NOEXCEPT(bool)' immediately after function declaration,
@@ -70,7 +74,7 @@ struct LogMessageEnvelope
 };
 
 // Class MessageLogger is invoked from the LOG_ASSERT, LOG_ERR, LOG_WARN and
-// LOG macros. It formats the message, then either prints it to stderr or
+// LOG_COM macros. It formats the message, then either prints it to stderr or
 // passes to the log custom handler if provided, then, in case of the error,
 // throws an std::runtime_exception, in case of failed LOG_ASSERT calls abort().
 // 
@@ -91,7 +95,7 @@ public:
 	~MessageLogger() NOEXCEPT(false);
 
 	/// The hook for the 'insertion operator', e.g.
-	/// 'LOG << "Message,"',
+	/// 'LOG_COM << "Message,"',
 	inline std::ostream &stream() { return _ss; }
 
 private:
@@ -103,25 +107,27 @@ private:
 	std::ostringstream _ss;
 };
 
-// The definition of the logging macros,
-#define LOG_ERR \
-	::MessageLogger(::LogMessageEnvelope::kError, \
-			__func__, __FILE__, __LINE__).stream()
-#define LOG_WARN \
-	::MessageLogger(::LogMessageEnvelope::kWarning, \
-			__func__, __FILE__, __LINE__).stream()
-#define LOG \
-	::MessageLogger(::LogMessageEnvelope::kInfo, \
-			__func__, __FILE__, __LINE__).stream()
-#define VLOG(v) if ((v) <= ::g_verbose_level)     \
-	::MessageLogger((::LogMessageEnvelope::Severity)(v), \
-					 __func__, __FILE__, __LINE__).stream()
-
-
 /***** ASSERTS *****/
 
 void AssertFailure_(const char *func, const char *file,
 		int line, const char *cond_str);
+
+#ifdef NAMESPACE //
+
+// The definition of the logging macros,
+#define LOG_ERR \
+	::datemoon::MessageLogger(::datemoon::LogMessageEnvelope::kError, \
+			__func__, __FILE__, __LINE__).stream()
+#define LOG_WARN \
+	::datemoon::MessageLogger(::datemoon::LogMessageEnvelope::kWarning, \
+			__func__, __FILE__, __LINE__).stream()
+#define LOG_COM \
+	::datemoon::MessageLogger(::datemoon::LogMessageEnvelope::kInfo, \
+			__func__, __FILE__, __LINE__).stream()
+#define VLOG_COM(v) if ((v) <= ::datemoon::g_verbose_level)     \
+	::datemoon::MessageLogger((::datemoon::LogMessageEnvelope::Severity)(v), \
+					 __func__, __FILE__, __LINE__).stream()
+
 
 // The original (simple) version of the code was this
 //
@@ -145,6 +151,30 @@ void AssertFailure_(const char *func, const char *file,
 // and compilers will be able to optimize the loop away (as the condition
 // is always false).
 
+
+#ifndef NDEBUG
+#define LOG_ASSERT(cond) do { if (cond) (void)0; else \
+	::datemoon::AssertFailure_(__func__, __FILE__, __LINE__, #cond); } while(0)
+#else
+#define LOG_ASSERT(cond) (void)0
+#endif
+
+#else // ifdef NAMESPACE
+
+// The definition of the logging macros,
+#define LOG_ERR \
+	::MessageLogger(::LogMessageEnvelope::kError, \
+			__func__, __FILE__, __LINE__).stream()
+#define LOG_WARN \
+	::MessageLogger(::LogMessageEnvelope::kWarning, \
+			__func__, __FILE__, __LINE__).stream()
+#define LOG_COM \
+	::MessageLogger(::LogMessageEnvelope::kInfo, \
+			__func__, __FILE__, __LINE__).stream()
+#define VLOG_COM(v) if ((v) <= ::g_verbose_level)     \
+	:MessageLogger((::LogMessageEnvelope::Severity)(v), \
+					 __func__, __FILE__, __LINE__).stream()
+
 #ifndef NDEBUG
 #define LOG_ASSERT(cond) do { if (cond) (void)0; else \
 	::AssertFailure_(__func__, __FILE__, __LINE__, #cond); } while(0)
@@ -152,6 +182,7 @@ void AssertFailure_(const char *func, const char *file,
 #define LOG_ASSERT(cond) (void)0
 #endif
 
+#endif // ifdef NAMESPACE
 /***** THIRD-PARTY LOG-HANDLER *****/
 
 /// Type of third-party logging function,
@@ -167,4 +198,7 @@ LogHandler SetLogHandler(LogHandler);
 void CreateLogHandler(const char *log_file);
 
 void CloseLogHandler();
+#ifdef NAMESPACE
+} // namespace datemoon
+#endif
 #endif // __LOG_MESSAGE_H__

@@ -3,7 +3,9 @@
 #include "config-parse-options.h"
 
 using namespace std;
-
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 int main(int argc,char *argv[])
 {
 	bool binary = true;

@@ -4,6 +4,10 @@
 #include "util/io-funcs.h"
 #include "util/log-message.h"
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
+
 void ReadVector(std::istream &is, std::vector<float> &vec, bool binary)
 {
 	int pos_at_start = is.tellg();
@@ -24,4 +28,6 @@ void ReadVector(std::istream &is, std::vector<float> &vec, bool binary)
 		vec.push_back(atof(str.c_str()));
 	}
 }
-
+#ifdef NAMESPACE
+} // namespace datemoon
+#endif

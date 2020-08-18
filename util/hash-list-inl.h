@@ -1,6 +1,10 @@
 #ifndef __HASH_LIST_INL_H__
 #define __HASH_LIST_INL_H__
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
+
 template<class I, class T> HashList<I, T>::HashList()
 {
 	_list_head = NULL;
@@ -181,4 +185,9 @@ void HashList<I, T>::InsertMore(I key, T val)
 	elem->tail = e->tail;
 	e->tail = elem;
 }
+
+#ifdef NAMESPACE
+}
+#endif
+
 #endif

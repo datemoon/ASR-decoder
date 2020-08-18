@@ -4,6 +4,13 @@
 #include <istream>
 #include <vector>
 
-void ReadVector(std::istream &is , std::vector<float> &vec , bool binary);
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
+
+void ReadVector(std::istream &is , std::vector<float> &vec , bool binary);
+#ifdef NAMESPACE
+} // namespace datemoon
+#endif
 #endif

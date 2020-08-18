@@ -9,6 +9,9 @@
 #include "util/io-funcs.h"
 #include "util/log-message.h"
 
+#ifdef NAMESPACE
+namespace datemoon {
+#endif
 bool ReadWordList(std::string file, std::vector<std::string> &wordlist, bool binary)
 {
 	std::ifstream ifs;
@@ -28,7 +31,7 @@ bool ReadWordList(std::string file, std::vector<std::string> &wordlist, bool bin
 	{
 		ifs >> word;
 		ifs >> wordid;
-//		LOG << word << " " <<  wordid << std::endl;
+//		LOG_COM << word << " " <<  wordid << std::endl;
 		while(wordid >= (int)(wordlist.size()))
 		{
 			wordlist.push_back("");
@@ -206,4 +209,6 @@ template<> void ReadBasicType<double>(std::istream &is, bool binary, double *f)
 			<< is.tellg() << std::endl;
 	}
 }
-
+#ifdef NAMESPACE
+}
+#endif
