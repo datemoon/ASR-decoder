@@ -20,6 +20,20 @@ void C2SPackageHeadPrint(C2SPackageHead &c2s, std::string flag)
 	std::cout << flag << "->" << "_data_len\t: " << c2s._data_len << std::endl;
 	std::cout << "*************************************************" << std::endl;
 }
+
+void S2CPackageHeadPrint(S2CPackageHead &s2c, std::string flag)
+{
+	std::cout << "*************************************************" << std::endl;
+	std::cout << flag << "->" << "_nbest\t: " << s2c._nbest  << std::endl;
+	std::cout << flag << "->" << "_lattice\t: " << s2c._lattice  << std::endl;
+	std::cout << flag << "->" << "_ali_info\t: " << s2c._ali_info  << std::endl;
+	std::cout << flag << "->" << "_score_info\t: " << s2c._score_info  << std::endl;
+	std::cout << flag << "->" << "_end_flag\t: " << s2c._end_flag  << std::endl;
+	std::cout << flag << "->" << "_nres\t: " << s2c._nres  << std::endl;
+
+	std::cout << "*************************************************" << std::endl;
+}
+
 bool C2SPackageAnalysis::C2SWrite(int sockfd, 
 		const void *data, size_t data_size, uint n, uint end_flag)
 {
@@ -105,7 +119,7 @@ bool S2CPackageAnalysis::S2CWrite(int sockfd, uint end_flag)
 {
 	_s2c_package_head._nbest = _nbest_res._nbest_len_len;
 	_s2c_package_head._end_flag = end_flag;
-	if(_s2c_package_head._end_flag != 0)
+	if(_s2c_package_head._end_flag != S2CNOEND)
 		_s2c_package_head._nres++;
 	ssize_t ret = write(sockfd, static_cast<void *>(&_s2c_package_head), sizeof(S2CPackageHead));
 	if(ret < 0)

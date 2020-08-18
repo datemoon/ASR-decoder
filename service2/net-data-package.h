@@ -231,18 +231,7 @@ private:
 	uint _data_buffer_capacity;
 };
 
-// _end_flag: 0:not end, 1:vad end, 2:all end.
-struct S2CPackageHead
-{
-	uint _nbest        :6;
-	uint _lattice      :1;
-	uint _ali_info     :1;
-	uint _score_info   :1;
-	uint _end_flag     :2;     
-	uint _nres         :16;
-	unsigned int       :0;
-};
-
+//////////////////////////////////////////////////////////////
 template <class T>
 T* Renew(T *src, size_t old_size, size_t new_size)
 {
@@ -258,6 +247,7 @@ T* Renew(T *src, size_t old_size, size_t new_size)
 	}
 	return tmp;
 }
+
 class S2CPackageNbest
 {
 public:
@@ -270,6 +260,16 @@ private:
 	uint _nbest_len_len;      // how many reuslt.
 	uint _nbest_len_capacity; // _nbest_len capacity.
 public:
+	void Print(std::string flag="")
+	{
+		std::vector<std::string> nbest;
+		GetData(&nbest);
+		for(size_t i=0; i < nbest.size(); ++i)
+		{
+			std::cout << flag << " -> " << nbest[i] << std::endl;
+		}
+	}
+
 	S2CPackageNbest(uint nbest_res_capacity=1024,uint nbest_len_capacity=5):
 		_nbest_res(NULL), _nbest_res_len(0), 
 		_nbest_res_capacity(nbest_res_capacity),
@@ -302,6 +302,16 @@ public:
 		_nbest_len_capacity = 0;
 	}
 
+	void GetData(std::vector<std::string> *nbest)
+	{
+		uint offset = 0;
+		for(uint i=0;i<_nbest_len_len;++i)
+		{
+			std::string res(_nbest_res+offset, _nbest_len[i]);
+			nbest->push_back(res);
+			offset += _nbest_len[i];
+		}
+	}
 	void SetNbest(std::string &result)
 	{
 		if(result.size() + _nbest_res_len > _nbest_res_capacity)
@@ -344,6 +354,7 @@ public:
 	}
 	ssize_t Read(int sockfd, uint n)
 	{
+		_nbest_len_len = n;
 		if (n <= 0)
 		{
 			return -1;
@@ -393,9 +404,29 @@ public:
 		_nbest_len_len = 0;
 	}
 };
+// _nbest           : 0,1...      -> nbest
+// _lattice         : 0|1
+// _ali_info        : 0|1
+// _score_info      : 0|1
+// _end_flag        : 0,1,2       -> 0:not end, 1:vad end, 2:all end.
+struct S2CPackageHead
+{
+	uint _nbest        :6;
+	uint _lattice      :1;
+	uint _ali_info     :1;
+	uint _score_info   :1;
+	uint _end_flag     :2;     
+	uint _nres         :16;
+	unsigned int       :0;
+};
+
+void S2CPackageHeadPrint(S2CPackageHead &s2c, std::string flag="");
+
 // from service to client pack and unpack.
 class S2CPackageAnalysis
 {
+public:
+	enum S2CENDFLAG {S2CNOEND=0,S2CMIDDLEEND=1,S2CEND=2};
 public:
 	S2CPackageAnalysis(uint nbest=0,uint lattice=0,
 			uint ali_info=0, uint score_info=0, uint end_flag=0, uint nres=0)
@@ -408,11 +439,23 @@ public:
 		_s2c_package_head._nres = nres;
 	}
 
+	bool SetUseLattice(uint lattice) { if(lattice >> 1 > 0) return false; _s2c_package_head._lattice = lattice; return true;}
+	bool SetUseAligninfo(uint ali_info) { if(ali_info >> 1 > 0) return false; _s2c_package_head._ali_info = ali_info;return true;}
+	bool SetUseScoreinfo(uint score_info) { if(score_info >> 1 > 0)return false; _s2c_package_head._score_info = score_info; return true;}
+	bool IsAllEnd()
+	{
+		if(_s2c_package_head._end_flag == S2CEND)
+			return true;
+		return false;
+	}
+
 	void Reset()
 	{
+		if(IsAllEnd())
+			_s2c_package_head._nres = 0;
 		_s2c_package_head._nbest = 0;
-		_s2c_package_head._end_flag = 0;
-		_s2c_package_head._nres = 0;
+		_s2c_package_head._end_flag = S2CNOEND;
+		_nbest_res.Reset();
 	}
 	~S2CPackageAnalysis() { }
 	/*
@@ -421,11 +464,23 @@ public:
 	void SetNbest(std::string &result)
 	{
 		_nbest_res.SetNbest(result);
+		_s2c_package_head._nbest++;
 	}
 	// from service to client package write.
 	bool S2CWrite(int sockfd, uint end_flag);
 	// from service to client package unpack.
 	bool S2CRead(int sockfd);
+
+	void GetData(std::vector<std::string> *nbest)
+	{
+		_nbest_res.GetData(nbest);
+	}
+
+	void Print(std::string flag="")
+	{
+		S2CPackageHeadPrint(_s2c_package_head, flag);
+		_nbest_res.Print(flag);
+	}
 
 private:
 	struct S2CPackageHead _s2c_package_head;
