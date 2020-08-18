@@ -10,7 +10,6 @@
 class TaskBase
 {
 public:
-	friend class ASRWorkThread;
 	typedef int int32;
 protected:
 	std::string _task_name;

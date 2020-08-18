@@ -6,12 +6,12 @@
 #include "service2/thread-pool.h"
 #include "util/log-message.h"
 
-class ASRServiceTask:public TaskBase
+class TestServiceTask:public TaskBase
 {
 public:
 	typedef TaskBase::int32 int32;
 public:
-	ASRServiceTask(int32 connfd, std::string task_name = ""):
+	TestServiceTask(int32 connfd, std::string task_name = ""):
 		TaskBase(task_name), _connfd(connfd) {}
 
 	int32 Run(void *data)

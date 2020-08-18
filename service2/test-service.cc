@@ -16,8 +16,8 @@
 #include <vector>
 
 #include "service2/thread-pool.h"
-#include "service2/work-thread.h"
-#include "service2/task.h"
+#include "service2/test-work-thread.h"
+#include "service2/test-task.h"
 #include "util/log-message.h"
 #include "service2/socket-class.h"
 
@@ -27,7 +27,8 @@ int main(int argc, char *argv[])
 {
 	const char *usage = "This is a test service code.\n";
 	ConfigParseOptions conf(usage);
-	SocketBase net_io(&conf);
+	SocketBase net_io;
+	net_io.Register(&conf);
 	conf.Read(argc, argv);
 	conf.PrintUsage();
 
@@ -56,7 +57,7 @@ int main(int argc, char *argv[])
 		vector<ThreadBase*> tmp_threads;
 		for(int i =0;i<nthread;++i)
 		{
-			ASRWorkThread *asr_t = new ASRWorkThread(&pool);
+			TestWorkThread *asr_t = new TestWorkThread(&pool);
 			if (asr_t->Create() != 0)
 			{
 				printf("init thread failed.\n");
@@ -86,7 +87,7 @@ int main(int argc, char *argv[])
 		else
 		{
 			printf("connect %d.\n",connectfd);
-			ASRServiceTask *ta = new ASRServiceTask(connectfd);
+			TestServiceTask *ta = new TestServiceTask(connectfd);
 			pool.AddTask(ta);
 		}
 	}

@@ -25,7 +25,7 @@ public:
 		OK = 0
 	};
 public:
-	SocketBase(ConfigParseOptions *conf)
+	SocketBase()
 	{
 		_ip = "127.0.0.1";
 		_port = 8000;
@@ -36,6 +36,10 @@ public:
 		_n_listen = 5;
 		_rec_timeout.tv_sec = 5;
 		_rec_timeout.tv_usec = 0;
+	}
+
+	void Register(ConfigParseOptions *conf)
+	{
 		int32 usec = 5000000;
 		int32 port = _port;
 		conf->Register("ip", &_ip, "socket address , Default "+_ip);
@@ -51,7 +55,7 @@ public:
 		_port = port;
 	}
 
-	SocketBase(std::string ip="127.0.0.1", int32 port=8000, int32 keepalive=1,
+	SocketBase(std::string ip, int32 port, int32 keepalive=1,
 			int32 keeptime=5, int32 keepinterval=1, int32 keepcount=3,
 			int32 n_listen=5, int32 usec=5000000):
 		_ip(ip), _port(port), _keepalive(keepalive), _keeptime(keeptime),

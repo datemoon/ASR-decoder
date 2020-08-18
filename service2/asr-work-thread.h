@@ -1,5 +1,5 @@
-#ifndef __WORK_THREAD_H__
-#define __WORK_THREAD_H__
+#ifndef __ASR_WORK_THREAD_H__
+#define __ASR_WORK_THREAD_H__
 
 #include "service2/thread-class.h"
 #include "service2/thread-pool.h"
@@ -13,6 +13,7 @@ public:
 	{ 
 		_thread_pool = tp;
 	}
+	~ASRWorkThread() { }
 	void Run();
 	int32 InitASRSource();
 private:
