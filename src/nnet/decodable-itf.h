@@ -53,6 +53,7 @@
   frame of the file once we've decided to terminate decoding.
 */
 
+#include "src/util/namespace-start.h"
 class DecodableInterface
 {
 public:
@@ -93,5 +94,5 @@ public:
 	virtual ~DecodableInterface() { }
 
 };
-  
-  #endif
+#include "src/util/namespace-end.h"
+#endif

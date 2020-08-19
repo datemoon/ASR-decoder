@@ -6,13 +6,14 @@
 #include <algorithm> 
 #include <vector>
 #include <limits>
-#include "nnet/nnet-nnet.h"
-#include "decoder/optimize-fst.h"
-#include "util/config-parse-options.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/decoder/optimize-fst.h"
+#include "src/util/config-parse-options.h"
 
 using namespace std;
 using std::unordered_map;
 
+#include "src/util/namespace-start.h"
 
 static int _total_toks = 0;
 struct CtcFasterDecoderOptions 
@@ -223,6 +224,6 @@ protected:
 	void ClearToks(unordered_map<StateId, Token*> &prev_toks);
 
 };
-
+#include "src/util/namespace-end.h"
 
 #endif

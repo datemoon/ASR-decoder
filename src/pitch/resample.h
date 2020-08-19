@@ -8,9 +8,9 @@
 #include <vector>
 
 
-#include "pitch/kaldi-matrix.h"
-#include "pitch/kaldi-vector.h"
-#include "pitch/kaldi-type.h"
+#include "src/pitch/kaldi-matrix.h"
+#include "src/pitch/kaldi-vector.h"
+#include "src/pitch/kaldi-type.h"
 
 /// @addtogroup  feat FeatureExtraction
 /// @{

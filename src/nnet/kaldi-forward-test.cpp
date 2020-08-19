@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <sys/time.h>
-#include "nnet/nnet-nnet.h"
-#include "nnet/nnet-feature-api.h"
-#include "nnet/nnet-util.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/nnet/nnet-feature-api.h"
+#include "src/nnet/nnet-util.h"
+
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 
 int main(int argc,char *argv[])
 {

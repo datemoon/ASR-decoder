@@ -1,7 +1,7 @@
 
 #include <cassert>
-#include "pitch/online-feature.h"
-#include "pitch/kaldi-common.h"
+#include "src/pitch/online-feature.h"
+#include "src/pitch/kaldi-common.h"
 
 OnlineDeltaFeature::OnlineDeltaFeature(const DeltaFeaturesOptions &opts,
 		OnlineFeatureInterface *src):

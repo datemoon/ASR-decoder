@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "cudnn-lstm-layer.h"
-#include "nnet-util.h"
-#include "nnet-nnet.h"
+#include "src/nnet/cudnn-lstm-layer.h"
+#include "src/nnet/nnet-util.h"
+#include "src/nnet/nnet-nnet.h"
+
+#include "src/util/namespace-start.h"
 
 void LstmCudnn::ResetBuf()
 {
@@ -124,4 +126,4 @@ bool LstmCudnn::ReadData(FILE *fp,bool binary)
 //	ReadMatrix(fp, _phole_o_c, 1, _dim);
 	return true;
 }
-
+#include "src/util/namespace-end.h"

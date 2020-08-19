@@ -1,9 +1,9 @@
 #include <cassert>
 #include <cstring>
-#include "pitch/kaldi-matrix.h"
-#include "pitch/kaldi-type.h"
-#include "pitch/kaldi-common.h"
-#include "pitch/kaldi-vector.h"
+#include "src/pitch/kaldi-matrix.h"
+#include "src/pitch/kaldi-type.h"
+#include "src/pitch/kaldi-common.h"
+#include "src/pitch/kaldi-vector.h"
 /// hubo
 
 // template instantiations.

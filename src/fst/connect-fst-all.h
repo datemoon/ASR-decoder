@@ -3,6 +3,7 @@
 
 #include <vector>
 using std::vector;
+#include "src/util/namespace-start.h"
 
 // Finds and returns strongly-connected components, accessible and
 // coaccessible states and related properties. Uses Tarjan's single
@@ -197,5 +198,5 @@ void SccVisitor<A>::FinishState(StateId s, StateId p, const A *)
 	}
 }
 
-
+#include "src/util/namespace-end.h"
 #endif

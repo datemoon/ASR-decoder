@@ -3,13 +3,14 @@
 
 
 #include <limits>
-//#include "kaldi-vector.h"
-#include "pitch/kaldi-matrix.h"
+//#include "src/kaldi-vector.h"
+#include "src/pitch/kaldi-matrix.h"
 extern "C"
 {
-#include "lib/cblas.h"
+#include "src/lib/cblas.h"
 }
-#include "pitch/kaldi-common.h"
+#include "src/pitch/kaldi-common.h"
+
 
 // Do not include this file directly.  It is to be included
 // by .cc files in this directory.
@@ -487,5 +488,4 @@ inline void clapack_Xgetri(MatrixIndexT num_rows, double *Mdata, MatrixIndexT st
 }
 #endif
 */
-
 #endif

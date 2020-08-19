@@ -1,8 +1,9 @@
 #include <string.h>
 #include <assert.h>
-#include "nnet-layer.h"
-#include "matrix.h"
+#include "src/nnet/nnet-layer.h"
+#include "src/nnet/matrix.h"
 
+#include "src/util/namespace-start.h"
 void Splice::PropagateFnc(float *in, int frames, int cols, float *out)
 {
 	assert(InputDim() == cols);
@@ -57,3 +58,5 @@ void LinearTransform::PropagateFnc(float *in, int frames, int cols, float *out )
 	memset(out,0x00,sizeof(float)*frames*OutputDim());
 	MatrixMulMatrix(in,_linearity,out,frames,_rows,cols,1.0,1.0);
 }
+
+#include "src/util/namespace-end.h"

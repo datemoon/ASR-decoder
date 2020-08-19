@@ -1,6 +1,11 @@
 #include <stdio.h>
-#include "nnet-nnet.h"
-#include "nnet-feature-api.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/nnet/nnet-feature-api.h"
+
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
+
 int main(int argc,char *argv[])
 {
 	if(argc != 2)

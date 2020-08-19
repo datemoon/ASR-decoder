@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <string.h>
-#include "decoder/optimize-fst.h"
-#include "log.h"
+#include "src/decoder/optimize-fst.h"
+#include "src/decoder/log.h"
+
+#include "src/util/namespace-start.h"
 
 bool Fst::ReadFst(const char *file)
 {
@@ -79,3 +81,4 @@ void Fst::RmOlalel()
 		}
 	}
 }
+#include "src/util/namespace-end.h"

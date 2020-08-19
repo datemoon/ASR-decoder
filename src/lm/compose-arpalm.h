@@ -1,8 +1,9 @@
 #ifndef __COMPOSE_ARPALM_H__
 #define __COMPOSE_ARPALM_H__
-#include "lm/arpa2fsa.h"
-#include "fst/compose-lat.h"
+#include "src/lm/arpa2fsa.h"
+#include "src/fst/compose-lat.h"
 
+#include "src/util/namespace-start.h"
 class ComposeArpaLm:public LatticeComposeItf<FsaStateId>
 {
 private:
@@ -32,5 +33,5 @@ public:
 };
 
 void CutLine(char *line, std::vector<std::string> &cut_line);
-
+#include "src/util/namespace-end.h"
 #endif

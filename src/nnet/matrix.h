@@ -4,6 +4,7 @@
 #define Exp(x) expf(x)
 #define Log(x) logf(x)
 
+#include "src/util/namespace-start.h"
 /*  alpha*A*B + beta * C **/
 // m : A matrix row , C matrix col
 // n : B matrix col , C matrix row
@@ -31,4 +32,6 @@ void DoSoftmax(float *A,int row,int col,float *B);
 void DoLog(float *A,int row,int col,float *B);
 
 void DoTanH(float *A,int row,int col,float *B);
+
+#include "src/util/namespace-end.h"
 #endif

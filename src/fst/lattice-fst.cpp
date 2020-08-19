@@ -1,7 +1,8 @@
 #include <iostream>
 #include <string.h>
-#include "fst/lattice-fst.h"
+#include "src/fst/lattice-fst.h"
 
+#include "src/util/namespace-start.h"
 void Lattice::Invert()
 {
 	for(size_t i = 0; i < static_cast<size_t>(NumStates()); ++i)
@@ -90,3 +91,4 @@ bool Lattice::Read(FILE *fp)
 	}
 	return true;
 }
+#include "src/util/namespace-end.h"

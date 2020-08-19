@@ -1,8 +1,9 @@
-#include "fst/topsort.h"
-#include "fst/dfs-visit-fst.h"
+#include "src/fst/topsort.h"
+#include "src/fst/dfs-visit-fst.h"
 
 using namespace std;
 
+#include "src/util/namespace-start.h"
 void StateSort(Lattice *fst,const vector<StateId> &order)
 {
 	if(order.size() != (unsigned)(fst->NumStates()))
@@ -60,3 +61,5 @@ void TopSort(Lattice *fst)
 		}
 	}
 }
+
+#include "src/util/namespace-end.h"

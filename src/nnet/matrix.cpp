@@ -1,10 +1,11 @@
-#include "matrix.h"
+#include "src/nnet/matrix.h"
 #ifdef CBLAS
 extern "C"
 {
-#include "lib/cblas.h"
+#include "src/lib/cblas.h"
 }
 #endif
+#include "src/util/namespace-start.h"
 
 /*  alpha*A*B + beta * C **/
 // m : A matrix row , C matrix row
@@ -142,3 +143,4 @@ void DoTanH(float *A,int row,int col,float *B)
 		B[i] = x;
 	}
 }
+#include "src/util/namespace-end.h"

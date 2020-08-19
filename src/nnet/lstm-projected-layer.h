@@ -1,8 +1,10 @@
 #ifndef __LSTMPROJECTEDSTREAMS_LAYER_H__
 #define __LSTMPROJECTEDSTREAMS_LAYER_H__
 #include <string>
-#include "matrix.h"
-#include "nnet-component.h"
+#include "src/nnet/matrix.h"
+#include "src/nnet/nnet-component.h"
+
+#include "src/util/namespace-start.h"
 
 class LstmProjectedStreams :public Component
 {	
@@ -122,5 +124,5 @@ private:
 	int _hidden_dim; // hidden cell dim
 	int _out_dim; // output dim
 };
-
+#include "src/util/namespace-end.h"
 #endif

@@ -4,8 +4,8 @@
 #include <assert.h>
 #include <iostream>
 #include <cmath>
-#include "fst/arc.h"
-#include "decoder/log.h"
+#include "src/fst/arc.h"
+#include "src/decoder/log.h"
 /*
 typedef int StateId;
 typedef int Label;
@@ -97,6 +97,7 @@ public:
 };
 */
 
+#include "src/util/namespace-start.h"
 typedef ArcTpl<float> Arc;
 
 class State
@@ -289,4 +290,5 @@ public:
 };
 typedef Arc StdArc;
 typedef State StdState;
+#include "src/util/namespace-end.h"
 #endif

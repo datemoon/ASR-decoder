@@ -5,6 +5,7 @@
 #include <cmath>
 #include <limits>
 
+#include "src/util/namespace-start.h"
 typedef int StateId;
 typedef int Label;
 //typedef float Weight;
@@ -318,6 +319,6 @@ inline bool ApproxEqual(const LatticeWeightTpl<FloatType> &w1,
 		return true;  // handles Zero().
 	return (fabs((w1.Value1() + w1.Value2()) - (w2.Value1() + w2.Value2())) <= delta);
 }
-
+#include "src/util/namespace-end.h"
 
 #endif

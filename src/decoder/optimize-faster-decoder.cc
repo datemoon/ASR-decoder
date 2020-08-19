@@ -1,9 +1,10 @@
 
 #include <stdio.h>
 #include <assert.h>
-#include "nnet/nnet-nnet.h"
-#include "decoder/optimize-faster-decoder.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/decoder/optimize-faster-decoder.h"
 
+#include "src/util/namespace-start.h"
 
 FasterDecoder::FasterDecoder(Fst *graph,
 		const FasterDecoderOptions *opts):
@@ -493,3 +494,4 @@ void FasterDecoder::ClearToks(unordered_map<StateId, Token*> &prev_toks)
 	printf("cleartok after %d\n",GetTotalTok());
 #endif
 }
+#include "src/util/namespace-end.h"

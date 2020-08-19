@@ -2,9 +2,10 @@
 #include <queue>
 #include <unordered_map>
 #include <limits> 
-#include "fst/compose-lat.h"
-#include "fst/connect-fst.h"
+#include "src/fst/compose-lat.h"
+#include "src/fst/connect-fst.h"
 
+#include "src/util/namespace-start.h"
 //template<typename Int1, typename Int2 = Int1>
 template<typename Int1, typename Int2>
 struct PairHasher {  // hashing function for pair<int, long long int>
@@ -138,3 +139,4 @@ template void ComposeLattice(Lattice *clat,
 		LatticeComposeItf<int> *fst, Lattice *olat, float scale);
 template void ComposeLattice(Lattice *clat,
 		LatticeComposeItf<unsigned int> *fst, Lattice *olat, float scale);
+#include "src/util/namespace-end.h"

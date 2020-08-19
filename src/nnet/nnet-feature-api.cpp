@@ -1,7 +1,9 @@
 #include <assert.h>
 #include <string.h>
-#include "nnet-feature-api.h"
-#include "nnet-util.h"
+#include "src/nnet/nnet-feature-api.h"
+#include "src/nnet/nnet-util.h"
+
+#include "src/util/namespace-start.h"
 
 int DnnFeat::Init(const char*cfgPath,const char *sysDir)
 {
@@ -252,4 +254,5 @@ void DnnFeat::Reset()
 	memset(_feats,0x00,sizeof(float) * _capacity);
 }
 
+#include "src/util/namespace-end.h"
 

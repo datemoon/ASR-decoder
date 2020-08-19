@@ -5,10 +5,11 @@
 #include <utility>
 #include <limits>
 #include <algorithm>
-#include "fst/connect-fst.h"
+#include "src/fst/connect-fst.h"
 
 using namespace std;
 
+#include "src/util/namespace-start.h"
 class ShortestPathCompare
 {
 public:
@@ -148,4 +149,5 @@ void NShortestPath(Lattice &ifst, Lattice *ofst, size_t n);
 	// end ofst it's should be a tree structure.
 }
 */
+#include "src/util/namespace-end.h"
 #endif

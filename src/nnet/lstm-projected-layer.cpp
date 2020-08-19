@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "nnet/lstm-projected-layer.h"
-#include "nnet/nnet-util.h"
+#include "src/nnet/lstm-projected-layer.h"
+#include "src/nnet/nnet-util.h"
+
+#include "src/util/namespace-start.h"
 
 void LstmProjectedStreams::ResetBuf()
 {
@@ -144,4 +146,4 @@ bool LstmProjectedStreams::ReadData(FILE *fp,bool binary)
 	ReadMatrixData(fp, _wei_r_m , _out_dim ,_hidden_dim);
 	return true;
 }
-
+#include "src/util/namespace-end.h"

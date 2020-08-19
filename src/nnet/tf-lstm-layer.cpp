@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "nnet/tf-lstm-layer.h"
-#include "nnet/nnet-util.h"
+#include "src/nnet/tf-lstm-layer.h"
+#include "src/nnet/nnet-util.h"
+
+#include "src/util/namespace-start.h"
 
 void TfLstm::ResetBuf()
 {
@@ -131,4 +133,4 @@ bool TfLstm::ReadData(FILE *fp,bool binary)
 	}
 	return true;
 }
-
+#include "src/util/namespace-end.h"

@@ -1,9 +1,10 @@
 
 #include <vector>
 #include <utility>
-#include "fst/rmepsilon.h"
-#include "fst/connect-fst.h"
+#include "src/fst/rmepsilon.h"
+#include "src/fst/connect-fst.h"
 
+#include "src/util/namespace-start.h"
 
 void RmEpsilon(Lattice &ifst, int ilabel)
 {
@@ -56,7 +57,7 @@ void RmEpsilon(Lattice &ifst, int ilabel)
 						cur_state_queue.push_back(Pair(arc->_to, 
 									Times(w, arc->_w)));
 						cur_state->DeleteArc(i);
-//						VLOG(3) << "state " << s << " delete arc " << i ;
+//						VLOG_COM(3) << "state " << s << " delete arc " << i ;
 						delete_arc_num++;
 						// beacuse delete this arc, so I need i--.
 						i--;
@@ -95,6 +96,7 @@ void RmEpsilon(Lattice &ifst, int ilabel)
 		rmeps_state[s] = true;
 	} // all state
 
-	VLOG(2) << "delete arc input " << ilabel << " num:" << delete_arc_num ;
+	VLOG_COM(2) << "delete arc input " << ilabel << " num:" << delete_arc_num ;
 	Connect(&ifst);
 }
+#include "src/util/namespace-end.h"

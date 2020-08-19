@@ -5,7 +5,7 @@
 #include <map>
 #include <set>
 #include <vector>
-#include "fst/lattice-fst.h"
+#include "src/fst/lattice-fst.h"
 
 //const float kDelta = 1.0/1024;
 
@@ -23,6 +23,6 @@ struct DeterminizeLatticeOptions
 bool DeterminizeLatticeWrapper(Lattice *ifst,double beam, Lattice*ofst,
 		DeterminizeLatticeOptions opts);
 
-#include "fst/lattice-determinize.h"
+#include "src/fst/lattice-determinize.h"
 
 #endif

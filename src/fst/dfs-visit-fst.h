@@ -9,7 +9,9 @@ using std::stack;
 using namespace std;
 using std::vector;
 
-#include "fst/lattice-fst.h"
+#include "src/fst/lattice-fst.h"
+
+#include "src/util/namespace-start.h"
 const int kDfsWhite = 0;   // Undiscovered
 const int kDfsGrey =  1;   // Discovered & unfinished
 const int kDfsBlack = 2;   // Finished
@@ -155,5 +157,5 @@ void DfsVisit(const Fst<Arc> &fst, V *visitor, ArcFilter filter)
 	visitor->FinishVisit();
 }
 #endif
-
+#include "src/util/namespace-end.h"
 #endif

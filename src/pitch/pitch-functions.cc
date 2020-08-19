@@ -3,11 +3,11 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "pitch/pitch-functions.h"
-#include "pitch/resample.h"
-#include "pitch/kaldi-vector.h"
-#include "pitch/kaldi-matrix.h"
-#include "pitch/online-feature.h"
+#include "src/pitch/pitch-functions.h"
+#include "src/pitch/resample.h"
+#include "src/pitch/kaldi-vector.h"
+#include "src/pitch/kaldi-matrix.h"
+#include "src/pitch/online-feature.h"
 
 /**
    This function processes the NCCF n to a POV feature f by applying the formula

@@ -2,10 +2,11 @@
 #define __NNET_FEATURE_API_H__
 
 #include <stdio.h>
-#include "FeatureExtractor.h"
-#include "pitch/pitch-functions.h"
+#include "src/nnet/FeatureExtractor.h"
+#include "src/pitch/pitch-functions.h"
 using namespace tasr;
 
+#include "src/util/namespace-start.h"
 class DnnFeat
 {
 private:
@@ -182,4 +183,5 @@ public:
 
 	void Reset();
 };
+#include "src/util/namespace-end.h"
 #endif

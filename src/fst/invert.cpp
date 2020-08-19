@@ -1,6 +1,7 @@
-#include "fst/lattice-fst.h"
-#include "fst/invert.h"
+#include "src/fst/lattice-fst.h"
+#include "src/fst/invert.h"
 
+#include "src/util/namespace-start.h"
 void Invert(Lattice &fst)
 {
 	StateId num_states = fst.NumStates();
@@ -14,5 +15,5 @@ void Invert(Lattice &fst)
 		}
 	}
 }
-
+#include "src/util/namespace-end.h"
 

@@ -1,7 +1,8 @@
 #include <vector>
-#include "fst/lattice-fst.h"
-#include "fst/reverse.h"
+#include "src/fst/lattice-fst.h"
+#include "src/fst/reverse.h"
 
+#include "src/util/namespace-start.h"
 void Reverse(Lattice &ifst, Lattice *ofst)
 {
 	StateId num_states = ifst.NumStates();
@@ -38,4 +39,4 @@ void Reverse(Lattice &ifst, Lattice *ofst)
 		}
 	}
 }
-
+#include "src/util/namespace-end.h"

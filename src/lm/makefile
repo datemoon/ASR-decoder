@@ -1,14 +1,16 @@
 
 include ../hubo.mk
 
-CXXFLAGS+=-I. -I.. -lm
+CXXFLAGS+=-I. -lm
 
 OBJ=arpa2fsa.o compose-arpalm.o
 
 LIB=liblm.a  ../fst/liblatfst.a ../util/libutil.a
 
 BIN= arpa2fsa-bin lmscore compose-text lmrescale
-all:liblm.a $(BIN)
+all:liblm.a 
+
+test:$(BIN)
 
 liblm.a:$(OBJ)
 	$(AR) -rc $@ $^

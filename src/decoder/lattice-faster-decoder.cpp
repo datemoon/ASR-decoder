@@ -3,10 +3,11 @@
 #include <iostream>
 #include <math.h>
 #include <unordered_set>
-#include "nnet/nnet-nnet.h"
-#include "decoder/lattice-faster-decoder.h"
-#include "fst/lattice-fst.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/decoder/lattice-faster-decoder.h"
+#include "src/fst/lattice-fst.h"
 
+#include "src/util/namespace-start.h"
 void LatticeFasterDecoder::InitDecoding()
 {
 	ClearActiveTokens();
@@ -1039,4 +1040,4 @@ bool LatticeFasterDecoder::GetBestPath(Lattice &best_path,
 	}*/
 	return true;
 }
-
+#include "src/util/namespace-end.h"

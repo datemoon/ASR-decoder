@@ -7,12 +7,16 @@
 #include <vector>
 #include <cstring>
 
-#include "pitch/kaldi-vector.h"
-#include "pitch/kaldi-matrix.h"
-#include "pitch/kaldi-type.h"
-#include "util/config-parse-options.h"
-#include "pitch/online-feature-itf.h"
+#include "src/pitch/kaldi-vector.h"
+#include "src/pitch/kaldi-matrix.h"
+#include "src/pitch/kaldi-type.h"
+#include "src/util/config-parse-options.h"
+#include "src/pitch/online-feature-itf.h"
 
+
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 /// @addtogroup  feat FeatureExtraction
 /// @{
 

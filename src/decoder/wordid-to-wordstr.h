@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "src/util/namespace-start.h"
 typedef int WordIdType;
 
 class WordSymbol
@@ -113,5 +114,5 @@ public:
 	}
 };
 
-
+#include "src/util/namespace-end.h"
 #endif

@@ -1,8 +1,9 @@
 #ifndef __LATTICE_FUNCTIONS_H__
 #define __LATTICE_FUNCTIONS_H__
 
-#include "fst/lattice-fst.h"
+#include "src/fst/lattice-fst.h"
 
+#include "src/util/namespace-start.h"
 void LatticeShortestPath(Lattice *ilat, Lattice *shortest_lat);
 
 // check top fst
@@ -14,4 +15,5 @@ void LatticeRmInput(Lattice &fst);
 
 void AddSuperFinalState(Lattice &fst);
 
+#include "src/util/namespace-end.h"
 #endif

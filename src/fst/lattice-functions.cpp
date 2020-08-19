@@ -4,10 +4,11 @@
 #include <algorithm>
 #include <limits>
 
-#include "fst/lattice-fst.h"
-#include "fst/lattice-functions.h"
-#include "fst/topsort.h"
+#include "src/fst/lattice-fst.h"
+#include "src/fst/lattice-functions.h"
+#include "src/fst/topsort.h"
 
+#include "src/util/namespace-start.h"
 void LatticeShortestPath(Lattice *ilat, Lattice *shortest_lat)
 {
 	// here ilat must be topologically sort lattice
@@ -175,3 +176,4 @@ void AddSuperFinalState(Lattice &fst)
 		}
 	}
 }
+#include "src/util/namespace-end.h"

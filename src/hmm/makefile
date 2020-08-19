@@ -1,11 +1,15 @@
 
 include ../hubo.mk
 
-CXXFLAGS+=-I. -I.. -lm
+CXXFLAGS+=-I. -lm
 
 LIB=../hmm/libhmm.a ../util/libutil.a 
 
-all:libhmm.a test-hmm test-transition-model
+TESTBIN=test-hmm test-transition-model
+
+all:libhmm.a
+
+test:$(TESTBIN)
 
 libhmm.a:hmm-topology.o transition-model.o
 	$(AR) -rc $@ $^

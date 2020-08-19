@@ -3,7 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "nnet-util.h"
+#include "src/nnet/nnet-util.h"
+
+#include "src/util/namespace-start.h"
 
 bool ReadScp(FILE *fp, std::string &key, std::string &file, long &offset)
 {
@@ -229,3 +231,4 @@ int MaxVec(Real *vec,int n)
 
 template
 int MaxVec<float>(float *vec,int n);
+#include "src/util/namespace-end.h"

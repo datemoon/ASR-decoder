@@ -3,8 +3,8 @@
 #include <limits>
 #include <cassert>
 #include <iostream>
-#include "pitch/resample.h"
-#include "pitch/kaldi-common.h"
+#include "src/pitch/resample.h"
+#include "src/pitch/kaldi-common.h"
 
 LinearResample::LinearResample(int32 samp_rate_in_hz,
                                int32 samp_rate_out_hz,

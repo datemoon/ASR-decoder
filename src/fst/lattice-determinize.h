@@ -11,10 +11,10 @@
 #include <stdexcept>
 #include <sstream>
 #include <iostream>
-#include "decoder/optimize-fst.h"
-#include "fst/lattice-fst.h"
-#include "fst/invert.h"
-#include "fst/lattice-determinize-api.h"
+#include "src/decoder/optimize-fst.h"
+#include "src/fst/lattice-fst.h"
+#include "src/fst/invert.h"
+#include "src/fst/lattice-determinize-api.h"
 
 using namespace std;
 using std::unordered_map;

@@ -5,15 +5,18 @@
 #include <utility>
 #include <assert.h>
 #include <string>
-#include "decoder/optimize-fst.h"
-#include "decoder/optimize-ctc-faster-decoder.h"
-#include "nnet/nnet-nnet.h"
-#include "nnet/nnet-feature-api.h"
-#include "wordid-to-wordstr.h"
-#include "align/phone-to-word.h"
+#include "src/decoder/optimize-fst.h"
+#include "src/decoder/optimize-ctc-faster-decoder.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/nnet/nnet-feature-api.h"
+#include "src/decoder/wordid-to-wordstr.h"
+#include "src/align/phone-to-word.h"
 
 using namespace std;
 
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 
 int main(int argc,char *argv[])
 {

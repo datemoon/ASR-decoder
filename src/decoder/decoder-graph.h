@@ -2,8 +2,9 @@
 #define __DECODE_GRAPH_H__
 
 
-#include "graph.h"
+#include "src/decoder/graph.h"
 
+#include "src/util/namespace-start.h"
 typedef Arc<int,int> StdArc;
 typedef Node<int,int> StdNode;
 typedef int StateId;
@@ -30,6 +31,6 @@ private:
 	int _tot_in_eps;
 	int _tot_out_eps;
 };
-
+#include "src/util/namespace-end.h"
 
 #endif

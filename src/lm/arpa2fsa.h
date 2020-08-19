@@ -7,11 +7,12 @@
 #include <cstring>
 #include <vector>
 #include <iostream>
-#include "util/util-common.h"
-#include "util/hash-key.h"
+#include "src/util/util-common.h"
+#include "src/util/hash-key.h"
 /*
  * This class change arpa lm to fsa.
  * */
+#include "src/util/namespace-start.h"
 #ifndef M_LN10
 #define M_LN10 2.302585092994045684017991454684
 #endif
@@ -563,5 +564,5 @@ private:
 	std::vector<std::vector<Offset> > _file_offset;
 };
 
-
+#include "src/util/namespace-end.h"
 #endif

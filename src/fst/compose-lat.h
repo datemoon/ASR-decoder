@@ -1,8 +1,9 @@
 #ifndef __COMPOSE_LAT_H__
 #define __COMPOSE_LAT_H__
 
-#include "fst/lattice-fst.h"
+#include "src/fst/lattice-fst.h"
 
+#include "src/util/namespace-start.h"
 template<class I>
 class LatticeComposeItf
 {
@@ -21,5 +22,5 @@ public:
 // fst w.Value2() * scale
 template <typename I>
 void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat, float scale = 1.0);
-
+#include "src/util/namespace-end.h"
 #endif

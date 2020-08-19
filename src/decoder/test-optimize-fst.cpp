@@ -1,5 +1,9 @@
 #include <stdio.h>
-#include "decoder/optimize-fst.h"
+#include "src/decoder/optimize-fst.h"
+
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 
 int main(int argc,char *argv[])
 {

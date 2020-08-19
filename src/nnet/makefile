@@ -1,7 +1,7 @@
 
 include ../hubo.mk
 
-CXXFLAGS+=-I ../ \
+CXXFLAGS+= \
 		 -DCBLAS  #-DDEBUGDNNOUT #-DDEBUGFEAT #-DDEBUGDNNOUT #-DDEBUGPITCH #-DDEBUG #-DDEBUGGRAPH
 
 CXXFLAGS += -fPIC
@@ -26,8 +26,9 @@ BIN = nnetread nnet-feature-api-test forward-test \
 	  stream-kaldi-forward-test kaldi-format-pitch-forward-test
 
 
-all: libnnet.a $(BIN)
+all: libnnet.a 
 
+test:$(BIN)
 nnetread:nnetread.o 
 	$(GXX) -g -o $@ $^ $(LIBS) $(LDLIBS)
 

@@ -1,6 +1,9 @@
 #include <iostream>
-#include "arpa2fsa.h"
+#include "src/lm/arpa2fsa.h"
 
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 
 int main(int argc,char *argv[])
 {

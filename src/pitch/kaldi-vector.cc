@@ -6,9 +6,9 @@
 #include <cassert>
 #include <cstdlib>
 #include <cmath>
-#include "pitch/kaldi-vector.h"
-//#include "kaldi-matrix.h"
-#include "pitch/cblas-wrappers.h"
+#include "src/pitch/kaldi-vector.h"
+//#include "src/kaldi-matrix.h"
+#include "src/pitch/cblas-wrappers.h"
 using namespace std;
 
 

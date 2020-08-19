@@ -6,16 +6,17 @@
 #include <unordered_map>
 #include <limits>
 #include <algorithm>
-#include "nnet/nnet-nnet.h"
-#include "optimize-mem-decoder/clg-fst.h"
-#include "decoder/lattice-faster-decoder.h"
-#include "fst/lattice-fst.h"
-#include "util/config-parse-options.h"
-#include "util/hash-list.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/optimize-mem-decoder/clg-fst.h"
+#include "src/decoder/lattice-faster-decoder.h"
+#include "src/fst/lattice-fst.h"
+#include "src/util/config-parse-options.h"
+#include "src/util/hash-list.h"
 
 using namespace std;
 using std::unordered_map;
 
+#include "src/util/namespace-start.h"
 #ifndef FLOAT_INF
 #define FLOAT_INF std::numeric_limits<BaseFloat>::infinity()
 #endif
@@ -360,4 +361,5 @@ private:
 	// Pool end
 };
 
+#include "src/util/namespace-end.h"
 #endif

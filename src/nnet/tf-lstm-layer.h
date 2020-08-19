@@ -1,8 +1,10 @@
 #ifndef __TFLSTM_LAYER_H__
 #define __TFLSTM_LAYER_H__
 #include <string>
-#include "matrix.h"
-#include "nnet-component.h"
+#include "src/nnet/matrix.h"
+#include "src/nnet/nnet-component.h"
+
+#include "src/util/namespace-start.h"
 
 class TfLstm :public Component
 {	
@@ -117,4 +119,5 @@ private:
 	bool _usephole;
 };
 
+#include "src/util/namespace-end.h"
 #endif

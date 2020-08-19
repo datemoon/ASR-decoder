@@ -13,7 +13,7 @@ int main()
 		std::cout << *(a[i]) << std::endl;
 	}
 	{
-		for(int i=0;i<a.size();++i)
+		for(size_t i=0;i<a.size();++i)
 			delete a[i];
 		vector<int *> s;
 		s.swap(a);

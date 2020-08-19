@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "nnet/nnet-simple-recurrent.h"
-#include "nnet/nnet-util.h"
+#include "src/nnet/nnet-simple-recurrent.h"
+#include "src/nnet/nnet-util.h"
+
+#include "src/util/namespace-start.h"
 
 bool SRUcell::ReadData(FILE *fp,bool binary)
 {
@@ -131,3 +133,4 @@ void SRUcell::PropagateFnc(float *in, int frames, int cols, float *out )
 		memcpy(out+t*_out_dim, y_h, _out_dim * sizeof(float));
 	}// end of loop
 }
+#include "src/util/namespace-end.h"

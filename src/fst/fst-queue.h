@@ -27,6 +27,7 @@ using std::vector;
 //   void Clear();
 // };
 
+#include "src/util/namespace-start.h"
 enum QueueType 
 {
 	TRIVIAL_QUEUE = 0,         // Single state queue
@@ -121,5 +122,5 @@ private:
 
 //	DISALLOW_COPY_AND_ASSIGN(AutoQueue);
 };
-
+#include "src/util/namespace-end.h"
 #endif

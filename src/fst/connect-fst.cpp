@@ -3,8 +3,9 @@
 using namespace std;
 using std::vector;
 
-#include "fst/dfs-visit-fst.h"
+#include "src/fst/dfs-visit-fst.h"
 
+#include "src/util/namespace-start.h"
 
 void Connect(Lattice *lat)
 {
@@ -19,4 +20,4 @@ void Connect(Lattice *lat)
 
 	lat->DeleteStates(dstates);
 }
-
+#include "src/util/namespace-end.h"

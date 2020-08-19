@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <cassert>
-#include "pitch/kaldi-common.h"
+#include "src/pitch/kaldi-common.h"
 
 /// @{ \addtogroup matrix_funcs_scalar
 

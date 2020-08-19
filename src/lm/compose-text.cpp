@@ -2,9 +2,12 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include "fst/compose-lat.h"
-#include "lm/compose-arpalm.h"
+#include "src/fst/compose-lat.h"
+#include "src/lm/compose-arpalm.h"
 
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 int main(int argc, char *argv[])
 {
 	if(argc != 4)

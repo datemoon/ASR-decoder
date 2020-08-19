@@ -5,20 +5,23 @@
 #include <utility>
 #include <assert.h>
 #include <string>
-#include "decoder/optimize-fst.h"
-#include "decoder/lattice-faster-decoder.h"
-#include "nnet/nnet-nnet.h"
-#include "nnet/nnet-feature-api.h"
-#include "wordid-to-wordstr.h"
-#include "align/phone-to-word.h"
-#include "fst/lattice-functions.h"
-#include "fst/lattice-to-nbest.h"
-#include "fst/rmepsilon.h"
-#include "fst/lattice-determinize.h"
-#include "fst/lattice-functions.h"
+#include "src/decoder/optimize-fst.h"
+#include "src/decoder/lattice-faster-decoder.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/nnet/nnet-feature-api.h"
+#include "src/decoder/wordid-to-wordstr.h"
+#include "src/align/phone-to-word.h"
+#include "src/fst/lattice-functions.h"
+#include "src/fst/lattice-to-nbest.h"
+#include "src/fst/rmepsilon.h"
+#include "src/fst/lattice-determinize.h"
+#include "src/fst/lattice-functions.h"
 
 using namespace std;
 
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 
 int main(int argc,char *argv[])
 {

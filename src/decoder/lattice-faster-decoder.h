@@ -6,14 +6,15 @@
 #include <unordered_map>
 #include <limits>
 #include <algorithm>
-#include "nnet/nnet-nnet.h"
-#include "decoder/optimize-fst.h"
-#include "fst/lattice-fst.h"
-#include "util/config-parse-options.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/decoder/optimize-fst.h"
+#include "src/fst/lattice-fst.h"
+#include "src/util/config-parse-options.h"
 
 using namespace std;
 using std::unordered_map;
 
+#include "src/util/namespace-start.h"
 #ifndef FLOAT_INF
 #define FLOAT_INF std::numeric_limits<float>::infinity()
 #endif
@@ -303,5 +304,5 @@ private:
 	// beacuse I can skip block frame , so add this true frame number.
 	int _num_frames_decoded;
 };
-
+#include "src/util/namespace-end.h"
 #endif

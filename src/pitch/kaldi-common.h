@@ -6,7 +6,7 @@
 #include <cmath>
 extern "C"
 {
-#include "lib/cblas.h"
+#include "src/lib/cblas.h"
 }
 template<typename Real> class VectorBase;
 template<typename Real> class Vector;

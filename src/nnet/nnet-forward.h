@@ -3,6 +3,7 @@
 
 #include <assert.h>
 
+#include "src/util/namespace-start.h"
 class Lstm
 {
 };
@@ -40,6 +41,6 @@ private:
 };
 
 
-
+#include "src/util/namespace-end.h"
 
 #endif

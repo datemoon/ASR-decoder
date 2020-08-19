@@ -5,9 +5,11 @@ CXXFLAGS+=-I .
 
 LIB=../util/libutil.a
 
-BIN=test-phone-to-word
+TESTBIN=test-phone-to-word
 
-all:test-phone-to-word libalign.a
+all:libalign.a
+
+test:$(TESTBIN)
 
 test-phone-to-word:phone-to-word.o test-phone-to-word.o
 	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB)
@@ -21,4 +23,4 @@ libalign.a:phone-to-word.o
 .PHONY:
 
 clean:
-	rm -f *.o $(BIN) libalign.a
+	rm -f *.o $(TESTBIN) libalign.a

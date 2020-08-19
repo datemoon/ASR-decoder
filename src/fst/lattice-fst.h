@@ -4,13 +4,14 @@
 #include <iostream>
 #include <stdio.h>
 #include <vector>
-//#include "decoder/optimize-fst.h"
-#include "util/util-common.h"
-#include "fst/arc.h"
+//#include "src/decoder/optimize-fst.h"
+#include "src/util/util-common.h"
+#include "src/fst/arc.h"
 
 using namespace std;
 using std::vector;
 
+#include "src/util/namespace-start.h"
 typedef LatticeWeightTpl<float> LatticeWeight;
 typedef ArcTpl<LatticeWeightTpl<float> > LatticeArc;
 
@@ -345,5 +346,5 @@ private:
 	int _startid;
 	vector<LatticeState *> _state;
 };
-
+#include "src/util/namespace-end.h"
 #endif

@@ -1,8 +1,9 @@
 
 #include <stdio.h>
-#include "faster-decoder.h"
+#include "src/decoder/faster-decoder.h"
 
 
+#include "src/util/namespace-start.h"
 FasterDecoder::FasterDecoder(const DecodeNet *graph,
 		const FasterDecoderOptions *opts):
 	_graph(graph), _config(opts), _num_frames_decoded(-1) 
@@ -396,4 +397,4 @@ void FasterDecoder::ClearToks()
 		Token::TokenDelete(it->second);
   	}
 }
-
+#include "src/util/namespace-end.h"

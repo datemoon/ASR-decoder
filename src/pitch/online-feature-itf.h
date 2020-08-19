@@ -1,8 +1,8 @@
 #ifndef KALDI_ITF_ONLINE_FEATURE_ITF_H_
 #define KALDI_ITF_ONLINE_FEATURE_ITF_H_ 1
 
-#include "pitch/kaldi-common.h"
-#include "pitch/kaldi-type.h"
+#include "src/pitch/kaldi-common.h"
+#include "src/pitch/kaldi-type.h"
 
 /// @ingroup Interfaces
 /// @{

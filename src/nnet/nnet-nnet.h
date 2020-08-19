@@ -7,11 +7,12 @@
 #include <assert.h>
 #include <string>
 #include <vector>
-#include "nnet/nnet-component.h"
-#include "hmm/transition-model.h"
-#include "util/config-parse-options.h"
-#include "nnet/decodable-itf.h"
+#include "src/nnet/nnet-component.h"
+#include "src/hmm/transition-model.h"
+#include "src/util/config-parse-options.h"
+#include "src/nnet/decodable-itf.h"
 using namespace std;
+#include "src/util/namespace-start.h"
 
 class Nnet
 {
@@ -308,4 +309,5 @@ private:
 typedef NnetForward AmInterface;
 template <typename Real>
 void PrintPoint(Real mat,int rows,int cols);
+#include "src/util/namespace-end.h"
 #endif

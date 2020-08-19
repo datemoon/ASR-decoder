@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <cassert>
 #include <iostream>
-#include "pitch/kaldi-common.h"
+#include "src/pitch/kaldi-common.h"
 
 
 static pthread_mutex_t _RandMutex = PTHREAD_MUTEX_INITIALIZER;

@@ -1,13 +1,16 @@
 #ifndef KALDI_FEAT_ONLINE_FEATURE_H_
 #define KALDI_FEAT_ONLINE_FEATURE_H_
 
-#include "pitch/kaldi-common.h"
-#include "pitch/kaldi-matrix.h"
-#include "pitch/kaldi-vector.h"
-#include "pitch/kaldi-type.h"
-#include "pitch/online-feature-itf.h"
-#include "util/config-parse-options.h"
+#include "src/pitch/kaldi-common.h"
+#include "src/pitch/kaldi-matrix.h"
+#include "src/pitch/kaldi-vector.h"
+#include "src/pitch/kaldi-type.h"
+#include "src/pitch/online-feature-itf.h"
+#include "src/util/config-parse-options.h"
 
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 struct DeltaFeaturesOptions {
 	  int32 order;
 	  int32 window;  // e.g. 2; controls window size (window size is 2*window + 1)

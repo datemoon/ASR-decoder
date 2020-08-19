@@ -2,13 +2,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "nnet/nnet-layer.h"
-#include "nnet/lstm-layer.h"
-#include "nnet/nnet-component.h"
-#include "nnet/cudnn-lstm-layer.h"
-#include "nnet/lstm-projected-layer.h"
-#include "nnet/nnet-simple-recurrent.h"
-#include "nnet/tf-lstm-layer.h"
+#include "src/nnet/nnet-layer.h"
+#include "src/nnet/lstm-layer.h"
+#include "src/nnet/nnet-component.h"
+#include "src/nnet/cudnn-lstm-layer.h"
+#include "src/nnet/lstm-projected-layer.h"
+#include "src/nnet/nnet-simple-recurrent.h"
+#include "src/nnet/tf-lstm-layer.h"
+
+#include "src/util/namespace-start.h"
 
 Component* Component::NewComponentOfType(ComponentType comp_type, int input_dim, int output_dim)
 {
@@ -188,4 +190,4 @@ void Component::Propagate(float *in,int frames,int dim,float *out,int &outdim)
 	outdim = _output_dim;
 	PropagateFnc(in,frames,dim,out);
 }
-
+#include "src/util/namespace-end.h"

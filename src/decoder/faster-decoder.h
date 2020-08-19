@@ -6,11 +6,12 @@
 #include <algorithm> 
 #include <vector>
 #include <limits>
-#include "decoder/decoder-graph.h"
+#include "src/decoder/decoder-graph.h"
 
 using namespace std;
 using std::unordered_map;
 
+#include "src/util/namespace-start.h"
 class DecodableInterface;
 
 struct FasterDecoderOptions 
@@ -183,7 +184,7 @@ protected:
 
 };
 
-
+#include "src/util/namespace-end.h"
 
 
 #endif

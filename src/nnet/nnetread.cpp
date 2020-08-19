@@ -1,7 +1,10 @@
 #include <iostream>
-#include "nnet-nnet.h"
+#include "src/nnet/nnet-nnet.h"
 
 
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 int main(int argc,char *argv[])
 {
 	Nnet *nnet = new Nnet;

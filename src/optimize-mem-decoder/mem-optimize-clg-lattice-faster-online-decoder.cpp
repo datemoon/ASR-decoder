@@ -2,11 +2,13 @@
 #include <iostream>
 #include <math.h>
 #include <unordered_set>
-#include "nnet/nnet-nnet.h"
-#include "decoder/lattice-faster-decoder.h"
-#include "optimize-mem-decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
-#include "fst/lattice-fst.h"
-#include "util/log-message.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/decoder/lattice-faster-decoder.h"
+#include "src/optimize-mem-decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
+#include "src/fst/lattice-fst.h"
+#include "src/util/log-message.h"
+
+#include "src/util/namespace-start.h"
 
 void MemOptimizeClgLatticeFasterOnlineDecoder::InitDecoding()
 {
@@ -1324,3 +1326,4 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::DeletePool()
 	LOG_ASSERT(_token_pool_size == 0 && _link_pool_head == 0);
 }
 
+#include "src/util/namespace-end.h"

@@ -1,14 +1,16 @@
 #include <stdio.h>
 #include <string.h>
-#include "nnet/nnet-nnet.h"
-#include "nnet/lstm-layer.h"
-#include "nnet/nnet-layer.h"
-#include "nnet/matrix.h"
-#include "nnet/cudnn-lstm-layer.h"
-#include "nnet/nnet-util.h"
-#include "nnet/lstm-projected-layer.h"
-#include "nnet/nnet-simple-recurrent.h"
-#include "nnet/tf-lstm-layer.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/nnet/lstm-layer.h"
+#include "src/nnet/nnet-layer.h"
+#include "src/nnet/matrix.h"
+#include "src/nnet/cudnn-lstm-layer.h"
+#include "src/nnet/nnet-util.h"
+#include "src/nnet/lstm-projected-layer.h"
+#include "src/nnet/nnet-simple-recurrent.h"
+#include "src/nnet/tf-lstm-layer.h"
+
+#include "src/util/namespace-start.h"
 
 bool Nnet::ReadNnet(const char* file)
 {
@@ -231,4 +233,4 @@ int NnetForward::MaxPdf(int frame,float *max_pdf)
 		*max_pdf = maxpdf;
 	return maxpdfid;
 }
-
+#include "src/util/namespace-end.h"

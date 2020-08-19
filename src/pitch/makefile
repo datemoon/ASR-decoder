@@ -1,7 +1,7 @@
 
 include ../hubo.mk
 
-CXXFLAGS+=-I ../ 
+CXXFLAGS+=
 
 OBJ=kaldi-vector.o    pitch-functions.o \
 	online-feature.o  resample.o kaldi-matrix.o kaldi-common.o
@@ -12,7 +12,10 @@ BIN=compute-and-process-kaldi-pitch-feats stream-compute-and-process-kaldi-pitch
 LIB=libpitch.a ../util/libutil.a \
 	$(CBLASLIB)
 
-all:libpitch.a $(BIN)
+all:libpitch.a 
+
+test:$(BIN)
+
 
 libpitch.a:$(OBJ)
 	$(AR) -rc $@ $^

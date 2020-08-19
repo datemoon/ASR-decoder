@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <iostream>
 #include <sys/time.h>
-#include "nnet-nnet.h"
-#include "nnet-feature-api.h"
-#include "util/config-parse-options.h"
-#include "util/io-funcs.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/nnet/nnet-feature-api.h"
+#include "src/util/config-parse-options.h"
+#include "src/util/io-funcs.h"
 
 using namespace std;
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 
 int main(int argc,char *argv[])
 {

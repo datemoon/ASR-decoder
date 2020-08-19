@@ -1,6 +1,9 @@
 #ifndef __CLG_FST_H__
 #define __CLG_FST_H__
-#include "decoder/optimize-fst.h"
+#include "src/decoder/optimize-fst.h"
+
+
+#include "src/util/namespace-start.h"
 
 typedef long long int ClgTokenStateId;
 
@@ -178,4 +181,5 @@ private:
 	ClgTokenStateId _offset; // _clg_fst->TotArc() + 1
 };
 
+#include "src/util/namespace-end.h"
 #endif

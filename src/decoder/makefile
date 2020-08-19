@@ -2,10 +2,10 @@
 
 include ../hubo.mk
 
-CXXFLAGS+= -I ../ -I ../nnet -I ../lib #-DPHONEQUEUE #-DDEBUGPRINT #-DTOKEN_ACTIVE_PRINT
+CXXFLAGS+= -I. #-DPHONEQUEUE #-DDEBUGPRINT #-DTOKEN_ACTIVE_PRINT
 
 
-BIN=test-optimize-fst optimize-faster-decoder-kaldifeature-test \
+TESTBIN=test-optimize-fst optimize-faster-decoder-kaldifeature-test \
 	optimize-faster-decoder-test \
 	optimize-ctc-faster-decoder-kaldifeature-test \
 	optimize-ctc-lattice-faster-decoder-kaldifeature-test \
@@ -15,7 +15,9 @@ BIN=test-optimize-fst optimize-faster-decoder-kaldifeature-test \
 LIBS=../hmm/libhmm.a ../nnet/libnnet.a ../decoder/libdecode.a \
 	  $(CBLASLIB) ../align/libalign.a ../util/libutil.a ../fst/liblatfst.a $(FEATLIB)
 
-all:libdecode.a $(BIN)
+all:libdecode.a
+
+test:$(TESTBIN)
 
 test-optimize-fst:test-optimize-fst.o 
 	$(CXX) $(CXXFLAGS) -o  $@ $^
@@ -52,4 +54,4 @@ optimize-clg-lattice-online-faster-decoder-kaldifeature-test:optimize-clg-lattic
 .PHONY:
 
 clean:
-	rm -f *.o $(BIN) libdecode.a
+	rm -f *.o $(TESTBIN) libdecode.a

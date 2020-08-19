@@ -1,15 +1,16 @@
 #include <vector>
-#include "fst/lattice-functions.h"
-#include "fst/lattice-to-nbest.h"
-#include "fst/reverse.h"
-#include "fst/connect-fst.h"
-#include "fst/topsort.h"
+#include "src/fst/lattice-functions.h"
+#include "src/fst/lattice-to-nbest.h"
+#include "src/fst/reverse.h"
+#include "src/fst/connect-fst.h"
+#include "src/fst/topsort.h"
 
 #include <unordered_map>
 #include <iostream>
 
 using namespace std;
 using std::unordered_map;
+#include "src/util/namespace-start.h"
 
 void NShortestPath(Lattice &ifst, Lattice *ofst,
 		size_t n)
@@ -196,3 +197,4 @@ void ConvertNbestToVector(Lattice &fst, vector<Lattice> *fsts_out)
 		(*fsts_out)[i].Swap(ofst);
 	}
 }
+#include "src/util/namespace-end.h"

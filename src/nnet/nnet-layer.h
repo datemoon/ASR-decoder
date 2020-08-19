@@ -3,9 +3,11 @@
 
 #include <string>
 #include <stdio.h>
-#include "matrix.h"
-#include "nnet-component.h"
-#include "nnet-util.h"
+#include "src/nnet/matrix.h"
+#include "src/nnet/nnet-component.h"
+#include "src/nnet/nnet-util.h"
+
+#include "src/util/namespace-start.h"
 
 class Splice :public Component
 {
@@ -308,6 +310,6 @@ private:
 	int _rows;
 	int _cols;
 };
-
+#include "src/util/namespace-end.h"
 
 #endif

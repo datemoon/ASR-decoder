@@ -8,6 +8,7 @@
 using namespace std;
 using std::vector;
 
+#include "src/util/namespace-start.h"
 #define NODE_ID int
 #define WEIGHT   float
 
@@ -218,5 +219,5 @@ typedef Arc<ArcInput,int> ParseArc;
 typedef Node<ArcInput,int> ParseNode;
 typedef Net<ArcInput,int> ParseNet;
 //typedef Net<string,string> ParseStringNet;
-
+#include "src/util/namespace-end.h"
 #endif

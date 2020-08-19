@@ -2,6 +2,7 @@
 #define __NNET_COMPONENT_H__
 
 #include <string>
+#include "src/util/namespace-start.h"
 
 using namespace std;
 typedef enum
@@ -71,5 +72,5 @@ private:
 	static Component* NewComponentOfType(ComponentType t, int input_dim, int output_dim);
 };
 ComponentType GetTypeInOutDim(char *str,int &indim, int &outdim, bool essen);
-
+#include "src/util/namespace-end.h"
 #endif

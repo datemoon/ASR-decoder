@@ -3,9 +3,9 @@
 
 #include <cassert>
 #include <iostream>
-#include "pitch/kaldi-common.h"
-#include "pitch/kaldi-matrix.h"
-#include "pitch/cblas-wrappers.h"
+#include "src/pitch/kaldi-common.h"
+#include "src/pitch/kaldi-matrix.h"
+#include "src/pitch/cblas-wrappers.h"
 
 /// \addtogroup matrix_group
 /// @{

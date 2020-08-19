@@ -3,13 +3,14 @@
 #include <iostream>
 #include <math.h>
 #include <unordered_set>
-#include "nnet/nnet-nnet.h"
-#include "decoder/lattice-faster-decoder.h"
-#include "decoder/clg-lattice-faster-online-decoder.h"
-#include "fst/lattice-fst.h"
-//#include "decoder/clg-fst.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/decoder/lattice-faster-decoder.h"
+#include "src/decoder/clg-lattice-faster-online-decoder.h"
+#include "src/fst/lattice-fst.h"
+//#include "src/decoder/clg-fst.h"
 
 
+#include "src/util/namespace-start.h"
 void ClgLatticeFasterOnlineDecoder::InitDecoding()
 {
 	ClearActiveTokens();
@@ -1205,4 +1206,4 @@ ClgLatticeFasterOnlineDecoder::BestPathIterator ClgLatticeFasterOnlineDecoder::T
 	}
 	return BestPathIterator(tok->_backpointer, ret_t);
 }
-
+#include "src/util/namespace-end.h"

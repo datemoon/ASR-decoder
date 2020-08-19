@@ -1,8 +1,11 @@
 #include <iostream>
 #include <string>
-#include "decoder/optimize-fst.h"
-#include "fst/connect-fst.h"
+//#include "src/decoder/optimize-fst.h"
+#include "src/fst/connect-fst.h"
 
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 
 
 int main(int argc,char *argv[])

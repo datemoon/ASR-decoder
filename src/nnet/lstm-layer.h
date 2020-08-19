@@ -1,8 +1,10 @@
 #ifndef __LSTM_LAYER_H__
 #define __LSTM_LAYER_H__
 #include <string>
-#include "matrix.h"
-#include "nnet-component.h"
+#include "src/nnet/matrix.h"
+#include "src/nnet/nnet-component.h"
+
+#include "src/util/namespace-start.h"
 
 class Lstm :public Component
 {	
@@ -109,5 +111,5 @@ private:
 	float *_phole_o_c;
 	int _dim;
 };
-
+#include "src/util/namespace-end.h"
 #endif

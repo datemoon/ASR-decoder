@@ -6,13 +6,14 @@
 #include <algorithm> 
 #include <vector>
 #include <limits>
-#include "nnet/nnet-nnet.h"
-#include "decoder/optimize-fst.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/decoder/optimize-fst.h"
 
 using namespace std;
 using std::unordered_map;
 
 
+#include "src/util/namespace-start.h"
 static int _total_toks = 0;
 struct FasterDecoderOptions 
 {
@@ -215,5 +216,5 @@ protected:
 
 };
 
-
+#include "src/util/namespace-end.h"
 #endif

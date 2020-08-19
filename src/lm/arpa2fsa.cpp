@@ -1,8 +1,9 @@
 
 #include <iostream>
 #include <pthread.h>
-#include "lm/arpa2fsa.h"
+#include "src/lm/arpa2fsa.h"
 
+#include "src/util/namespace-start.h"
 static pthread_mutex_t add_fsa_node_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 bool Fsa::Write(FILE *fp)
@@ -695,4 +696,4 @@ bool Arpa2Fsa::ConvertArpa2Fsa()
 	}
 	return true;
 }
-
+#include "src/util/namespace-end.h"

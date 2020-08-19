@@ -2,10 +2,10 @@
 #include <vector>
 #include <stdio.h>
 #include <cstring>
-#include "util/config-parse-options.h"
-#include "pitch/pitch-functions.h"
-#include "pitch/kaldi-type.h"
-#include "pitch/kaldi-matrix.h"
+#include "src/util/config-parse-options.h"
+#include "src/pitch/pitch-functions.h"
+#include "src/pitch/kaldi-type.h"
+#include "src/pitch/kaldi-matrix.h"
 
 using namespace std;
 

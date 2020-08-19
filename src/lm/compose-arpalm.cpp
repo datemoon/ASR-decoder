@@ -1,6 +1,7 @@
-#include "lm/compose-arpalm.h"
-#include "util/log-message.h"
+#include "src/lm/compose-arpalm.h"
+#include "src/util/log-message.h"
 
+#include "src/util/namespace-start.h"
 FsaStateId ComposeArpaLm::Start()
 {
 	FsaStateId start = _lm->Start();
@@ -122,13 +123,13 @@ bool ArpaLmScore::ComputerText(char *text)
 		s_ngram++;
 		if(s_ngram > e_ngram) 
 			s_ngram = e_ngram;
-		VLOG(2) << logprob << " " << _map_syms[ids[i]] << " " 
+		VLOG_COM(2) << logprob << " " << _map_syms[ids[i]] << " " 
 			<< backoff << " " <<  logprob+backoff << " " << s_ngram ;
 		std::cout << logprob << " " << _map_syms[ids[i]] << " " 
 			<< backoff << " " <<  (logprob+backoff)/2.3025 << " " << s_ngram << std::endl;
 		tot_score += logprob+backoff;
 	}
-	VLOG(2) << tot_score;
+	VLOG_COM(2) << tot_score;
 	std::cout << tot_score/2.3025 << std::endl;
 	return true;
 }
@@ -151,4 +152,4 @@ void ArpaLmScore::ConvertText2Lat(char *text,Lattice *lat)
 	}
 	lat->SetFinal(stateid, 0.0);
 }
-
+#include "src/util/namespace-end.h"

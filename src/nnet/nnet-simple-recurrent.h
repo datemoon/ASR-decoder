@@ -1,10 +1,11 @@
 #ifndef __NNET_SIMPLE_RECURRENT_H__
 #define __NNET_SIMPLE_RECURRENT_H__
 #include <string>
-#include "nnet/matrix.h"
-#include "nnet/nnet-component.h"
+#include "src/nnet/matrix.h"
+#include "src/nnet/nnet-component.h"
 
 
+#include "src/util/namespace-start.h"
 
 class SRUcell :public Component
 {
@@ -90,5 +91,6 @@ private:
 	float *_bias_r;
 };
 
+#include "src/util/namespace-end.h"
 
 #endif
