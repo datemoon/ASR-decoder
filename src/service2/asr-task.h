@@ -3,7 +3,8 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-#include "src/service2/thread-pool.h"
+//#include "src/service2/thread-pool.h"
+#include "src/service2/asr-work-thread.h"
 #include "src/util/log-message.h"
 
 #include "src/util/namespace-start.h"
@@ -11,7 +12,6 @@
 class ASRServiceTask:public TaskBase
 {
 public:
-	friend class ASRWorkThread;
 	typedef TaskBase::int32 int32;
 public:
 	ASRServiceTask(int32 connfd, std::string task_name = ""):
@@ -40,10 +40,10 @@ private:
 
 int32 ASRServiceTask::Run(void *data)
 {
-	ASRWorkThread * asr_work_thread = static_cast<ASRWorkThread *> data;
-	C2SPackageAnalysis &ser_c2s = asr_work_thread._ser_c2s_package_analysys;
-	S2CPackageAnalysis &ser_s2c = asr_work_thread._ser_s2c_package_analysys;
-	ASRWorker *asr_work = asr_work_thread._asr_work;
+	ASRWorkThread * asr_work_thread = static_cast<ASRWorkThread *>(data);
+	C2SPackageAnalysis &ser_c2s = asr_work_thread->_ser_c2s_package_analysys;
+	S2CPackageAnalysis &ser_s2c = asr_work_thread->_ser_s2c_package_analysys;
+	kaldi::ASRWorker *asr_work = asr_work_thread->_asr_work;
 	int n=0; // read timeout times
 	while(1)
 	{

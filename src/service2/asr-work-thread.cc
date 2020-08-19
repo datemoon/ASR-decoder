@@ -3,6 +3,12 @@
 
 #include "src/util/namespace-start.h"
 
+bool ASRWorkThread::InitASRSource(kaldi::ASROpts *asr_opts, kaldi::ASRSource *asr_source)
+{
+	_asr_work = new kaldi::ASRWorker(asr_opts, asr_source);
+	return true;
+}
+
 void ASRWorkThread::Run()
 {
 	pthread_t tid = GetThreadId();

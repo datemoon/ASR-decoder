@@ -2,7 +2,7 @@
 
 
 CXXFLAGS=-msse -msse2 -Wall -Wunused-local-typedefs -Wsign-compare -pthread \
-		 -std=c++0x \
+		 -std=c++11 \
 		 -O2 #-gdwarf-2 #-gstabs+ #-DDEBUGTOKEN -g #-pg #-DDEBUG #-DDEBUGGRAPH
 
 CXXFLAGS += -fPIC -I../..

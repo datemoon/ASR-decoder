@@ -4,7 +4,7 @@
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 
-
+#include <signal.h>
 #include <unistd.h>
 #include <error.h>
 #include <netdb.h>
@@ -18,16 +18,20 @@
 #include "src/service2/thread-pool.h"
 #include "src/service2/asr-work-thread.h"
 #include "src/service2/asr-task.h"
-#include "src/src/util/log-message.h"
+#include "src/util/log-message.h"
 #include "src/service2/socket-class.h"
+#include "src/service2/asr-source.h"
 
 using namespace std;
-#ifdef NAMESPACE
-using namespace datemoon;
-#endif
 
 int main(int argc, char *argv[])
 {
+	#ifdef NAMESPACE
+	using namespace datemoon;
+	#endif
+	using namespace kaldi;
+	using namespace fst;
+
 	const char *usage = "This is a test service code.\n";
 	ParseOptions po(usage);
 	ASROpts asr_opts;
