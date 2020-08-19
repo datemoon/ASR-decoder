@@ -1,7 +1,10 @@
 
 #include <iostream>
 #include <fstream>
-#include "hmm-topology.h"
+#include "src/hmm/hmm-topology.h"
+#ifdef NAMESPACE
+using namespace datemoon ;
+#endif
 
 
 int main(int argc,char *argv[])

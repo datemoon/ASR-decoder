@@ -3,9 +3,11 @@
 #include <assert.h>
 #include <math.h>
 #include <algorithm>
-#include "hmm/transition-model.h"
-#include "util/io-funcs.h"
-#include "util/read-vector.h"
+#include "src/hmm/transition-model.h"
+#include "src/util/io-funcs.h"
+#include "src/util/read-vector.h"
+
+#include "src/util/namespace-start.h"
 
 void TransitionModel::Read(std::istream &is, bool binary , bool have_probs) 
 {
@@ -262,3 +264,4 @@ int TransitionModel::TransitionIdToPdfClass(int trans_id) const
 	return entry[t._hmm_state]._pdf_class;
 }
 
+#include "src/util/namespace-end.h"

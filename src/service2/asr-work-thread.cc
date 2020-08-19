@@ -1,9 +1,8 @@
 #include "src/util/log-message.h"
 #include "src/service2/asr-work-thread.h"
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
+
 void ASRWorkThread::Run()
 {
 	pthread_t tid = GetThreadId();
@@ -40,6 +39,5 @@ void ASRWorkThread::Run()
 		pthread_mutex_unlock(pthread_pool_mutex);
 	}
 }
-#ifdef NAMESPACE
-} // namespace datemoon
-#endif
+
+#include "src/util/namespace-end.h"

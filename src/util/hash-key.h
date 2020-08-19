@@ -3,9 +3,7 @@
 
 #include <cstring>
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
 /* bitmask used to compute hash
  * code modulo maxEntries */
 #define hashMask(nbits) (~((~(size_t)0L)<<(nbits)))
@@ -41,8 +39,6 @@ public:
 	}
 };
 
-#ifdef NAMESPACE
-} // namespace datemoon
-#endif
+#include "src/util/namespace-end.h"
 
 #endif

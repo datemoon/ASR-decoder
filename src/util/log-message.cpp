@@ -1,9 +1,7 @@
 
 #include "src/util/log-message.h"
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
 
 int g_verbose_level = 0;
 const char *g_program_name = NULL;
@@ -233,6 +231,4 @@ void CloseLogHandler()
 	g_log_file_pointer = NULL;
 	g_log_handler = NULL;
 }
-#ifdef NAMESPACE
-}
-#endif
+#include "src/util/namespace-end.h"

@@ -1,5 +1,5 @@
-#include "hmm/hmm-topology.h"
-#include "util/io-funcs.h"
+#include "src/hmm/hmm-topology.h"
+#include "src/util/io-funcs.h"
 #include <vector>
 #include <iostream>
 #include <string>
@@ -7,6 +7,8 @@
 #include <utility>
 #include <algorithm>
 #include <assert.h>
+
+#include "src/util/namespace-start.h"
 
 void HmmTopology::Read(std::istream &is, bool binary)
 {
@@ -166,3 +168,5 @@ const HmmTopology::TopologyEntry& HmmTopology::TopologyForPhone(int phone) const
 	return _entries[_phone2idx[phone]];
 
 }
+
+#include "src/util/namespace-end.h"

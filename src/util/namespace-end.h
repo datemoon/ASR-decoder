@@ -1,0 +1,5 @@
+
+#ifdef NAMESPACE
+}
+#endif
+

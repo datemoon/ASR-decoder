@@ -6,8 +6,10 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#include "util/text-util.h"
-#include "phone-to-word.h"
+#include "src/util/text-util.h"
+#include "src/align/phone-to-word.h"
+
+#include "src/util/namespace-start.h"
 
 int PinyinNode::AddWordToNode(int wordid)
 {
@@ -262,4 +264,6 @@ int PhoneToWord::ProcessPronDict(const char *prondict)
 	fin.close();
 	return 0;
 }
+
+#include "src/util/namespace-end.h"
 

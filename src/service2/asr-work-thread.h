@@ -6,9 +6,8 @@
 #include "src/service2/thread-pool.h"
 #include "src/service2/net-data-package.h"
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
+
 class ASRWorkThread:public ThreadBase
 {
 public:
@@ -43,7 +42,7 @@ bool ASRWorkThread::InitASRSource(kaldi::ASROpts *asr_opts, kaldi::ASRSource *as
 	_asr_work = new kaldi::ASRWorker(asr_opts, asr_source);
 	return true;
 }
-#ifdef NAMESPACE
-} // namespace datemoon
-#endif
+
+#include "src/util/namespace-end.h"
+
 #endif

@@ -6,9 +6,7 @@
 #include <fstream>
 #include <vector>
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
 
 bool ReadWordList(std::string file, std::vector<std::string> &wordlist, bool binary=false);
 
@@ -43,7 +41,6 @@ template<> void ReadBasicType<double>(std::istream &is, bool binary, double *f);
 //template<> void ReadBasicType<int>(std::istream &is, bool binary, int *f);
 
 void CheckToken(const char *token);
-#ifdef NAMESPACE
-}
-#endif
+
+#include "src/util/namespace-end.h"
 #endif

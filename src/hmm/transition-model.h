@@ -4,7 +4,9 @@
 #include <string>
 #include <assert.h>
 #include <vector>
-#include "hmm/hmm-topology.h"
+#include "src/hmm/hmm-topology.h"
+
+#include "src/util/namespace-start.h"
 
 class TransitionModel 
 {
@@ -136,5 +138,7 @@ private:
 	// of pdfs).
 	int _num_pdfs;
 };
+
+#include "src/util/namespace-end.h"
 
 #endif

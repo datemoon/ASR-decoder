@@ -8,9 +8,7 @@
 #include <string>
 #include <vector>
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
 
 /* Important that this file does not depend on any other headers. */
 
@@ -198,7 +196,6 @@ LogHandler SetLogHandler(LogHandler);
 void CreateLogHandler(const char *log_file);
 
 void CloseLogHandler();
-#ifdef NAMESPACE
-} // namespace datemoon
-#endif
+
+#include "src/util/namespace-end.h"
 #endif // __LOG_MESSAGE_H__

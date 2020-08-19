@@ -9,9 +9,8 @@
 #include "src/util/io-funcs.h"
 #include "src/util/log-message.h"
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
+
 bool ReadWordList(std::string file, std::vector<std::string> &wordlist, bool binary)
 {
 	std::ifstream ifs;
@@ -209,6 +208,4 @@ template<> void ReadBasicType<double>(std::istream &is, bool binary, double *f)
 			<< is.tellg() << std::endl;
 	}
 }
-#ifdef NAMESPACE
-}
-#endif
+#include "src/util/namespace-end.h"

@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "src/util/namespace-start.h"
+
 class HmmTopology
 {
 public:
@@ -41,5 +43,6 @@ private:
 	std::vector<TopologyEntry> _entries;
 };
 
+#include "src/util/namespace-end.h"
 
 #endif

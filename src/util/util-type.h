@@ -1,9 +1,7 @@
 #ifndef __UTIL_TYPE_H__
 #define __UTIL_TYPE_H__
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
 
 typedef float BaseFloat;
 typedef float float32;
@@ -20,7 +18,6 @@ enum RetVal
 	ERROR = -1,
 	OK = 0
 };
-#ifdef NAMESPACE
-} // namespace datemoon
-#endif
+
+#include "src/util/namespace-end.h"
 #endif

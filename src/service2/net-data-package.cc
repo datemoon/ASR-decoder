@@ -2,9 +2,8 @@
 #include <string.h>
 #include "src/service2/net-data-package.h"
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
+
 void C2SPackageHeadPrint(C2SPackageHead &c2s, std::string flag)
 {
 	std::cout << "*************************************************" << std::endl;
@@ -158,6 +157,5 @@ bool S2CPackageAnalysis::S2CRead(int sockfd)
 	}
 	return true;
 }
-#ifdef NAMESPACE
-} // namespace datemoon
-#endif
+
+#include "src/util/namespace-end.h"

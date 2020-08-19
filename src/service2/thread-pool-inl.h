@@ -1,9 +1,8 @@
 #include "src/service2/thread-pool.h"
 #include "src/util/log-message.h"
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
+
 template<class T>
 ThreadPoolBase<T>::ThreadPoolBase(int32 thread_num):
 	_shutdown(false),
@@ -144,7 +143,4 @@ void *ThreadPoolBase<T>::ThreadFunc(void *thread_para)
 	}
 }
 */
-
-#ifdef NAMESPACE
-} // namespace datemoon
-#endif
+#include "src/util/namespace-end.h"

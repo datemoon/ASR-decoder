@@ -6,9 +6,8 @@
 #include "src/service2/thread-pool.h"
 #include "src/util/log-message.h"
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
+
 class ASRServiceTask:public TaskBase
 {
 public:
@@ -114,7 +113,7 @@ int32 ASRServiceTask::Run(void *data)
 	printf("close |%d| ok.\n",_connfd);
 	return 0;
 }
-#ifdef NAMESPACE
-} // namespace datemoon
-#endif
+
+#include "src/util/namespace-end.h"
+
 #endif

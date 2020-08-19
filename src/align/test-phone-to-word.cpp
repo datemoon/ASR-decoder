@@ -4,8 +4,12 @@
 #include <vector>
 #include <stdlib.h>
 #include <assert.h>
-#include "phone-to-word.h"
-#include "util/text-util.h"
+#include "src/align/phone-to-word.h"
+#include "src/util/text-util.h"
+
+#ifdef NAMESPACE
+using namespace datemoon ;
+#endif
 
 int main(int argc,char *argv[])
 {

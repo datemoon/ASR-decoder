@@ -13,9 +13,7 @@
 #include <vector>
 #include "src/util/log-message.h"
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
 
 // the class ConfigParseOption is for parsing command-line options
 
@@ -184,8 +182,5 @@ protected:
 	void NormalizeArgName(std::string *str);
 };
 
-#ifdef NAMESPACE
-}
-#endif
-
+#include "src/util/namespace-end.h"
 #endif

@@ -8,9 +8,8 @@
 #include <cassert>
 #include "src/util/log-message.h"
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
+
 template<class I, class T> class HashList
 {
 public:
@@ -105,9 +104,7 @@ private:
 	//_allocated doesn't become a problem.
 };
 
-#ifdef NAMESPACE
-}
-#endif
+#include "src/util/namespace-end.h"
 
 #include "src/util/hash-list-inl.h"
 

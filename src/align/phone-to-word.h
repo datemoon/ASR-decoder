@@ -7,6 +7,8 @@
 using namespace std;
 using std::unordered_map;
 
+#include "src/util/namespace-start.h"
+
 struct PinyinArc
 {
 	int _phoneid;
@@ -152,6 +154,6 @@ private:
 
 };
 
-
+#include "src/util/namespace-end.h"
 
 #endif

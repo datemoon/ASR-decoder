@@ -1,9 +1,7 @@
 #ifndef __HASH_LIST_INL_H__
 #define __HASH_LIST_INL_H__
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
 
 template<class I, class T> HashList<I, T>::HashList()
 {
@@ -186,8 +184,6 @@ void HashList<I, T>::InsertMore(I key, T val)
 	e->tail = elem;
 }
 
-#ifdef NAMESPACE
-}
-#endif
+#include "src/util/namespace-end.h"
 
 #endif

@@ -3,9 +3,8 @@
 
 #include <pthread.h>
 
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
+
 class ThreadBase
 {
 public:
@@ -30,7 +29,7 @@ private:
 	pthread_t _thread_id;
 	int32 _index;
 };
-#ifdef NAMESPACE
-} // namespace datemoon
-#endif
+
+#include "src/util/namespace-end.h"
+
 #endif

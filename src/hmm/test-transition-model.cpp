@@ -1,7 +1,10 @@
 
 #include <iostream>
 #include <fstream>
-#include "transition-model.h"
+#include "src/hmm/transition-model.h"
+#ifdef NAMESPACE
+using namespace datemoon ;
+#endif
 
 
 int main(int argc,char *argv[])

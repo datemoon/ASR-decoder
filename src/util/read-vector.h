@@ -4,13 +4,10 @@
 #include <istream>
 #include <vector>
 
-
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+#include "src/util/namespace-start.h"
 
 void ReadVector(std::istream &is , std::vector<float> &vec , bool binary);
-#ifdef NAMESPACE
-} // namespace datemoon
-#endif
+
+#include "src/util/namespace-end.h"
+
 #endif
