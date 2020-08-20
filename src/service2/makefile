@@ -27,7 +27,7 @@ KALDI_LIB_STATIC=$(KALDI_ROOT)/online2/kaldi-online2.a $(KALDI_ROOT)/ivector/kal
 		  $(KALDI_ROOT)/matrix/kaldi-matrix.a $(KALDI_ROOT)/base/kaldi-base.a
 
 TESTFILES=testv1-service client test-service net-data-package-test \
-		  asr-service
+		  asr-service asr-client asr-client-v1
 
 LIBS=../util/libutil.a ../service2/libservice2.a
 
@@ -47,6 +47,12 @@ test-service:test-service.o
 	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
 
 client:client.o
+	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
+
+asr-client:asr-client.o
+	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
+
+asr-client-v1:asr-client-v1.o
 	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
 
 net-data-package-test:net-data-package-test.o

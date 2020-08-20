@@ -127,6 +127,8 @@ bool S2CPackageAnalysisTest(const char *infile)
 			ser.Print("reset-ser");
 		}
 		n++;
+		std::string res1(cache);
+		ser.SetNbest(res1);
 		if(n%3==0)
 		{
 			if(ser.S2CWrite(fd, S2CPackageAnalysis::S2CMIDDLEEND) != true)
@@ -138,8 +140,6 @@ bool S2CPackageAnalysisTest(const char *infile)
 			ser.Reset();
 			ser.Print("reset-ser");
 		}
-		std::string res1(cache);
-		ser.SetNbest(res1);
 	}
 	close(fd);
 	fd = open(tmpfile, O_RDONLY);

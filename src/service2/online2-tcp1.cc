@@ -1,16 +1,16 @@
 // online2bin/online2-tcp1.cc
 
-#include "src/feat/wave-reader.h"
-#include "src/online2/online-nnet3-decoding.h"
-#include "src/online2/online-nnet2-feature-pipeline.h"
-#include "src/online2/onlinebin-util.h"
-#include "src/online2/online-timing.h"
-#include "src/online2/online-endpoint.h"
-#include "src/fstext/fstext-lib.h"
-#include "src/lat/lattice-functions.h"
-#include "src/util/kaldi-thread.h"
-#include "src/nnet3/nnet-utils.h"
-#include "src/online2bin/asr-source.h"
+#include "feat/wave-reader.h"
+#include "online2/online-nnet3-decoding.h"
+#include "online2/online-nnet2-feature-pipeline.h"
+#include "online2/onlinebin-util.h"
+#include "online2/online-timing.h"
+#include "online2/online-endpoint.h"
+#include "fstext/fstext-lib.h"
+#include "lat/lattice-functions.h"
+#include "util/kaldi-thread.h"
+#include "nnet3/nnet-utils.h"
+#include "online2bin/asr-source.h"
 
 #include <netinet/in.h>
 #include <sys/socket.h>
