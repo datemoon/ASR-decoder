@@ -3,6 +3,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <signal.h>
 //#include "src/service2/thread-pool.h"
 #include "src/service2/asr-work-thread.h"
 #include "src/util/log-message.h"
@@ -40,10 +41,13 @@ private:
 
 int32 ASRServiceTask::Run(void *data)
 {
+	signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
 	ASRWorkThread * asr_work_thread = static_cast<ASRWorkThread *>(data);
 	C2SPackageAnalysis &ser_c2s = asr_work_thread->_ser_c2s_package_analysys;
 	S2CPackageAnalysis &ser_s2c = asr_work_thread->_ser_s2c_package_analysys;
 	kaldi::ASRWorker *asr_work = asr_work_thread->_asr_work;
+	size_t chunk=0;
+	asr_work->Init(&chunk);
 	int n=0; // read timeout times
 	while(1)
 	{
@@ -65,6 +69,7 @@ int32 ASRServiceTask::Run(void *data)
 			LOG_COM << "C2SRead error." << std::endl;
 			break;
 		}
+		ser_c2s.Print("ser_c2s");
 		n=0;
 		uint data_len;
 		char *data = ser_c2s.GetData(&data_len);
@@ -75,8 +80,10 @@ int32 ASRServiceTask::Run(void *data)
 		{
 			eos = true;
 		}
-		int32 ret = asr_work->ProcessData(data, data_len, eos);
+		std::string msg;
+		int32 ret = asr_work->ProcessData(data, data_len, msg, eos, 2);
 
+		ser_s2c.SetNbest(msg);
 		if(eos == true || ret == 1)
 		{
 			if(eos == true)
@@ -105,10 +112,12 @@ int32 ASRServiceTask::Run(void *data)
 				break;
 			}
 		}
+		ser_s2c.Print("ser_s2c");
 		ser_s2c.Reset();
 		if(eos == true)
 			break; // end
 	}
+	asr_work->Destory();
 	close(_connfd);
 	printf("close |%d| ok.\n",_connfd);
 	return 0;

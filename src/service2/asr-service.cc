@@ -51,11 +51,11 @@ int main(int argc, char *argv[])
 
 	signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
 
-	ConfigParseOptions conf(usage);
+	//ConfigParseOptions conf(usage);
 	SocketBase net_io;
-	net_io.Register(&conf);
-	conf.Read(argc, argv);
-	conf.PrintUsage();
+	//net_io.Register(&conf);
+	//conf.Read(argc, argv);
+	//conf.PrintUsage();
 
 	if(net_io.Init() < 0)
 	{

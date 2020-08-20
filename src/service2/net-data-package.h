@@ -87,7 +87,7 @@ public:
 public:
 	void Reset()
 	{
-		memset(&_c2s_package_head, 0x00, sizeof(_c2s_package_head));
+		_c2s_package_head._n = 0;
 	}
 	inline bool SetDtype(uint dtype)
 	{
@@ -208,7 +208,7 @@ public:
 	 * end_flag  : end flag
 	 * */
 	bool C2SWrite(int sockfd, const void *data, size_t data_size,
-			uint n=0, uint end_flag=0);
+			uint end_flag=0);
 	// from client to service package unpack.
 	bool C2SRead(int sockfd);
 	void Print(std::string flag="")

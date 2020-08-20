@@ -36,15 +36,16 @@ bool C2SPackageAnalysisTest(const char *infile, const char *outfile)
 		n++;
 		if(ret == 0)
 		{
-			if(cli.C2SWrite(fd, cache, ret, n, 1) != true)
+			if(cli.C2SWrite(fd, cache, ret, 1) != true)
 			{
 				std::cout << "C2SWrite failed." << std::endl;
 				return false;
 			}
 			cli.Print("cli");
+			cli.Reset();
 			break;
 		}
-		if(cli.C2SWrite(fd, cache, ret, n, 0) != true)
+		if(cli.C2SWrite(fd, cache, ret, 0) != true)
 		{
 			std::cout << "C2SWrite failed." << std::endl;
 			return false;
@@ -127,8 +128,6 @@ bool S2CPackageAnalysisTest(const char *infile)
 			ser.Print("reset-ser");
 		}
 		n++;
-		std::string res1(cache);
-		ser.SetNbest(res1);
 		if(n%3==0)
 		{
 			if(ser.S2CWrite(fd, S2CPackageAnalysis::S2CMIDDLEEND) != true)
@@ -140,6 +139,8 @@ bool S2CPackageAnalysisTest(const char *infile)
 			ser.Reset();
 			ser.Print("reset-ser");
 		}
+		std::string res1(cache);
+		ser.SetNbest(res1);
 	}
 	close(fd);
 	fd = open(tmpfile, O_RDONLY);

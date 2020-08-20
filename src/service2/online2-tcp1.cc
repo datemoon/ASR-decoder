@@ -119,7 +119,8 @@ int main(int argc, char *argv[]) {
           eos = !server.ReadChunk(chunk_len);
           Vector<BaseFloat> wave_part = server.GetChunk();
 
-		  int32 ret = asr_work.ProcessData((char*)wave_part.Data(), (int)wave_part.Dim()*sizeof(BaseFloat), eos);
+		  std::string msg;
+		  int32 ret = asr_work.ProcessData((char*)wave_part.Data(), (int)wave_part.Dim()*sizeof(BaseFloat), msg, eos);
 		  //std::cout << "eos is " << eos << std::endl; 
 		  if(eos == true || ret == 1)
 		  {

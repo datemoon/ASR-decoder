@@ -37,7 +37,7 @@ void S2CPackageHeadPrint(S2CPackageHead &s2c, std::string flag)
 }
 
 bool C2SPackageAnalysis::C2SWrite(int sockfd, 
-		const void *data, size_t data_size, uint n, uint end_flag)
+		const void *data, size_t data_size, uint end_flag)
 {
 	if(end_flag == 0 && data_size == 0)
 	{
@@ -49,7 +49,8 @@ bool C2SPackageAnalysis::C2SWrite(int sockfd,
 		std::cerr << "SetEndFLag error." << std::endl;
 		return false;
 	}
-	SetN(n);
+	//SetN(n);
+	_c2s_package_head._n++;
 	SetDataLen(data_size);
 	ssize_t ret = write(sockfd, static_cast<void *>(&_c2s_package_head),
 			sizeof(C2SPackageHead));

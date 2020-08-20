@@ -135,7 +135,9 @@ public:
 	//typedef ASTType::int32 int32;
 	//typedef ASTType::BaseFloat BaseFloat;
 	ASRWorker(ASROpts *asr_opts, ASRSource *asr_source):
-		_asr_opts(asr_opts), _asr_source(asr_source),_feature_pipeline(NULL) {}
+		_asr_opts(asr_opts), _asr_source(asr_source),
+		_decodable_info(NULL), _feature_info(NULL), _feature_pipeline(NULL), 
+		_decoder(NULL) {}
 	~ASRWorker() { }
 	void Init(size_t *chunk_len, int32 frame_offset=0)
 	{
@@ -163,7 +165,7 @@ public:
 		_decoder->InitDecoding(frame_offset);
 
 	}
-	
+
 	void Reset(bool eos)
 	{
 		if (eos)
@@ -174,10 +176,32 @@ public:
 		}
 		_decoder->InitDecoding(_frame_offset);
 	}
-
-	int32 ProcessData(char *data, int32 data_len, bool eos = false)
+	void Destory()
 	{
-		int32 data_type=4;
+		if(_decodable_info != NULL)
+		{
+			delete _decodable_info;
+			_decodable_info = NULL;
+		}
+		if(_feature_info != NULL)
+		{
+			delete _feature_info;
+			_feature_info = NULL;
+		}
+		if (_feature_pipeline != NULL)
+		{
+			delete _feature_pipeline;
+			_feature_pipeline=NULL;
+		}
+		if(_decoder != NULL)
+		{
+			delete _decoder;
+			_decoder = NULL;
+		}
+	}
+
+	int32 ProcessData(char *data, int32 data_len, std::string &msg, bool eos = false, int32 data_type=4)
+	{
 		if(eos)
 		{
 			_feature_pipeline->InputFinished();
@@ -186,7 +210,7 @@ public:
 			_frame_offset += _decoder->NumFramesDecoded();
 			if (_decoder->NumFramesDecoded() > 0)
 			{
-				std::string msg = GetProduceTime(true);
+				msg = GetProduceTime(eos);
 			}
 			return 0; //语音结束,eos is true.
 		}
@@ -195,7 +219,10 @@ public:
 		// convert input data
 		for(int i=0;i<data_len/data_type;++i)
 		{
-			wave_part(i) = ((BaseFloat*)(data))[i];
+			if(data_type == 2)
+				wave_part(i) = ((short*)(data))[i];
+			else if(data_type == 4)
+				wave_part(i) = ((BaseFloat*)(data))[i];
 		}
 		_feature_pipeline->AcceptWaveform(_samp_freq, wave_part);
 		_samp_count += _chunk_len;
@@ -205,7 +232,7 @@ public:
 		{
 			if (_decoder->NumFramesDecoded() > 0)
 			{
-				std::string msg = GetProduceTime(false);
+				msg = GetProduceTime(false);
 			}
 			_check_count += _check_period;
 		}
@@ -214,7 +241,7 @@ public:
 		{
 			_decoder->FinalizeDecoding();
 			_frame_offset += _decoder->NumFramesDecoded();
-			std::string msg = GetProduceTime(true);
+			msg = GetProduceTime(true);
 			return 1; // 语音中间截断
 		}
 
