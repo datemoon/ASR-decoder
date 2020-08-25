@@ -1,7 +1,7 @@
 #ifndef __COMPOSE_ARPALM_H__
 #define __COMPOSE_ARPALM_H__
-#include "src/lm/arpa2fsa.h"
-#include "src/fst/compose-lat.h"
+#include "src/newlm/arpa2fsa.h"
+#include "src/newfst/compose-lat.h"
 
 #include "src/util/namespace-start.h"
 class ComposeArpaLm:public LatticeComposeItf<FsaStateId>

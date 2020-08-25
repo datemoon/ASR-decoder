@@ -1,16 +1,15 @@
 include ../hubo.mk
 
 
-TESTFILES=testv1-service client test-service net-data-package-test \
-		  asr-service asr-client asr-client-v1 asr-client-v2
+TESTFILES=testv1-service test-client test-service net-data-package-test 
 
 LIBS=../util/libutil.a ../service2/libservice2.a
 
 OBJ=thread-class.o test-work-thread.o net-data-package.o \
 	asr-work-thread.o asr-source.o
-#thread-pool.o 
 
 LIBNAME=libservice2.a
+
 all:$(LIBNAME)
 
 test:$(TESTFILES)
@@ -24,21 +23,8 @@ test-service:test-service.o
 client:client.o
 	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
 
-asr-client:asr-client.o
-	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
-
-asr-client-v1:asr-client-v1.o
-	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
-
-asr-client-v2:asr-client-v2.o
-	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
-
 net-data-package-test:net-data-package-test.o
 	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
-
-asr-service:asr-service.o
-	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIB_DYNAMIC) $(FST_LIB) $(CBLAS_LIB)
-	#$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIB_STATIC) $(FST_LIB) $(CBLAS_LIB)
 
 $(LIBNAME):$(OBJ)
 	$(AR) -rcu $@ $^

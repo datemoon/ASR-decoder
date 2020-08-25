@@ -1,4 +1,4 @@
-#include "src/lm/compose-arpalm.h"
+#include "src/newlm/compose-arpalm.h"
 #include "src/util/log-message.h"
 
 #include "src/util/namespace-start.h"

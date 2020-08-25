@@ -2,8 +2,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include "src/fst/compose-lat.h"
-#include "src/lm/compose-arpalm.h"
+#include "src/newfst/compose-lat.h"
+#include "src/newlm/compose-arpalm.h"
 
 #ifdef NAMESPACE
 using namespace datemoon;

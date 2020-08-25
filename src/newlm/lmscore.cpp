@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include "src/lm/compose-arpalm.h"
+#include "src/newlm/compose-arpalm.h"
 #ifdef NAMESPACE
 using namespace datemoon;
 #endif

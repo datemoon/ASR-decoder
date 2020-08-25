@@ -1,5 +1,5 @@
 #include <iostream>
-#include "src/lm/arpa2fsa.h"
+#include "src/newlm/arpa2fsa.h"
 
 #ifdef NAMESPACE
 using namespace datemoon;

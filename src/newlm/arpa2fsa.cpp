@@ -1,7 +1,7 @@
 
 #include <iostream>
 #include <pthread.h>
-#include "src/lm/arpa2fsa.h"
+#include "src/newlm/arpa2fsa.h"
 
 #include "src/util/namespace-start.h"
 static pthread_mutex_t add_fsa_node_mutex = PTHREAD_MUTEX_INITIALIZER;
