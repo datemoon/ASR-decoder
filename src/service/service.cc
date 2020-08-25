@@ -14,16 +14,16 @@
 #include <pthread.h>
 #include <assert.h>
 
-#include "service/thread-pool.h"
-#include "service/task.h"
-#include "util/log-message.h"
+#include "src/service/thread-pool.h"
+#include "src/service/task.h"
+#include "src/util/log-message.h"
 
 int main(int argc, char *argv[])
 {
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0 );
 	if(sockfd == -1)
 	{
-		LOG << "socket error.";
+		LOG_COM << "socket error.";
 		return -1;
 	}
 	struct sockaddr_in ser,cli;
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 	int res=bind(sockfd, (struct sockaddr *) & ser, sizeof(ser));
 	if(res != 0)
 	{
-		LOG << "bind error.";
+		LOG_COM << "bind error.";
 		return -1;
 	}
 	int nthread = 1;

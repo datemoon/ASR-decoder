@@ -1,5 +1,5 @@
-#include "service/thread-pool.h"
-#include "util/log-message.h"
+#include "src/service/thread-pool.h"
+#include "src/util/log-message.h"
 
 ThreadPoolBase::ThreadPoolBase(ThreadPoolBase::int32 thread_num):
 	_shutdown(false),
@@ -59,7 +59,7 @@ ThreadPoolBase::int32 ThreadPoolBase::StopAll()
 {
 	if(_shutdown)
 		return TPERROR;
-	LOG << "*****************************\n"
+	LOG_COM << "*****************************\n"
 		<< "Now I will end all threads!!"
 		<< "*****************************";
 	// wake up all thread distory thread pool
@@ -72,7 +72,7 @@ ThreadPoolBase::int32 ThreadPoolBase::StopAll()
 
 	pthread_mutex_destroy(&_pthread_pool_mutex);
 	pthread_cond_destroy(&_pthread_pool_cond);
-	LOG << "*****************************\n"
+	LOG_COM << "*****************************\n"
 		<< "End all threads ok!!"
 		<< "*****************************";
 	return TPOK;
@@ -92,16 +92,16 @@ void *ThreadPoolBase::ThreadFunc(void *thread_para)
 		pthread_mutex_lock(pthread_pool_mutex);
 		while(thread_pool->GetTaskSize() == 0 && !thread_pool->Shutdown())
 		{
-			LOG << "Thread " << tid << " wait task.";
+			LOG_COM << "Thread " << tid << " wait task.";
 			pthread_cond_wait(pthread_pool_cond, pthread_pool_mutex);
 		}
 		if(thread_pool->Shutdown())
 		{
 			pthread_mutex_unlock(pthread_pool_mutex);
-			LOG << "Thread " << tid << " will exit.";
+			LOG_COM << "Thread " << tid << " will exit.";
 			pthread_exit(NULL);
 		}
-		LOG << "tid " << tid << " run.";
+		LOG_COM << "tid " << tid << " run.";
 
 		TaskBase *task = thread_pool->GetTask();
 

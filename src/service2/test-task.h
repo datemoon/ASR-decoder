@@ -5,9 +5,8 @@
 #include <sys/socket.h>
 #include "src/service2/thread-pool.h"
 #include "src/util/log-message.h"
-#ifdef NAMESPACE
-namespace datemoon {
-#endif
+
+#include "src/util/namespace-start.h"
 
 class TestServiceTask:public TaskBase
 {
@@ -75,7 +74,5 @@ private:
 	int32 _connfd; // connect fd
 	void SetConnFd(int32 connfd); // set socket id
 };
-#ifdef NAMESPACE
-} // namespace datemoon
-#endif
+#include "src/util/namespace-end.h"
 #endif

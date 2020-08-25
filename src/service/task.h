@@ -3,8 +3,8 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-#include "service/thread-pool.h"
-#include "util/log-message.h"
+#include "src/service/thread-pool.h"
+#include "src/util/log-message.h"
 
 class ASRServiceTask:public TaskBase
 {
@@ -27,10 +27,10 @@ public:
 			int len = recv(_connfd, recvbuf, sizeof(recvbuf), 0 );
 			if(len <= 0)
 			{
-				LOG << "on buf " << len << "!!!";
+				LOG_COM << "on buf " << len << "!!!";
 				if(errno == EAGAIN || errno == EINPROGRESS)
 				{
-					LOG << "|" << _connfd << "| timeout and continue";
+					LOG_COM << "|" << _connfd << "| timeout and continue";
 					n++;
 					if(n>2)
 						break;
@@ -40,7 +40,7 @@ public:
 			}
 
 			n=0;
-			VLOG(0) << "from |" << _connfd << "| receive \"" << recvbuf << "\"";
+			VLOG_COM(0) << "from |" << _connfd << "| receive \"" << recvbuf << "\"";
 			if(strncmp(recvbuf,"end",3) == 0)
 			{
 				break;
@@ -63,8 +63,8 @@ public:
 	}
 	void GetInfo()
 	{
-		LOG << "Task name is : " << _task_name ;
-		LOG << "Task connetid is : " << _connfd;
+		LOG_COM << "Task name is : " << _task_name ;
+		LOG_COM << "Task connetid is : " << _connfd;
 	}
 
 private:
