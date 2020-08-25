@@ -871,7 +871,7 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::FinalizeDecoding()
 // Outputs an FST corresponding to the raw, state-level
 // tracebacks.
 bool MemOptimizeClgLatticeFasterOnlineDecoder::GetRawLattice(Lattice *ofst,
-		bool use_final_probs) 
+		bool use_final_probs)
 {
 	typedef LatticeArc Arc;
 //typedef Arc::StateId StateId;
@@ -1069,45 +1069,6 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::TopSortTokens(Token *tok_list,
 
 	for (IterType iter = token2pos.begin(); iter != token2pos.end(); ++iter)
 		(*topsorted_list)[iter->second] = iter->first;
-}
-bool MemOptimizeClgLatticeFasterOnlineDecoder::GetBestPath(Lattice &best_path, 
-		vector<int> &best_words_arr, vector<int> &best_phones_arr,
-		float &best_tot_score, float &best_lm_score)
-{
-	if(best_path.Start() == kNoStateId)
-		return false;
-	best_tot_score = 0;
-	best_lm_score = 0;
-	// here best_path can't be top sort
-	StateId start_start = best_path.Start();
-	LatticeState * cur_state = best_path.GetState(start_start);
-	while(!cur_state->IsFinal())
-	{
-		// beacause one best path , so every state have only one arc.
-		LatticeArc *arc = cur_state->GetArc(0);
-		StateId next_stateid = arc->_to;
-		if(arc->_input != 0)
-			best_phones_arr.push_back(arc->_input);
-		if(arc->_output != 0)
-			best_words_arr.push_back(arc->_output);
-		best_lm_score += arc->_w.Value1();
-		best_tot_score += arc->_w.Value1() + arc->_w.Value2();
-		cur_state = best_path.GetState(next_stateid);
-	}/*
-	for(StateId s = 0 ; s < best_path.NumStates(); ++s)
-	{
-		// beacause one best path , so every state have only one arc.
-		if(best_path.GetState(s)->GetArcSize() == 1)
-		{
-			Arc *arc = best_path.GetState(s)->GetArc(0);
-			if(arc->_input != 0)
-				best_phones_arr.push_back(arc->_input);
-			if(arc->_output != 0)
-				best_words_arr.push_back(arc->_output);
-			best_tot_score += arc->_w;
-		}// else is final
-	}*/
-	return true;
 }
 
 // Outputs an FST corresponding to the single best path through the lattice.

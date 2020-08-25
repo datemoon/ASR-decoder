@@ -1,11 +1,16 @@
 
+#include "src/newfst/lattice-functions.h"
+#include "src/newfst/lattice-to-nbest.h"
+#include "src/newfst/rmepsilon.h"
+#include "src/newfst/lattice-determinize.h"
+
 #include "src/kaldi-nnet3/kaldi-online-nnet3-my-decoder.h"
 
 
 int OnlineClgLatticeFastDecoder::ProcessData(char *data, int data_len, int eos, int data_type)
 {
-	kaldi::Vector<BaseFloat> wave_part;
-	assert(date_len%data_type == 0 && "data_len \% datatype is not 0");
+	kaldi::Vector<kaldi::BaseFloat> wave_part;
+	assert(data_len%data_type == 0 && "data_len \% datatype is not 0");
 	
 	float samp_freq = _online_info._feature_info.GetSamplingFrequency();
 	if(data_len > 0)
@@ -43,34 +48,32 @@ int OnlineClgLatticeFastDecoder::ProcessData(char *data, int data_len, int eos, 
 }
 
 void OnlineClgLatticeFastDecoder::GetLattice(datemoon::Lattice *olat, 
+		bool end_of_utterance)
+{
+	_decoder.GetRawLattice(olat, end_of_utterance);
+}
+
+void OnlineClgLatticeFastDecoder::GetBestPath(datemoon::Lattice *best_path,
 		bool end_of_utterance) const
 {
-	_decoder.GetRawLattice(olat, end_of_utterance);
+	_decoder.GetBestPath(best_path, end_of_utterance);
 }
 
-void OnlineClgLatticeFastDecoder::GetBestPath(bool end_of_utterance,
-		datemoon::Lattice *best_path) const
+void OnlineClgLatticeFastDecoder::GetNbest(vector<datemoon::Lattice> &nbest_paths, int n, bool end_of_utterance)
 {
-	vector<int> best_words_arr;
-   	vector<int> best_phones_arr;
-    float best_tot_score=0, best_lm_score =0;
-	_decoder.GetBestPath(*best_path, best_words_arr, best_phones_arr, best_tot_score, best_lm_score);
-}
+	datemoon::Lattice olat;
+	_decoder.GetRawLattice(&olat, end_of_utterance);
 
-void OnlineClgLatticeFastDecoder::GetNbest(vector<datemoon::Lattice> &nbest_paths, int n, bool end_of_utterance=true)
-{
-	Lattice olat;
-	_decoder.GetRawLattice(olat, end_of_utterance);
-
-	Lattice detfst;
-	DeterminizeLatticeOptions opts;
+	datemoon::Lattice detfst;
+	datemoon::DeterminizeLatticeOptions opts;
 	bool debug_ptr = false;
-	assert(LatticeCheckFormat(&olat) && "ofst format it's error");
-	DeterminizeLatticeWrapper(&olat,&detfst,opts,&debug_ptr);
-	assert(LatticeCheckFormat(&detfst) && "detfst format it's error");
-	Lattice nbest_lat;
-	NShortestPath(detfst, &nbest_lat, n);
-	ConvertNbestToVector(nbest_lat, &nbest_paths);
-
+	assert(datemoon::LatticeCheckFormat(&olat) && "ofst format it's error");
+	datemoon::DeterminizeLatticeWrapper(&olat,&detfst,opts,&debug_ptr);
+	assert(datemoon::LatticeCheckFormat(&detfst) && "detfst format it's error");
+	datemoon::Lattice nbest_lat;
+	datemoon::NShortestPath(detfst, &nbest_lat, n);
+	datemoon::ConvertNbestToVector(nbest_lat, &nbest_paths);
 }
+
+
 

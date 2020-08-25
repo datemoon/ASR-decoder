@@ -182,5 +182,21 @@ protected:
 	void NormalizeArgName(std::string *str);
 };
 
+/// This template is provided for convenience in reading config classes from
+/// files; this is not the standard way to read configuration options, but may
+/// occasionally be needed.  This function assumes the config has a function
+/// "void Register(OptionsItf *opts)" which it can call to register the
+/// ParseOptions object.
+template<class C> void ReadConfigFromFile(const std::string &config_filename,
+		C *c)
+{
+	std::ostringstream usage_str;
+	usage_str << "Parsing config from "
+		<< "from '" << config_filename << "'";
+	ConfigParseOptions conf(usage_str.str().c_str());
+	c->Register(&conf);
+	conf.ReadConfigFile(config_filename);
+}
+
 #include "src/util/namespace-end.h"
 #endif

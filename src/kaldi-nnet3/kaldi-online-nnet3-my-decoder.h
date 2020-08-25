@@ -1,14 +1,14 @@
 
-#include "nnet3/decodable-online-looped.h"
-#include "matrix/matrix-lib.h"
-#include "util/common-utils.h"
-#include "base/kaldi-error.h"
-#include "itf/online-feature-itf.h"
+#include "online2/online-nnet3-decoding.h"
 #include "online2/online-nnet2-feature-pipeline.h"
-#include "hmm/transition-model.h"
-#include "hmm/posterior.h"
+#include "online2/onlinebin-util.h"
+#include "online2/online-timing.h"
+#include "online2/online-endpoint.h"
+#include "feat/wave-reader.h"
+#include "nnet3/nnet-utils.h"
 
 #include "src/decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
+#include "src/decoder/wordid-to-wordstr.h"
 
 struct OnlineDecoderConf
 {
@@ -19,7 +19,7 @@ public:
 	std::string _wordlist;
 	std::string _phonedict;
 	std::string _prondict;
-	OnlineDecoderConf():_config_decoder(""),wordlist(""),phonedict(""),prondict("") { }
+	OnlineDecoderConf():_config_decoder(""),_wordlist(""),_phonedict(""),_prondict("") { }
 	void Register(kaldi::OptionsItf *conf)
 	{
 		_decodable_opts.Register(conf);
@@ -34,7 +34,7 @@ public:
 struct OnlineDecoderInfo
 {
 public:
-	const OnlineDecoderConf &_online_conf
+	const OnlineDecoderConf &_online_conf;
 	// feature config read 
 	kaldi::OnlineNnet2FeaturePipelineInfo _feature_info;
 	// decoder config read
@@ -70,15 +70,15 @@ public:
 		{
 			if(0 != _wordsymbol.ReadText(online_conf._wordlist.c_str()))
 			{
-				datemoon::LOG_WARN << "read wordlist " << online_conf._wordlist << " failed!!!";
+				LOG_WARN << "read wordlist " << online_conf._wordlist << " failed!!!";
 			}
 		}
 		// am load
 		{
 			bool binary;
 			kaldi::Input ki(_nnet3_filename, &binary);
-			trans_model.Read(ki.Stream(), binary);
-			am_nnet.Read(ki.Stream(), binary);
+			_trans_model.Read(ki.Stream(), binary);
+			_am_nnet.Read(ki.Stream(), binary);
 			kaldi::nnet3::SetBatchnormTestMode(true, &(_am_nnet.GetNnet()));
 			kaldi::nnet3::SetDropoutTestMode(true, &(_am_nnet.GetNnet()));
 			kaldi::nnet3::CollapseModel(kaldi::nnet3::CollapseModelConfig(),
@@ -86,7 +86,7 @@ public:
 		} // load am ok
 		if(_clgfst.Init(_fst_in_filename.c_str(), _hmm_in_filename.c_str())!= true)
 		{
-			datemoon::LOG_ERR << "load clg fst: " << fst_in_filename 
+			LOG_ERR << "load clg fst: " << fst_in_filename 
 				<< " and " <<  hmm_in_filename << " error.";
 		}
 
@@ -99,10 +99,10 @@ class OnlineClgLatticeFastDecoder
 public:
 
 public:
-	OnlineClgLatticeFastDecoder(const OnlineDecoderInfo &online_info):
+	OnlineClgLatticeFastDecoder(OnlineDecoderInfo &online_info):
 		_online_info(online_info),
-		_decodable_info(online_info._decodable_opts, &online_info._am_nnet),
-	   	_decoder(&online_info._clgfst, online_info._decoder_opts), 
+		_decodable_info(online_info._online_conf._decodable_opts, &online_info._am_nnet),
+	   	_decoder(&online_info._clgfst, _online_info._decoder_opts), 
 		_decodable(NULL),_feature_pipeline(NULL) 
 	{
 	   InitDecoding(0, true);	
@@ -125,39 +125,31 @@ public:
 				   	_decodable_info,
 					_feature_pipeline->InputFeature(), 
 					_feature_pipeline->IvectorFeature());
-			decodable_->SetFrameOffset(frame_offset);
+			_decodable->SetFrameOffset(frame_offset);
 		}
 		_decoder.InitDecoding();
 	}
 	
 	// input data to decoder
 	// data_type is data type: 2 -> short, 4-> float
-	int ProcessData(char *data, int date_len, int data_type);
-	/// advance the decoding as far as we can.
-	void AdvanceDecoding();
-	
-	/// Finalizes the decoding. Cleans up and prunes remaining tokens, so the
-	/// GetLattice() call will return faster.  You must not call this before
-	/// calling (TerminateDecoding() or InputIsFinished()) and then Wait().
-	void FinalizeDecoding();
-
-	kaldi::int32 NumFramesDecoded() const;
+	int ProcessData(char *data, int date_len, int eos, int data_type);
 
 	/// Gets the lattice.  The output lattice has any acoustic scaling in it
 	/// (which will typically be desirable in an online-decoding context); if you
 	/// want an un-scaled lattice, scale it using ScaleLattice() with the inverse
 	/// of the acoustic weight.  "end_of_utterance" will be true if you want the
 	/// final-probs to be included.
-	void GetLattice(bool end_of_utterance,
-			CompactLattice *clat) const;
+	void GetLattice(datemoon::Lattice *clat, 
+			bool end_of_utterance);
 
 	/// Outputs an FST corresponding to the single best path through the current
 	/// lattice. If "use_final_probs" is true AND we reached the final-state of
 	/// the graph then it will include those as final-probs, else it will treat
 	/// all final-probs as one.
-	 void GetBestPath(bool end_of_utterance,
-			 datemoon::Lattice *best_path) const;
+	void GetBestPath(datemoon::Lattice *best_path,
+			bool end_of_utterance) const;
 
+	void GetNbest(vector<datemoon::Lattice> &nbest_paths, int n, bool end_of_utterance);
 
 	/// This function calls EndpointDetected from online-endpoint.h,
 	/// with the required arguments.
@@ -165,7 +157,7 @@ public:
 
 private:
 	// configure information
-	const OnlineDecoderInfo &_online_info;
+	OnlineDecoderInfo &_online_info;
 	// nnet forward info
 	kaldi::nnet3::DecodableNnetSimpleLoopedInfo _decodable_info;
 	

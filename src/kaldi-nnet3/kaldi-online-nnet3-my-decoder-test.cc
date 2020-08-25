@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
 						vector<int> nbest_phones_arr;
 						float nbest_tot_score=0 ,nbest_lm_score=0;
 
-						if(online_decoder.GetBestPath(nbest_paths[i], nbest_words_arr, nbest_phones_arr, nbest_tot_score, nbest_lm_score))
+						if(BestPathToVector(nbest_paths[i], nbest_words_arr, nbest_phones_arr, nbest_tot_score, nbest_lm_score))
 						{
 							for(unsigned j = 0; j < nbest_words_arr.size(); ++j)
 							{

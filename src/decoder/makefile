@@ -21,13 +21,14 @@ liboptimizedecode.a:mem-optimize-clg-lattice-faster-online-decoder.o
 	$(AR) -rcu $@ $^
 
 %.o:%.c
-	    $(CXX) $(CXXFLAGS) -c  -o $@ $^
+	$(CXX) $(CXXFLAGS) -c  -o $@ $^
 
 %.o:%.cpp
-	    $(CXX) $(CXXFLAGS) -c  -o $@ $^
+	$(CXX) $(CXXFLAGS) -c  -o $@ $^
 
 %.o:%.cc
-	    $(CXX) $(CXXFLAGS) -c  -o $@ $^
+	$(CXX) $(CXXFLAGS) -c  -o $@ $^
+
 .PHONY:
 
 clean:

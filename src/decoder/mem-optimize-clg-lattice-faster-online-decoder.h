@@ -129,13 +129,6 @@ public:
 	BestPathIterator TraceBackBestPath(
 			BestPathIterator iter, LatticeArc *arc) const;
 
-
-
-	// get best path
-	bool GetBestPath(Lattice &best_path, 
-			vector<int> &best_words_arr, vector<int> &best_phones_arr,
-			float &best_tot_score, float &best_lm_score);
-
 	// Returns the number of frames decoded so far.  The value returned changes
 	// whenever we call ProcessEmitting().
 	inline int NumFramesDecoded() const { return _active_toks.size() - 1; }
@@ -147,7 +140,7 @@ public:
 	/// it will treat all final-probs as one.
 	/// The raw lattice will be topologically sorted.
 	bool GetRawLattice(Lattice *ofst,
-			bool use_final_probs) ;
+			bool use_final_probs);
 private:
 	Token * FindOrAddToken(ClgTokenStateId stateid,int frame_plus_one, float tot_cost, 
 			Token *backpointer, bool *changed);
