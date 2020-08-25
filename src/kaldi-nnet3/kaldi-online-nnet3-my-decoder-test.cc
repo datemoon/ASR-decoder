@@ -27,19 +27,18 @@ int main(int argc, char *argv[])
 	
 	const char *usage = "This is a test kaldi-online-nnet3-my-decoder code.\n"
 		"Usage: kaldi-online-nnet3-my-decoder-test [options] <nnet3-in> "
-		        "<fst-in> <hmm-fst-in> <word-symbol-table>\n";
+		        "<fst-in> <hmm-fst-in> <word-symbol-table> <wavfile>\n";
 	kaldi::ParseOptions po(usage);
 	std::string wordlist,phonedict,prondict;
 	//po.Register("wordlist", &wordlist, "default is no wordlist");
 	po.Register("phonedict", &phonedict , "default is no phonedict");
     po.Register("prondict", &prondict, "default is no prondict");
+	std::string decoder_conf;
+	po.Register("config-decoder", &decoder_conf, "decoder conf file");
 
 	kaldi::nnet3::NnetSimpleLoopedComputationOptions decodable_opts;
 	kaldi::OnlineNnet2FeaturePipelineConfig feature_opts;
-	BaseFloat samp_freq = 16000.0;
 
-	po.Register("samp-freq", &samp_freq,
-			"Sampling frequency of the input signal (coded as 16-bit slinear).");
 	feature_opts.Register(&po);
 	decodable_opts.Register(&po);
 
@@ -49,6 +48,10 @@ int main(int argc, char *argv[])
 		po.PrintUsage();
 		return 1;
 	}
+	LatticeFasterDecoderConfig decoder_opts;
+	ReadConfigFromFile(decoder_conf, &decoder_opts);
+	//decoder_opts._max_active = 5000;
+	//decoder_opts._beam = 10;
 
 	std::string nnet3_rxfilename = po.GetArg(1),
 		fst_in_filename = po.GetArg(2),
@@ -71,6 +74,7 @@ int main(int argc, char *argv[])
 	// feature
 	kaldi::OnlineNnet2FeaturePipelineInfo feature_info(feature_opts);
 	kaldi::OnlineNnet2FeaturePipeline feature_pipeline(feature_info);
+	BaseFloat samp_freq = feature_info.GetSamplingFrequency();
 
 	// load clg fst
 	ClgFst clgfst;
@@ -79,9 +83,6 @@ int main(int argc, char *argv[])
 		std::cerr << "load fst error." << std::endl;
 		return -1;
 	}
-	LatticeFasterDecoderConfig decoder_opts;
-	decoder_opts._max_active = 5000;
-	decoder_opts._beam = 10;
 
 	MemOptimizeClgLatticeFasterOnlineDecoder online_decoder(&clgfst, decoder_opts);
 

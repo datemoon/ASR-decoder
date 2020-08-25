@@ -10,31 +10,129 @@
 
 #include "src/decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
 
-class OnlineDecoder
+struct OnlineDecoderConf
+{
+public:
+	kaldi::nnet3::NnetSimpleLoopedComputationOptions _decodable_opts;
+	kaldi::OnlineNnet2FeaturePipelineConfig _feature_opts;
+	std::string _config_decoder;
+	std::string _wordlist;
+	std::string _phonedict;
+	std::string _prondict;
+	OnlineDecoderConf():_config_decoder(""),wordlist(""),phonedict(""),prondict("") { }
+	void Register(kaldi::OptionsItf *conf)
+	{
+		_decodable_opts.Register(conf);
+		_feature_opts.Register(conf);
+		conf->Register("config-decoder", &_config_decoder,
+				"decoder config file (default NULL)");
+		conf->Register("wordlist", &_wordlist,
+				"wordlist file (default NULL)");
+	}
+};
+
+struct OnlineDecoderInfo
+{
+public:
+	const OnlineDecoderConf &_online_conf
+	// feature config read 
+	kaldi::OnlineNnet2FeaturePipelineInfo _feature_info;
+	// decoder config read
+	datemoon::LatticeFasterDecoderConfig _decoder_opts;
+	// words list read
+	datemoon::WordSymbol _wordsymbol;
+	
+	kaldi::nnet3::AmNnetSimple _am_nnet;
+    kaldi::TransitionModel _trans_model;
+	
+	datemoon::ClgFst _clgfst;
+
+	const std::string &_nnet3_filename;
+	const std::string &_fst_in_filename;
+	const std::string &_hmm_in_filename;
+	OnlineDecoderInfo(const OnlineDecoderConf &online_conf,
+			const std::string &nnet3_filename,
+			const std::string &fst_in_filename,
+			const std::string &hmm_in_filename):
+		_online_conf(online_conf),
+		_feature_info(online_conf._feature_opts),
+		_nnet3_filename(nnet3_filename),
+		_fst_in_filename(fst_in_filename),
+		_hmm_in_filename(hmm_in_filename)
+	{
+		// read decoder config
+		if(online_conf._config_decoder != "")
+		{
+			ReadConfigFromFile(online_conf._config_decoder, &_decoder_opts);
+		}
+		// word list read
+		if(online_conf._wordlist != "")
+		{
+			if(0 != _wordsymbol.ReadText(online_conf._wordlist.c_str()))
+			{
+				datemoon::LOG_WARN << "read wordlist " << online_conf._wordlist << " failed!!!";
+			}
+		}
+		// am load
+		{
+			bool binary;
+			kaldi::Input ki(_nnet3_filename, &binary);
+			trans_model.Read(ki.Stream(), binary);
+			am_nnet.Read(ki.Stream(), binary);
+			kaldi::nnet3::SetBatchnormTestMode(true, &(_am_nnet.GetNnet()));
+			kaldi::nnet3::SetDropoutTestMode(true, &(_am_nnet.GetNnet()));
+			kaldi::nnet3::CollapseModel(kaldi::nnet3::CollapseModelConfig(),
+					&(_am_nnet.GetNnet()));
+		} // load am ok
+		if(_clgfst.Init(_fst_in_filename.c_str(), _hmm_in_filename.c_str())!= true)
+		{
+			datemoon::LOG_ERR << "load clg fst: " << fst_in_filename 
+				<< " and " <<  hmm_in_filename << " error.";
+		}
+
+	} // construct ok
+
+};
+
+class OnlineClgLatticeFastDecoder
 {
 public:
 
 public:
-	OnlineDecoder(const datemoon::LatticeFasterDecoderConfig &decoder_opts,
-			datemoon::ClgFst *decoder_fst):
-		_decoder_opts(decoder_opts),
-	   	_decoder(decoder_fst, _conf._decoder_opts), _decodable(NULL) { }
-
-	void InitDecoding(const nnet3::DecodableNnetSimpleLoopedInfo &info,
-			const kaldi::TransitionModel &trans_model,
-			OnlineNnet2FeaturePipeline *features, 
-			int frame_offset=0)
+	OnlineClgLatticeFastDecoder(const OnlineDecoderInfo &online_info):
+		_online_info(online_info),
+		_decodable_info(online_info._decodable_opts, &online_info._am_nnet),
+	   	_decoder(&online_info._clgfst, online_info._decoder_opts), 
+		_decodable(NULL),_feature_pipeline(NULL) 
 	{
-		if(_decodable != NULL)
-			delete _decodable;
-		_decodable = new kaldi::nnet3::DecodableAmNnetLoopedOnline(
-				trans_model, info,
-				feature->InputFeature(), 
-				feature->IvectorFeature());
-		decodable_->SetFrameOffset(frame_offset);
-		_decoder.InitDecoding();
+	   InitDecoding(0, true);	
 	}
 
+	// send_end if send end will init _decodable and _feature_pipeline
+	void InitDecoding(int frame_offset=0, bool send_end = false)
+	{
+		if(send_end == true)
+		{
+			// new _feature_pipeline
+			if (_feature_pipeline != NULL)
+				delete _feature_pipeline;
+			_feature_pipeline = new kaldi::OnlineNnet2FeaturePipeline(_online_info._feature_info);
+			// new _decodable
+			if(_decodable != NULL)
+				delete _decodable;
+			_decodable = new kaldi::nnet3::DecodableAmNnetLoopedOnline(
+					_online_info._trans_model,
+				   	_decodable_info,
+					_feature_pipeline->InputFeature(), 
+					_feature_pipeline->IvectorFeature());
+			decodable_->SetFrameOffset(frame_offset);
+		}
+		_decoder.InitDecoding();
+	}
+	
+	// input data to decoder
+	// data_type is data type: 2 -> short, 4-> float
+	int ProcessData(char *data, int date_len, int data_type);
 	/// advance the decoding as far as we can.
 	void AdvanceDecoding();
 	
@@ -66,14 +164,15 @@ public:
 	bool EndpointDetected(const kaldi::OnlineEndpointConfig &config);
 
 private:
-	const datemoon::LatticeFasterDecoderConfig &_decoder_opts;
-	
-	// this is remembered from the constructor; it's ultimately
-	// derived from calling FrameShiftInSeconds() on the feature pipeline.
-	BaseFloat _input_feature_frame_shift_in_seconds;
+	// configure information
+	const OnlineDecoderInfo &_online_info;
+	// nnet forward info
+	kaldi::nnet3::DecodableNnetSimpleLoopedInfo _decodable_info;
 	
 	// decoder
 	datemoon::MemOptimizeClgLatticeFasterOnlineDecoder _decoder;
 	// nnet forward
 	kaldi::nnet3::DecodableAmNnetLoopedOnline *_decodable;
+	// feature pipe
+	kaldi::OnlineNnet2FeaturePipeline *_feature_pipeline;
 };
