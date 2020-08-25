@@ -3,9 +3,9 @@
 
 
 SUBDIRS=util hmm align lib pitch nnet \
-	fst lm \
+	newfst newlm \
 	decoder fst_format_convert_tool \
-	service2
+	service2 kaldi-nnet3
 
 all:ex
 

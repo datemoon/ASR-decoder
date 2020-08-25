@@ -17,5 +17,8 @@
 #include "src/util/text-util.h"
 #include "src/util/read-vector.h"
 #include "src/util/config-parse-options.h"
+#include "src/util/util-type.h"
+#include "src/util/hash-key.h"
+#include "src/util/hash-list.h"
 
 #endif

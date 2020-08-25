@@ -5,28 +5,34 @@
 #include <utility>
 #include <assert.h>
 #include <string>
-#include "optimize-mem-decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
-#include "nnet/nnet-nnet.h"
-#include "nnet/nnet-feature-api.h"
-#include "decoder/wordid-to-wordstr.h"
-#include "align/phone-to-word.h"
-#include "fst/lattice-functions.h"
-#include "fst/lattice-to-nbest.h"
-#include "fst/rmepsilon.h"
-#include "fst/lattice-determinize.h"
-#include "fst/lattice-functions.h"
+#include "src/decoder/optimize-fst.h"
+#include "src/decoder/lattice-faster-decoder.h"
+#include "src/decoder/clg-lattice-faster-online-decoder.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/nnet/nnet-feature-api.h"
+#include "src/decoder/wordid-to-wordstr.h"
+#include "src/align/phone-to-word.h"
+#include "src/fst/lattice-functions.h"
+#include "src/fst/lattice-to-nbest.h"
+#include "src/fst/rmepsilon.h"
+#include "src/fst/lattice-determinize.h"
+#include "src/fst/lattice-functions.h"
 
 using namespace std;
 
+#ifdef NAMESPACE
+using namespace datemoon;
+#endif
 
 int main(int argc,char *argv[])
 {
 	const char *usage = "This is a ctc decode.\n"
 		"wfst graph no block flag.\n\n"
-		"Usage:optimize-clg-lattice-online-faster-decoder-kaldifeature-test featconf fst hmmfst nnetmodel feat.list\n";
+		"Usage:optimize-ctc-lattice-faster-decoder-kaldifeature-test featconf fst hmmfst nnetmodel feat.list\n";
 	ConfigParseOptions conf(usage);
 
 	LatticeFasterDecoderConfig decodeopt;
+//	CtcFasterDecoderOptions decodeopt(16.0,7000,20,0.5,2.0);
 	NnetForwardOptions nnetopt;
 	decodeopt.Register(&conf);
 	nnetopt.Register(&conf);
@@ -73,7 +79,6 @@ int main(int argc,char *argv[])
 	int left = 0, right =0 ;
 	
 	forward->GetLRoffset(left,right);
-	// feature extract
 	DnnFeat *dnnfeat = new DnnFeat;
 	dnnfeat->Init(featconf.c_str(), "./");
 	dnnfeat->InitParameters(left,right);
@@ -86,7 +91,7 @@ int main(int argc,char *argv[])
 	}
 
 
-	MemOptimizeClgLatticeFasterOnlineDecoder decode(&fst, decodeopt);
+	ClgLatticeFasterOnlineDecoder decode(&fst, decodeopt);
 
 #define LEN (1024)
 	int nnet_in_frame = 0;
@@ -148,7 +153,6 @@ int main(int argc,char *argv[])
 			gettimeofday(&start,NULL);
 #endif
 			int max_frames = forward->NumFramesReady();
-			// decoder
 			decode.AdvanceDecoding(forward,max_frames);
 
 			decode.FinalizeDecoding();
@@ -186,7 +190,7 @@ int main(int argc,char *argv[])
 		Lattice best_path;
 		decode.GetBestPath(&best_path);
 //		best_path.Print();
-		{
+/*
 		// get raw lattice
 		Lattice best_path;
 		vector<Lattice> nbest_paths;
@@ -219,7 +223,7 @@ int main(int argc,char *argv[])
 				//ofst.Print();
 				Lattice nbest_lat;
 				//NShortestPath(ofst, &nbest_lat, 5);
-				NShortestPath(detfst, &nbest_lat, 10);
+				NShortestPath(detfst, &nbest_lat, 5);
 //				nbest_lat.Print();
 				ConvertNbestToVector(nbest_lat, &nbest_paths);
 
@@ -266,7 +270,7 @@ int main(int argc,char *argv[])
 				}
 			}
 		} // nbest ok
-		}
+*/
 		vector<int> best_words_arr;
 		vector<int> best_phones_arr;
 		printf("%s	",linefeat);
@@ -305,7 +309,7 @@ int main(int argc,char *argv[])
 		}
 		else
 			printf("no result.\n");
-		
+
 		//decode.PrintBestPath();
 		// the last do align
 		if(prondict.size() != 0)
