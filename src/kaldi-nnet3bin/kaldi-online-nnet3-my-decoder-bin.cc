@@ -32,19 +32,12 @@ int main(int argc, char *argv[])
 	OnlineDecoderConf online_conf;
 	online_conf.Register(&po);
 
-	// init decoder config file
-	std::string decoder_conf;
-	po.Register("config-decoder", &decoder_conf, "decoder conf file");
-
 	po.Read(argc, argv);
 	if (po.NumArgs() != 5)
 	{
 		po.PrintUsage();
 		return 1;
 	}
-	// init decoder config
-	LatticeFasterDecoderConfig decoder_opts;
-	ReadConfigFromFile(decoder_conf, &decoder_opts);
 
 	std::string nnet3_rxfilename = po.GetArg(1),
 		fst_in_filename = po.GetArg(2),

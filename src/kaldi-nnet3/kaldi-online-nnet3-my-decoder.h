@@ -75,6 +75,7 @@ public:
 		{
 			ReadConfigFromFile(online_conf._config_decoder, &_decoder_opts);
 		}
+		_decoder_opts.Print();
 		// word list read
 		if(_wordlist != "")
 		{

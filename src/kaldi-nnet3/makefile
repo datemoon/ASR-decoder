@@ -9,7 +9,7 @@ LIB=libonlinedecode.a
 
 TESTBIN=kaldi-online-nnet3-my-decoder-test
 
-all:$(LIB) test kaldi-online-nnet3-my-decoder-bin
+all:$(LIB) test 
 
 test:$(TESTBIN)
 
@@ -20,13 +20,10 @@ kaldi-online-nnet3-my-decoder-test:kaldi-online-nnet3-my-decoder-test.o
 libonlinedecode.a:$(OBJ)
 	$(AR) -rcu $@ $^
 
-kaldi-online-nnet3-my-decoder-bin:kaldi-online-nnet3-my-decoder-bin.o
-	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB) $(LIBS) $(KALDI_LIB_DYNAMIC) $(CBLAS_LIB) 
-
 %.o:%.cc
 	$(GXX) $(CXXFLAGS) -c -o $@ $< 
 
 .PHONY:
 
 clean:
-	rm -f *.o $(TESTBIN) $(LIB) kaldi-online-nnet3-my-decoder-bin
+	rm -f *.o $(TESTBIN) $(LIB) 

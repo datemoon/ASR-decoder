@@ -9,12 +9,12 @@
 
 int OnlineClgLatticeFastDecoder::ProcessData(char *data, int data_len, int eos, int data_type)
 {
-	kaldi::Vector<kaldi::BaseFloat> wave_part;
 	assert(data_len%data_type == 0 && "data_len \% datatype is not 0");
 	
-	float samp_freq = _online_info._feature_info.GetSamplingFrequency();
 	if(data_len > 0)
 	{
+		kaldi::Vector<kaldi::BaseFloat> wave_part;
+		float samp_freq = _online_info._feature_info.GetSamplingFrequency();
 		wave_part.Resize(data_len/data_type);
 		for(int i=0;i<data_len/data_type;++i)
 		{
@@ -27,8 +27,8 @@ int OnlineClgLatticeFastDecoder::ProcessData(char *data, int data_len, int eos, 
 				wave_part(i) = ((short*)(data))[i];
 			}
 		}
+		_feature_pipeline->AcceptWaveform(samp_freq, wave_part);
 	}
-	_feature_pipeline->AcceptWaveform(samp_freq, wave_part);
 	if(eos == 0)
 	{ // send data
 		_decoder.AdvanceDecoding(_decodable);
