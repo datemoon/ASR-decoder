@@ -4,8 +4,8 @@
 KALDI_ROOT=/home/hubo/git/github-online/github/kaldi/src
 OPENFSTINC = $(KALDI_ROOT)/../tools/openfst-1.6.7/include
 
-FST_LIB=$(KALDI_ROOT)/../tools/openfst-1.6.7/lib/libfst.a
-
+FST_LIB_STATIC=$(KALDI_ROOT)/../tools/openfst-1.6.7/lib/libfst.a
+FST_LIB_DYNAMIC=$(KALDI_ROOT)/../tools/openfst-1.6.7/lib/libfst.so
 
 ifeq ($(CUDA),true)
 ATLASINC=/opt/intel/mkl/include
