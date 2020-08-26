@@ -7,6 +7,18 @@
 
 struct LatticeFasterDecoderConfig 
 {
+	void Print()
+	{
+		LOG_COM << "beam\t:" << _beam ;
+		LOG_COM << "max_active\t:" << _max_active;
+		LOG_COM << "min_active\t:" << _min_active;
+		LOG_COM << "lattice_beam\t:" << _lattice_beam;
+		LOG_COM << "prune_interval\t:" << _prune_interval;
+		LOG_COM << "determinize_lattice:\t" << _determinize_lattice;
+		LOG_COM << "beam_delta\t:" << _beam_delta;
+		LOG_COM << "hash_ratio\t:" << _hash_ratio;
+		LOG_COM << "prune_scale\t:" << _prune_scale;
+	}
 	float _beam;
 	int _max_active;
 	int _min_active;

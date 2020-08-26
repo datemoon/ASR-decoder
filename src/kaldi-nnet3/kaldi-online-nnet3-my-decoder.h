@@ -16,18 +16,25 @@ public:
 	kaldi::nnet3::NnetSimpleLoopedComputationOptions _decodable_opts;
 	kaldi::OnlineNnet2FeaturePipelineConfig _feature_opts;
 	std::string _config_decoder;
-	std::string _wordlist;
+	//std::string _wordlist;
 	std::string _phonedict;
 	std::string _prondict;
-	OnlineDecoderConf():_config_decoder(""),_wordlist(""),_phonedict(""),_prondict("") { }
+	OnlineDecoderConf():
+		_config_decoder(""),
+		_phonedict(""),_prondict("") { }
+		//_wordlist(""),
 	void Register(kaldi::OptionsItf *conf)
 	{
 		_decodable_opts.Register(conf);
 		_feature_opts.Register(conf);
 		conf->Register("config-decoder", &_config_decoder,
 				"decoder config file (default NULL)");
-		conf->Register("wordlist", &_wordlist,
-				"wordlist file (default NULL)");
+		//conf->Register("wordlist", &_wordlist,
+		//		"wordlist file (default NULL)");
+		conf->Register("phonedict", &_phonedict,
+				"phonedict file (default NULL)");
+		conf->Register("prondict", &_prondict,
+				"prondict file (default NULL)");
 	}
 };
 
@@ -50,15 +57,18 @@ public:
 	const std::string &_nnet3_filename;
 	const std::string &_fst_in_filename;
 	const std::string &_hmm_in_filename;
+	const std::string &_wordlist;
 	OnlineDecoderInfo(const OnlineDecoderConf &online_conf,
 			const std::string &nnet3_filename,
 			const std::string &fst_in_filename,
-			const std::string &hmm_in_filename):
+			const std::string &hmm_in_filename,
+			const std::string &wordlist):
 		_online_conf(online_conf),
 		_feature_info(online_conf._feature_opts),
 		_nnet3_filename(nnet3_filename),
 		_fst_in_filename(fst_in_filename),
-		_hmm_in_filename(hmm_in_filename)
+		_hmm_in_filename(hmm_in_filename),
+		_wordlist(wordlist)
 	{
 		// read decoder config
 		if(online_conf._config_decoder != "")
@@ -66,11 +76,11 @@ public:
 			ReadConfigFromFile(online_conf._config_decoder, &_decoder_opts);
 		}
 		// word list read
-		if(online_conf._wordlist != "")
+		if(_wordlist != "")
 		{
-			if(0 != _wordsymbol.ReadText(online_conf._wordlist.c_str()))
+			if(0 != _wordsymbol.ReadText(_wordlist.c_str()))
 			{
-				LOG_WARN << "read wordlist " << online_conf._wordlist << " failed!!!";
+				LOG_WARN << "read wordlist " << _wordlist << " failed!!!";
 			}
 		}
 		// am load
@@ -85,7 +95,7 @@ public:
 					&(_am_nnet.GetNnet()));
 		} // load am ok
 		if(_clgfst.Init(_fst_in_filename.c_str(), _hmm_in_filename.c_str())!= true)
-		{
+		{ // init clg fst
 			LOG_ERR << "load clg fst: " << fst_in_filename 
 				<< " and " <<  hmm_in_filename << " error.";
 		}
@@ -132,6 +142,8 @@ public:
 	
 	// input data to decoder
 	// data_type is data type: 2 -> short, 4-> float
+	// if eos is 1,it's end point and not send end, 
+	// nest send data must be InitDecoding(frame_offset, send_end=false)
 	int ProcessData(char *data, int date_len, int eos, int data_type);
 
 	/// Gets the lattice.  The output lattice has any acoustic scaling in it
@@ -151,6 +163,10 @@ public:
 
 	void GetNbest(vector<datemoon::Lattice> &nbest_paths, int n, bool end_of_utterance);
 
+	inline int NumFramesDecoded()
+	{
+		return _decoder.NumFramesDecoded();
+	}
 	/// This function calls EndpointDetected from online-endpoint.h,
 	/// with the required arguments.
 	bool EndpointDetected(const kaldi::OnlineEndpointConfig &config);
@@ -168,3 +184,4 @@ private:
 	// feature pipe
 	kaldi::OnlineNnet2FeaturePipeline *_feature_pipeline;
 };
+

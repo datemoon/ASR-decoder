@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
 	ReadConfigFromFile(decoder_conf, &decoder_opts);
 	//decoder_opts._max_active = 5000;
 	//decoder_opts._beam = 10;
+	decoder_opts.Print();
 
 	std::string nnet3_rxfilename = po.GetArg(1),
 		fst_in_filename = po.GetArg(2),

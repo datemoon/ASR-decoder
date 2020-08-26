@@ -21,8 +21,8 @@ struct DeterminizeLatticeOptions
 	DeterminizeLatticeOptions():_delta(kDelta), _max_mem(-1), _max_loop(-1) { }
 };
 
-bool DeterminizeLatticeWrapper(Lattice *ifst,double beam, Lattice*ofst,
-		DeterminizeLatticeOptions opts);
+bool DeterminizeLatticeWrapper(Lattice *ifst, Lattice *ofst,
+		DeterminizeLatticeOptions opts, bool *debug_ptr);
 #include "src/util/namespace-end.h"
 
 #include "src/newfst/lattice-determinize.h"

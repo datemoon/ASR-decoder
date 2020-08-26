@@ -12,7 +12,7 @@ LIBS=../newfst/liblatfst.a ../util/libutil.a
 
 OBJ=lattice-fst.o lattice-functions.o lattice-to-nbest.o \
 	dfs-visit-fst.o connect-fst.o reverse.o rmepsilon.o invert.o topsort.o \
-	compose-lat.o
+	compose-lat.o lattice-determinize-api.o
 
 all:liblatfst.a 
 

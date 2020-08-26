@@ -4,6 +4,7 @@
 // this file process lattice determinize
 // word input 
 #include <vector>
+#include <deque>
 #include <climits>
 #include <array>
 #include <unordered_set>
@@ -1392,22 +1393,5 @@ private:
 	}
 };
 
-bool DeterminizeLatticeWrapper(Lattice *ifst, Lattice *ofst,
-		DeterminizeLatticeOptions opts, bool *debug_ptr)
-{
-	// first must invert ifst.
-	Invert(*ifst);
-	// second ifst input must be sort.
-	ifst->ArcSort();
-	// third determinize.
-	LatticeDeterminizer<LatticeWeight ,int> det(ifst, opts);
-
-	if(!det.Determinize(debug_ptr))
-		return false;
-	det.Output(ofst);
-	// end invert ofst
-	Invert(*ofst);
-	return true;
-}
 #include "src/util/namespace-end.h"
 #endif
