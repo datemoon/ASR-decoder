@@ -59,7 +59,7 @@ void OnlineClgLatticeFastDecoder::GetBestPath(datemoon::Lattice *best_path,
 	_decoder.GetBestPath(best_path, end_of_utterance);
 }
 
-void OnlineClgLatticeFastDecoder::GetNbest(vector<datemoon::Lattice> &nbest_paths, int n, bool end_of_utterance)
+void OnlineClgLatticeFastDecoder::GetNbest(std::vector<datemoon::Lattice> &nbest_paths, int n, bool end_of_utterance)
 {
 	datemoon::Lattice olat;
 	_decoder.GetRawLattice(&olat, end_of_utterance);
@@ -75,5 +75,39 @@ void OnlineClgLatticeFastDecoder::GetNbest(vector<datemoon::Lattice> &nbest_path
 	datemoon::ConvertNbestToVector(nbest_lat, &nbest_paths);
 }
 
+void OnlineClgLatticeFastDecoder::OnebestLatticeToString(datemoon::Lattice &onebest_lattice, std::string &onebest_string)
+{
+	onebest_string = "";
+	std::vector<int> nbest_words_arr;
+    std::vector<int> nbest_phones_arr;
+    float nbest_tot_score=0 ,nbest_lm_score=0;
+	if(datemoon::LatticeToVector(onebest_lattice, nbest_words_arr, nbest_phones_arr, nbest_tot_score, nbest_lm_score) != true)
+	{
+		LOG_WARN << "best paths is null!!!";
+		return;
+	}
+	for(unsigned i = 0; i < nbest_words_arr.size(); ++i)
+		onebest_string += _online_info._wordsymbol.FindWordStr(nbest_words_arr[i]) + std::string(" ");
+	LOG_COM << onebest_string << " tot_score: " << nbest_tot_score << " lm_score: " << nbest_lm_score;
+}
+void OnlineClgLatticeFastDecoder::GetBestPathTxt(std::string &best_result, bool end_of_utterance)
+{
+	best_result = "";
+	datemoon::Lattice best_path;
+	_decoder.GetBestPath(&best_path, end_of_utterance);
 
+	OnebestLatticeToString(best_path, best_result);
+}
 
+void OnlineClgLatticeFastDecoder::GetNbestTxt(std::vector<std::string> &nbest_result, int n, bool end_of_utterance)
+{
+	nbest_result.clear();
+	std::vector<datemoon::Lattice> nbest_paths;
+	GetNbest(nbest_paths, n, end_of_utterance);
+	for(size_t i = 0 ; i < nbest_paths.size(); ++i)
+	{
+		std::string one_txt;
+		OnebestLatticeToString(nbest_paths[i], one_txt);
+		nbest_result.push_back(one_txt);
+	}
+}

@@ -162,8 +162,15 @@ public:
 	void GetBestPath(datemoon::Lattice *best_path,
 			bool end_of_utterance) const;
 
-	void GetNbest(vector<datemoon::Lattice> &nbest_paths, int n, bool end_of_utterance);
+	void GetBestPathTxt(std::string &best_result, bool end_of_utterance);
 
+	void GetNbest(std::vector<datemoon::Lattice> &nbest_paths, int n, bool end_of_utterance);
+
+	void GetNbestTxt(std::vector<std::string> &nbest_result, int n, bool end_of_utterance);
+
+	// convert onebest lattice convert string text. word_sys must be have.
+	void OnebestLatticeToString(datemoon::Lattice &onebest_lattice, std::string &onebest_string);
+	
 	inline int NumFramesDecoded()
 	{
 		return _decoder.NumFramesDecoded();

@@ -21,6 +21,9 @@ void C2SPackageHeadPrint(C2SPackageHead &c2s, std::string flag)
 	std::cout << flag << "->" << "_n\t: " << c2s._n << std::endl;
 	std::cout << flag << "->" << "_data_len\t: " << c2s._data_len << std::endl;
 	std::cout << "*************************************************" << std::endl;
+	if(true)
+	{
+	}
 }
 
 void S2CPackageHeadPrint(S2CPackageHead &s2c, std::string flag)

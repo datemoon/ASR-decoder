@@ -89,6 +89,8 @@ public:
 	{
 		_c2s_package_head._n = 0;
 	}
+
+	// set audil data type ,(short,float...)
 	inline bool SetDtype(uint dtype)
 	{
 		if(dtype >> 2 > 0)
@@ -96,21 +98,28 @@ public:
 		_c2s_package_head._dtype = dtype;
 		return true;
 	}
+	inline uint GetDtype() { return _c2s_package_head._dtype;}
+	// get data type len
+	inline uint GetDtypeLen()
+	{
+		if(_c2s_package_head._dtype == DSHORT)
+			return 2;
+		else if(_c2s_package_head._dtype == DFLOAT)
+			return 4;
+	}
 
-	/*
-	 * set which one package,start from 0-2^32
-	 * */
+	// set which one package,start from 0-2^32
 	inline void SetN(uint n)
 	{
 		_c2s_package_head._n = n;
 	}
-	/*
-	 * set data segment length.
-	 * */
+	// set data segment length.
 	inline void SetDataLen(uint data_len)
 	{
 		_c2s_package_head._data_len = data_len;
 	}
+
+	// set end flag
 	inline bool SetEndFLag(uint end_flag)
 	{
 		if(end_flag >> 1 > 0)
@@ -118,6 +127,13 @@ public:
 		_c2s_package_head._end_flag = end_flag;
 		return true;
 	}
+	// whether send to service end .
+	bool IsEnd()
+	{
+		return _c2s_package_head._end_flag == 1 ? true:false;
+	}
+	
+	// set audio bit, 8bit 16bit,32bit
 	inline bool SetBit(uint bit)
 	{
 		if(bit >> 4 > 0)
@@ -125,15 +141,18 @@ public:
 		_c2s_package_head._bit = bit;
 		return true;
 	}
+	inline uint GetBit() { return _c2s_package_head._bit;}
+	
 	inline bool SetSampleRate(uint sample_rate)
 	{
 		if(sample_rate >> 8 > 0)
 			return false;
 		_c2s_package_head._sample_rate = sample_rate;
 		return true;
-		
 	}
+	inline uint GetSampleRate() { return _c2s_package_head._sample_rate;}
 
+	// audio type set (pcm,wav,opus)
 	inline bool SetAudioType(uint audio_type)
 	{
 		if(audio_type >> 2 > 0)
@@ -141,29 +160,29 @@ public:
 		_c2s_package_head._audio_type = audio_type;
 		return true;
 	}
-
-	inline bool SetAudioHeadFlage(uint audio_head_flage)
+	inline uint GetAudioType() { return _c2s_package_head._audio_type;}
+	
+	// whether have audio head. Default no.
+	inline bool SetAudioHeadFlag(uint audio_head_flage)
 	{
 		if(audio_head_flage >> 1 > 0)
 			return false;
 		_c2s_package_head._audio_head_flage = audio_head_flage;
 		return true;
 	}
+	inline uint GetAudioHeadFlag() { return _c2s_package_head._audio_head_flage; }
 
-	/*
-	 * set return nbest number.
-	 * */
-	inline bool setNbest(uint nbest = 1)
+	// set return nbest number. maximux it's 31->(2^6-1).
+	inline bool SetNbest(uint nbest = 1)
 	{
 		if(nbest >> 6 > 0)
 			return false;
 		_c2s_package_head._nbest = nbest;
 		return true;
 	}
+	inline uint GetNbest() { return _c2s_package_head._nbest;}
 	
-	/*
-	 * set whether return lattice,default don't return lattice.
-	 * */
+	// set whether return lattice,default don't return lattice.
 	inline bool SetLattice(uint lattice = 0)
 	{
 		if(lattice >> 1 > 0)
@@ -171,9 +190,9 @@ public:
 		_c2s_package_head._lattice = lattice;
 		return true;
 	}
-	/*
-	 * set whether return align info,default don't return.
-	 * */
+	inline uint GetLattice() { return _c2s_package_head._lattice; }
+	
+	//set whether return align info,default don't return.
 	inline bool SetAliInfo(uint ali_info = 0)
 	{
 		if(ali_info >> 1 > 0)
@@ -181,9 +200,9 @@ public:
 		_c2s_package_head._ali_info = ali_info;
 		return true;
 	}
-	/*
-	 * set whether score info,default don't return.
-	 * */
+	inline uint GetSetAliInfo() { return _c2s_package_head._ali_info; }
+
+	// set whether score info,default don't return.
 	inline bool SetScoreInfo(uint score_info = 0)
 	{
 		if(score_info >> 1 > 0)
@@ -191,7 +210,9 @@ public:
 		_c2s_package_head._score_info = score_info;
 		return true;
 	}
+	inline uint GetScoreInfo() { return _c2s_package_head._score_info; }
 
+	// set keep bit.
 	inline bool SetKeep(uint keep = 0)
 	{
 		if(keep >> 1 > 0)
@@ -199,6 +220,7 @@ public:
 		_c2s_package_head._keep = keep;
 		return true;
 	}
+	//////////////////////////////////////////////////////////
 	// from client to service package write.
 	/*
 	 * sockfd    : scoket fd
@@ -214,11 +236,6 @@ public:
 	void Print(std::string flag="")
 	{
 		C2SPackageHeadPrint(_c2s_package_head, flag);
-	}
-
-	bool IsEnd()
-	{
-		return _c2s_package_head._end_flag == 1 ? true:false;
 	}
 
 	char* GetData(uint *data_len)
@@ -460,9 +477,8 @@ public:
 		_nbest_res.Reset();
 	}
 	~S2CPackageAnalysis() { }
-	/*
-	 * Set nbest result.
-	 * */
+	// Set nbest result.
+	// if you result greater than 1, you should be recursive call n times.
 	void SetNbest(std::string &result)
 	{
 		_nbest_res.SetNbest(result);

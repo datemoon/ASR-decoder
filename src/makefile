@@ -5,9 +5,9 @@
 SUBDIRS=util hmm align lib pitch nnet \
 	newfst newlm \
 	decoder fst_format_convert_tool \
-	service2 kaldi-nnet3 
+	service2 kaldi-nnet3 v2-asr
 
-SUBDIRSBIN=service2bin
+SUBDIRSBIN=service2bin kaldi-nnet3bin 
 
 all:ex exbin
 
@@ -19,6 +19,4 @@ exbin:
 
 .PHONY:
 clean:
-	-for x in $(SUBDIRS) ; do make clean -C $$x; done
-
-
+	-for x in $(SUBDIRS) $(SUBDIRSBIN) ; do make clean -C $$x; done

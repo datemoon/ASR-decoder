@@ -44,6 +44,7 @@ KALDI_LIB_STATIC=$(KALDI_ROOT)/online2/kaldi-online2.a $(KALDI_ROOT)/ivector/kal
 
 CXXFLAGS+= -I$(KALDI_ROOT) -I$(OPENFSTINC) -I$(ATLASINC) \
 		   -Wl,-rpath=$(KALDI_ROOT)/../tools/openfst-1.6.7/lib \
-		   -Wl,-rpath=$(KALDI_ROOT)/lib \
-		   -DKALDI
+		   -Wl,-rpath=$(KALDI_ROOT)/lib 
+
+CXXFLAGS+= -DKALDI
 

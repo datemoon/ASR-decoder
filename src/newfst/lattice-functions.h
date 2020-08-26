@@ -15,7 +15,7 @@ void LatticeRmInput(Lattice &fst);
 
 void AddSuperFinalState(Lattice &fst);
 
-bool BestPathToVector(Lattice &best_path, 
+bool LatticeToVector(Lattice &best_path, 
 		std::vector<int> &best_words_arr, std::vector<int> &best_phones_arr,
 		float &best_tot_score, float &best_lm_score);
 #include "src/util/namespace-end.h"

@@ -1,9 +1,14 @@
 include ../hubo.mk
 
 
-BIN=asr-service asr-client asr-client-v1 asr-client-v2
+BIN=asr-service asr-client asr-client-v1 asr-client-v2 \
+	v2-asr-service
 
-LIBS=../util/libutil.a ../service2/libservice2.a
+LIBS=../v2-asr/libv2asr.a ../kaldi-nnet3/libonlinedecode.a \
+	 ../service2/libservice2.a \
+	 ../decoder/liboptimizedecode.a \
+	 ../newfst/liblatfst.a \
+	 ../util/libutil.a
 
 OBJ=
 
@@ -22,6 +27,11 @@ asr-client-v2:asr-client-v2.o
 asr-service:asr-service.o
 	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIB_DYNAMIC) $(FST_LIB) $(CBLAS_LIB)
 	#$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIB_STATIC) $(FST_LIB) $(CBLAS_LIB)
+
+v2-asr-service:v2-asr-service.o
+	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIB_DYNAMIC) $(FST_LIB) $(CBLAS_LIB)
+	#$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIB_STATIC) $(FST_LIB) $(CBLAS_LIB)
+
 
 %.o:%.c
 	$(CXX) $(CXXFLAGS) -c  -o $@ $<
