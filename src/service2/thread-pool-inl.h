@@ -5,9 +5,10 @@
 #include "src/util/namespace-start.h"
 
 template<class T>
-ThreadPoolBase<T>::ThreadPoolBase(int32 thread_num):
+ThreadPoolBase<T>::ThreadPoolBase(int32 thread_num, bool wait_thread):
 	_shutdown(false),
-	_thread_num(thread_num)
+	_thread_num(thread_num),
+	_wait_thread(wait_thread)
 {
 	if(pthread_mutex_init(&_pthread_pool_mutex, NULL) != 0)
 	{
@@ -90,14 +91,16 @@ typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::AddTask(TaskBase *task)
 {
 	// judge queue full or not and process
 	pthread_mutex_lock(&_pthread_pool_mutex);
-	if(_idle_pthread_id.size() != 0)
+	if(_idle_pthread_id.size() != 0 || _wait_thread == true)
 	{ // have idle pthread
 		_task_list.push_back(task);
 	}
 	else
 	{
+		pthread_mutex_unlock(&_pthread_pool_mutex);
 		LOG_WARN << "No idle pthread wait...";
 		task->Stop();
+		return -1;
 		// task cancel
 	}
 	pthread_mutex_unlock(&_pthread_pool_mutex);

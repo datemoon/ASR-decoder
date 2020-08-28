@@ -44,6 +44,7 @@ protected:
 
 	pthread_mutex_t _pthread_pool_mutex;  // thread synchronization lock
 	pthread_cond_t _pthread_pool_cond;    // thread condition lock
+	bool _wait_thread;
 
 	void OneToTwo(pthread_t tid, std::vector<pthread_t> &one, std::vector<pthread_t> &two)
 	{
@@ -94,7 +95,7 @@ public:
 	}
 
 
-	ThreadPoolBase(int32 thread_num=10);
+	ThreadPoolBase(int32 thread_num=10,bool wait_thread=false);
 	// release thread pool source
 	~ThreadPoolBase();
 	// add task

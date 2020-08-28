@@ -56,7 +56,11 @@ void TestWorkThread::Run()
 		_thread_pool->MoveToBusy(tid); // add busy list
 		pthread_mutex_unlock(pthread_pool_mutex);
 
-		task->Run(NULL);
+		if(0 != task->Run(NULL))
+		{
+			LOG_WARN << "task run error!!!"
+		}
+		delete task;
 
 		pthread_mutex_lock(pthread_pool_mutex);
 		_thread_pool->MoveToIdle(tid); // add idle list

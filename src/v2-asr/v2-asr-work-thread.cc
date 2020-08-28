@@ -37,7 +37,11 @@ void V2ASRWorkThread::Run()
 		_thread_pool->MoveToBusy(tid); // add busy list
 		pthread_mutex_unlock(pthread_pool_mutex);
 
-		task->Run((void*)this);
+		if(0 != task->Run((void*)this))
+		{
+			LOG_WARN << "task run error!!!";
+		}
+		delete task;
 
 		pthread_mutex_lock(pthread_pool_mutex);
 		_thread_pool->MoveToIdle(tid); // add idle list

@@ -2,7 +2,7 @@ include ../hubo.mk
 
 
 BIN=asr-service asr-client asr-client-v1 asr-client-v2 \
-	v2-asr-service
+	v2-asr-service thread-client
 
 LIBS=../v2-asr/libv2asr.a ../kaldi-nnet3/libonlinedecode.a \
 	 ../service2/libservice2.a \
@@ -16,6 +16,9 @@ LIBNAME=libservice2.a
 all:$(BIN)
 
 asr-client:asr-client.o
+	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
+
+thread-client:thread-client.o
 	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
 
 asr-client-v1:asr-client-v1.o
