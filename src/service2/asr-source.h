@@ -19,9 +19,8 @@
 
 namespace kaldi {
 
-class ASROpts
+struct ASROpts
 {
-public:
 	// feature option
 	OnlineNnet2FeaturePipelineConfig _feature_opts;
 	// nnet option
@@ -67,6 +66,7 @@ public:
 	}
 };
 
+class ASRWorker;
 class ASRSource
 {
 public:
@@ -138,7 +138,7 @@ public:
 		_asr_opts(asr_opts), _asr_source(asr_source),
 		_decodable_info(NULL), _feature_info(NULL), _feature_pipeline(NULL), 
 		_decoder(NULL) {}
-	~ASRWorker() { }
+	~ASRWorker() { Destory();}
 	void Init(size_t *chunk_len, int32 frame_offset=0)
 	{
 		_produce_time = _asr_opts->_produce_time;

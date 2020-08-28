@@ -14,14 +14,18 @@ public:
 	typedef ThreadBase::int32 int32;
 public:
 	ASRWorkThread(ThreadPoolBase<ThreadBase> *tp, 
-			kaldi::ASROpts *asr_opts, kaldi::ASRSource *asr_source)
+			kaldi::ASROpts *asr_opts, kaldi::ASRSource *asr_source):
+		_thread_pool(tp),
+		_asr_work(NULL)
 	{ 
-		_thread_pool = tp;
 		InitASRSource(asr_opts, asr_source);
 	}
 	~ASRWorkThread() 
 	{ 
-		delete _asr_work;
+		if(_asr_work != NULL)
+			delete _asr_work;
+		_asr_work = NULL;
+		_thread_pool = NULL;
 	}
 	void Run();
 private:

@@ -15,19 +15,21 @@ public:
 		TOK = 0
 	};
 public:
-	ThreadBase(){}
-	ThreadBase(int32 index):_index(index){ }
+	ThreadBase():_thread_id(0),_index(-1),_ready_ok(false){}
+	ThreadBase(int32 index):_thread_id(0),_index(index),_ready_ok(false){ }
 
 	virtual ~ThreadBase() {}
 	static void* ThreadFunc(void* para); // thread function
 	virtual void Run() = 0;              // real process data 
 	int32 Create();                      // create thread
 	int32 Join(void **ret);              // join thread
-	int32 GetThreadId() const;           // get pthread id
+	pthread_t GetThreadId() const;           // get pthread id
 	int32 GetThreadIndex() const;        // get pthread index
-private:
+	bool IsReady() { return _ready_ok;}
+protected:
 	pthread_t _thread_id;
 	int32 _index;
+	bool _ready_ok;
 };
 
 #include "src/util/namespace-end.h"

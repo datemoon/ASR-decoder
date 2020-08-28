@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 	#endif
 	const char *usage = "This is a test v2 asr service test code.\n"
 		"Usage: v2-asr-service [options] <nnet3-in> "
-		"<fst-in> <hmm-fst-in> <word-symbol-table> <wavfile>\n";
+		"<fst-in> <hmm-fst-in> <word-symbol-table>\n";
 
 	kaldi::ParseOptions po(usage);
 	std::string config_socket="";
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 	online_conf.Register(&po);
 
 	po.Read(argc, argv);
-	if (po.NumArgs() != 5)
+	if (po.NumArgs() != 4)
    	{
 		po.PrintUsage();
 		return 1;
@@ -49,22 +49,25 @@ int main(int argc, char *argv[])
 	std::string nnet3_rxfilename = po.GetArg(1),
 		fst_in_filename = po.GetArg(2),
 		hmm_in_filename = po.GetArg(3),
-		word_syms_filename = po.GetArg(4),
-		wavfilelist = po.GetArg(5);
+		word_syms_filename = po.GetArg(4);
 
 	// online decoder info
 	OnlineDecoderInfo online_info(online_conf, nnet3_rxfilename,
 			fst_in_filename, hmm_in_filename,word_syms_filename);
 
-	signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
+	LOG_COM << "OnlineDecoderInfo init ok.";
+	//signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
 
 	//ConfigParseOptions conf(usage);
-	SocketBase net_io;
-	ReadConfigFromFile(config_socket, &net_io);
+	SocketConf net_conf;
+	datemoon::ReadConfigFromFile(config_socket, &net_conf);
+	net_conf.Info();
+	SocketBase net_io(&net_conf);
 	//net_io.Register(&conf);
 	//conf.Read(argc, argv);
 	//conf.PrintUsage();
 
+	LOG_COM << "SocketBase init ok.";
 	if(net_io.Init() < 0)
 	{
 		LOG_ERR << "net_io.Init failed!!!";
@@ -83,6 +86,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	LOG_COM << "create ThreadPool start.";
 	int nthread = 3;
 	ThreadPoolBase<ThreadBase> pool(nthread);
 	{
@@ -90,18 +94,13 @@ int main(int argc, char *argv[])
 		vector<ThreadBase*> tmp_threads;
 		for(int i =0;i<nthread;++i)
 		{
-			V2ASRWorkThread *asr_t = new V2ASRWorkThread(online_info);
-			if (asr_t->Create() != 0)
-			{
-				printf("init thread failed.\n");
-				return -1;
-			}
+			V2ASRWorkThread *asr_t = new V2ASRWorkThread(&pool, online_info);
 			tmp_threads.push_back(asr_t);
 		}
 		pool.Init(tmp_threads);
 	}
 	LOG_COM << "init thread pool ok";
-	
+
 	while(1)
 	{
 		int connectfd = net_io.Accept();

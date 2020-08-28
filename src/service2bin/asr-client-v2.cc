@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	
 	C2SPackageAnalysis c2s_cli;
+	c2s_cli.SetNbest(1);
 	struct sockaddr_in ser;
 	memset(&ser, 0x00, sizeof(ser));
 	ser.sin_family = AF_INET;
@@ -77,6 +78,7 @@ int main(int argc, char *argv[])
 		size_t sent_len = fread((void*)sentbuf, 1, LEN, fp);
 		if(sent_len > 0)
 		{
+			c2s_cli.SetNbest(1);
 			if(true != c2s_cli.C2SWrite(sockfd, sentbuf, sent_len, 0))
 			{
 				 std::cout << "C2SWrite failed." << std::endl;
@@ -86,6 +88,7 @@ int main(int argc, char *argv[])
 		}
 		else
 		{
+			c2s_cli.SetNbest(5);
 			if(true != c2s_cli.C2SWrite(sockfd, sentbuf, sent_len, 1))
 			{
 				 std::cout << "C2SWrite end failed." << std::endl;

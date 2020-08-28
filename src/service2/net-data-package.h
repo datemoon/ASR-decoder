@@ -61,6 +61,7 @@ public:
 			uint n=0, uint data_len=0):
 		_data_buffer(NULL),_data_buffer_capacity(0)
 	{
+		memset(&_c2s_package_head, 0x00, sizeof(_c2s_package_head));
 		_c2s_package_head._dtype = dtype;
 		_c2s_package_head._bit = bit;
 		_c2s_package_head._sample_rate = sample_rate;
@@ -450,6 +451,7 @@ public:
 	S2CPackageAnalysis(uint nbest=0,uint lattice=0,
 			uint ali_info=0, uint score_info=0, uint end_flag=0, uint nres=0)
 	{
+		memset(&_s2c_package_head, 0x00, sizeof(_s2c_package_head));
 		_s2c_package_head._nbest = nbest;
 		_s2c_package_head._lattice = lattice;
 		_s2c_package_head._ali_info = ali_info;

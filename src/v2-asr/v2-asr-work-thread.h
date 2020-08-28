@@ -18,16 +18,18 @@ public:
 public:
 
 	//
-	V2ASRWorkThread(OnlineDecoderInfo &online_info):
+	V2ASRWorkThread(ThreadPoolBase<ThreadBase> *thread_pool, 
+			OnlineDecoderInfo &online_info):
+		_thread_pool(thread_pool),
 		_online_clg_decoder(online_info) { }
 
 	~V2ASRWorkThread() { }
 	void Run();
 private:
+	ThreadPoolBase<ThreadBase> *_thread_pool;
 	// online decoder instance
 	OnlineClgLatticeFastDecoder _online_clg_decoder;
 
-	ThreadPoolBase<ThreadBase> *_thread_pool;
 	// recv data from client
 	C2SPackageAnalysis _ser_c2s_package_analysys;
 	// send data to client

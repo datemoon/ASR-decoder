@@ -10,9 +10,54 @@
 
 #include "src/util/namespace-start.h"
 
-class SocketConf
+struct SocketConf
 {
+	std::string _ip;
+	int32 _port;
+
+	int32 _keepalive; // open keepalive if no 0.
+	int32 _keeptime;  // 5s no data
+	int32 _keepinterval; // 
+	int32 _keepcount;    // 
+	int32 _n_listen;             // max listen, advised 5.
+
+	int32 _rec_timeout; // recive timeout usec
 public:
+	SocketConf()
+	{
+		_ip = "127.0.0.1";
+		_port = 8000;
+		_keepalive = 1;
+		_keeptime = 5;
+		_keepinterval = 1;
+		_keepcount = 3;
+		_n_listen = 5;
+		_rec_timeout = 5000000;
+	}
+	void Register(ConfigParseOptions *conf)
+	{
+		conf->Register("ip", &_ip, "socket address , Default "+_ip);
+		conf->Register("port", &_port, "socket port. Default 8000");
+		conf->Register("keepalive", &_keepalive, "socket keepalive switch, default is 1(open),0(close)");
+		conf->Register("keeptime", &_keeptime, "if keepalive open, keeptime it's no data to send data time. Default 5s");
+		conf->Register("keepinterval", &_keepinterval, "if keepalive open, keep interval. Defalut 1s");
+		conf->Register("keepcount", &_keepcount, "if keepalive open, max keeptime times. Default 3");
+		conf->Register("n_listen", &_n_listen, "listen max");
+		conf->Register("rec_timeout", &_rec_timeout, "ust usec, Default 5000000(5s)");
+	}
+	void Info()
+	{
+		LOG_COM << "*******************SocketInfo********************";
+		LOG_COM << "ip\t:" << _ip;
+		LOG_COM << "port\t:" << _port;
+		LOG_COM << "keepalive\t:" << _keepalive;
+		LOG_COM << "keeptime\t:" << _keeptime;
+		LOG_COM << "keepinterval\t:" << _keepinterval;
+		LOG_COM << "keepcount\t:" << _keepcount;
+		LOG_COM << "n_listen\t:" << _n_listen;
+		LOG_COM << "rec_timeout(usec)\t:" << _rec_timeout;
+		LOG_COM << "*************************************************";
+	}
 };
 
 class SocketBase
@@ -38,24 +83,19 @@ public:
 		_rec_timeout.tv_sec = 5;
 		_rec_timeout.tv_usec = 0;
 	}
-
-	void Register(ConfigParseOptions *conf)
+	SocketBase(SocketConf *conf)
 	{
-		int32 usec = 5000000;
-		int32 port = _port;
-		conf->Register("ip", &_ip, "socket address , Default "+_ip);
-		conf->Register("port", &port, "socket port. Default 8000");
-		conf->Register("keepalive", &_keepalive, "socket keepalive switch, default is 1(open),0(close)");
-		conf->Register("keeptime", &_keeptime, "if keepalive open, keeptime it's no data to send data time. Default 5s");
-		conf->Register("keepinterval", &_keepinterval, "if keepalive open, keep interval. Defalut 1s");
-		conf->Register("keepcount", &_keepcount, "if keepalive open, max keeptime times. Default 3");
-		conf->Register("n_listen", &_n_listen, "listen max");
-		conf->Register("rec_timeout", &usec, "ust usec, Default 5000000(5s)");
-		_rec_timeout.tv_sec = usec/1000000;
-		_rec_timeout.tv_usec = usec%1000000;
-		_port = port;
-	}
+		_ip = conf->_ip;
+		_port = conf->_port;
+		_keepalive = conf->_keepalive;
+		_keeptime = conf->_keeptime;
+		_keepinterval = conf->_keepinterval;
+		_keepcount = conf->_keepcount ;
+		_n_listen = conf->_n_listen;
+		_rec_timeout.tv_sec = conf->_rec_timeout/1000000;
+		_rec_timeout.tv_usec = conf->_rec_timeout%1000000;
 
+	}
 	SocketBase(std::string ip, int32 port, int32 keepalive=1,
 			int32 keeptime=5, int32 keepinterval=1, int32 keepcount=3,
 			int32 n_listen=5, int32 usec=5000000):

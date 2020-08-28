@@ -36,6 +36,9 @@ int main(int argc, char *argv[])
 	ParseOptions po(usage);
 	ASROpts asr_opts;
 	asr_opts.Register(&po);
+	std::string config_socket="";
+	po.Register("config-socket", &config_socket, "Socket config file.(default NULL)");
+
 	po.Read(argc, argv);
 	if (po.NumArgs() != 3)
    	{
@@ -52,10 +55,10 @@ int main(int argc, char *argv[])
 	signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
 
 	//ConfigParseOptions conf(usage);
-	SocketBase net_io;
-	//net_io.Register(&conf);
-	//conf.Read(argc, argv);
-	//conf.PrintUsage();
+	SocketConf net_conf;
+	datemoon::ReadConfigFromFile(config_socket, &net_conf);
+	net_conf.Info();
+	SocketBase net_io(&net_conf);
 
 	if(net_io.Init() < 0)
 	{
@@ -75,7 +78,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	int nthread = 3;
+	int nthread = 5;
 	ThreadPoolBase<ThreadBase> pool(nthread);
 	{
 		// create thread
@@ -83,17 +86,11 @@ int main(int argc, char *argv[])
 		for(int i =0;i<nthread;++i)
 		{
 			ASRWorkThread *asr_t = new ASRWorkThread(&pool, &asr_opts, &asr_source);
-			if (asr_t->Create() != 0)
-			{
-				printf("init thread failed.\n");
-				return -1;
-			}
 			tmp_threads.push_back(asr_t);
 		}
 		pool.Init(tmp_threads);
 	}
 	LOG_COM << "init thread pool ok";
-	
 	while(1)
 	{
 		int connectfd = net_io.Accept();

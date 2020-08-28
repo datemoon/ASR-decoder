@@ -25,7 +25,7 @@ ThreadBase::int32 ThreadBase::Create()
 	return TOK;
 }
 
-ThreadBase::int32 ThreadBase::GetThreadId() const
+pthread_t ThreadBase::GetThreadId() const
 {
 	return _thread_id;
 }

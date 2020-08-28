@@ -119,6 +119,16 @@ public:
 	   InitDecoding(0, true);	
 	}
 
+	~OnlineClgLatticeFastDecoder()
+	{
+		if (_feature_pipeline != NULL)
+			delete _feature_pipeline;
+		_feature_pipeline = NULL;
+		if(_decodable != NULL)
+			delete _decodable;
+		_decodable = NULL;
+	}
+
 	// send_end if send end will init _decodable and _feature_pipeline
 	void InitDecoding(int frame_offset=0, bool send_end = false)
 	{

@@ -104,7 +104,8 @@ int32 V2ASRServiceTask::Run(void *data)
 		}
 		gettimeofday(&decoder_end, NULL);
 		total_decoder_time += (decoder_end.tv_sec- decoder_start.tv_sec) +
-			(decoder_end.tv_usec - decoder_start.tv_usec)/1000000;
+			(decoder_end.tv_usec - decoder_start.tv_usec)*1.0/1000000;
+		//LOG_COM << "decoder_time = " << total_decoder_time;
 		// according to ser_c2s request , return package.
 		uint nbest = ser_c2s.GetNbest();
 		
@@ -177,9 +178,11 @@ int32 V2ASRServiceTask::Run(void *data)
 				smaple_rate=32000;
 			else
 				break;
-			float wav_time = total_wav_len*1.0/smaple_rate;
+			float wav_time = total_wav_len*1.0/(smaple_rate*dtype_len);
 			float rt = total_decoder_time/wav_time;
-			LOG_COM << "decoder rt is : " << rt ;
+			LOG_COM << "wav time(s)\t:" << wav_time;
+			LOG_COM << "run time(s)\t:" << total_decoder_time;
+			LOG_COM << "decoder rt\t: " << rt ;
 			break; // end
 		}
 	}

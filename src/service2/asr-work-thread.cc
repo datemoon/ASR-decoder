@@ -16,12 +16,15 @@ void ASRWorkThread::Run()
 	pthread_mutex_t *pthread_pool_mutex = _thread_pool->GetPthreadMutex();
 	// thread condition lock
 	pthread_cond_t *pthread_pool_cond = _thread_pool->GetPthreadCond();
-
 	while(1)
 	{
 		pthread_mutex_lock(pthread_pool_mutex);
 		while(_thread_pool->GetTaskSize() == 0 && !_thread_pool->Shutdown())
 		{
+			if(_ready_ok == false)
+			{// run ok
+				_ready_ok = true;
+			}
 			LOG_COM << "Thread " << tid << " wait task.";
 			pthread_cond_wait(pthread_pool_cond, pthread_pool_mutex);
 		}

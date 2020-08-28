@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "src/service2/thread-pool.h"
 #include "src/util/log-message.h"
 
@@ -10,12 +11,12 @@ ThreadPoolBase<T>::ThreadPoolBase(int32 thread_num):
 {
 	if(pthread_mutex_init(&_pthread_pool_mutex, NULL) != 0)
 	{
-		LOG_ERR << "pthread_mutex_init failed.";
+		LOG_ERR << "pthread_mutex_init _pthread_pool_mutex failed.";
 		return ;
 	}
 	if(pthread_cond_init(&_pthread_pool_cond, NULL) != 0)
 	{
-		LOG_ERR << "pthread_cond_init failed.";
+		LOG_ERR << "pthread_cond_init _pthread_pool_cond failed.";
 		return ;
 	}
 }
@@ -31,8 +32,9 @@ typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::AddThread(T *th)
 template<class T>
 typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::Init(std::vector<T *> &t_v)
 {
-	for(int i=0; i<t_v.size(); ++i)
+	for(size_t i=0; i < t_v.size(); ++i)
 	{
+		t_v[i]->Create();
 		int ret = AddThread(t_v[i]);
 		if(ret != i+1)
 		{
@@ -40,12 +42,36 @@ typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::Init(std::vector<T *> &t_v)
 			return TPERROR;
 		}
 	}
+
+	for(int i=0; i<_all_threads.size(); ++i)
+	{
+		LOG_COM << "Recv ready cond start." << i;
+		while(true)
+		{
+			pthread_mutex_lock(&_pthread_pool_mutex);
+			if(_all_threads[i]->IsReady() == false)
+			{
+				pthread_mutex_unlock(&_pthread_pool_mutex);
+				//LOG_COM << "Wait thread " << _all_threads[i]->GetThreadId() << " ready ok.";
+				usleep(1000);
+			}
+			else
+			{
+				pthread_mutex_unlock(&_pthread_pool_mutex);
+				break;
+			}
+		}
+		LOG_COM << "Recv ready cond ok." << i;
+	}
+	LOG_COM << "Init thread pool ok.";
 	return TPOK;
 }
 
 template<class T>
 ThreadPoolBase<T>::~ThreadPoolBase()
 {
+	StopAll();
+	/*
 	if(pthread_mutex_destroy(&_pthread_pool_mutex) != 0)
 	{
 		LOG_WARN << "pthread_mutex_destroy failed.";
@@ -56,6 +82,7 @@ ThreadPoolBase<T>::~ThreadPoolBase()
 		LOG_WARN << "pthread_cond_destroy failed.";
 		return;
 	}
+	*/
 }
 
 template<class T>
@@ -84,22 +111,29 @@ typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::StopAll()
 {
 	if(_shutdown)
 		return TPERROR;
-	LOG_COM << "*****************************\n"
-		<< "Now I will end all threads!!"
-		<< "*****************************";
+	LOG_COM << "*****************************";
+	LOG_COM << "Now I will end all threads!!";
+	LOG_COM << "*****************************";
 	// wake up all thread distory thread pool
+	pthread_mutex_lock(&_pthread_pool_mutex);
 	_shutdown = true;
 	pthread_cond_broadcast(&_pthread_pool_cond);
-	for(int32 i =0 ; i< _thread_num ; ++i)
+	pthread_mutex_unlock(&_pthread_pool_mutex);
+	LOG_COM << "_shutdown set true.";
+	for(size_t i =0 ; i< _all_threads.size() ; ++i)
 	{
 		pthread_join(_all_threads[i]->GetThreadId(), NULL);
 	}
 
 	pthread_mutex_destroy(&_pthread_pool_mutex);
 	pthread_cond_destroy(&_pthread_pool_cond);
-	LOG_COM << "*****************************\n"
-		<< "End all threads ok!!"
-		<< "*****************************";
+	for(size_t i = 0 ; i < _all_threads.size(); ++i)
+	{
+		delete _all_threads[i];
+	}
+	LOG_COM << "*****************************";
+	LOG_COM << "End all threads ok!!";
+	LOG_COM << "*****************************";
 	return TPOK;
 }
 

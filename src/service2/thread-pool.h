@@ -80,7 +80,7 @@ public:
 	{
 		return &_pthread_pool_cond;
 	}
-	
+
 	TaskBase *GetTask()
 	{
 		TaskBase *task = _task_list.front();
