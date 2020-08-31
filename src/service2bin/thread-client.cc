@@ -43,7 +43,8 @@ int main(int argc,char *argv[])
 	{
 		LOG_WARN << "Open outfile " << outfile << " failed!!!, Will be printf stdout.";
 	}
-	ThreadPoolBase<ThreadBase> pool(nthread);
+	bool wait_thread=true;
+	ThreadPoolBase<ThreadBase> pool(nthread, wait_thread);
 	{
 		// create thread
 		std::vector<ThreadBase*> tmp_threads;

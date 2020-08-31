@@ -265,7 +265,7 @@ T* Renew(T *src, size_t old_size, size_t new_size)
 	memset(tmp, 0x00, size*sizeof(T));
 	if(src != NULL)
 	{
-		memcpy(tmp, src, size*sizeof(T));
+		memcpy(tmp, src, old_size*sizeof(T));
 		delete [] src;
 	}
 	return tmp;
