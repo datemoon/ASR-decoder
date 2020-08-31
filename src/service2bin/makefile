@@ -1,6 +1,5 @@
 include ../hubo.mk
 
-
 BIN=asr-service asr-client asr-client-v1 asr-client-v2 \
 	v2-asr-service thread-client
 
@@ -35,7 +34,6 @@ v2-asr-service:v2-asr-service.o
 	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIB_DYNAMIC) $(FST_LIB_DYNAMIC) $(CBLAS_LIB)
 	#$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIB_STATIC) $(FST_LIB_STATIC) $(CBLAS_LIB)
 
-
 %.o:%.c
 	$(CXX) $(CXXFLAGS) -c  -o $@ $<
 
@@ -43,6 +41,5 @@ v2-asr-service:v2-asr-service.o
 	$(CXX) $(CXXFLAGS) -c  -o $@ $<
 
 .PHONY:
-
 clean:
 	rm -f *.o $(BIN) $(LIBNAME)

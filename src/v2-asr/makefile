@@ -5,7 +5,7 @@ TESTFILES=
 
 LIBS=../util/libutil.a ../service2/libservice2.a
 
-OBJ=v2-asr-work-thread.o
+OBJ=v2-asr-work-thread.o asr-client-task.o
 
 LIBNAME=libv2asr.a
 

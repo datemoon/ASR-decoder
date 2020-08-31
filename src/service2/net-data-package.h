@@ -475,6 +475,13 @@ public:
 		return false;
 	}
 
+	bool IsMiddleEnd()
+	{
+		if(_s2c_package_head._end_flag == S2CMIDDLEEND)
+			return true;
+		return false;
+	}
+
 	void Reset()
 	{
 		if(IsAllEnd())
@@ -505,6 +512,11 @@ public:
 	{
 		S2CPackageHeadPrint(_s2c_package_head, flag);
 		_nbest_res.Print(flag);
+	}
+
+	int GetNres()
+	{
+		return _s2c_package_head._nres;
 	}
 
 private:

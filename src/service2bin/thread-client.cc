@@ -25,9 +25,11 @@ int main(int argc,char *argv[])
 	std::string ip = "127.0.0.1";
 	int port=8000;
 	int nthread=1;
+	std::string outfile = "result.txt";
 	opt.Register("ip", &ip, "service address(default 127.0.0.1)");
 	opt.Register("port", &port, "service port(default 8000)");
 	opt.Register("nthread", &nthread, "client thread number less then service thread number.(default 1)");
+	opt.Register("outfile", &outfile, "outfile name.(default result.txt)");
 
 	opt.Read(argc, argv);
 	if (opt.NumArgs() != 2)
@@ -37,6 +39,10 @@ int main(int argc,char *argv[])
 	}
 	std::string wavlist = opt.GetArg(1);
 
+	if(CreateResultHandle(outfile.c_str(), "w") != true)
+	{
+		LOG_WARN << "Open outfile " << outfile << " failed!!!, Will be printf stdout.";
+	}
 	ThreadPoolBase<ThreadBase> pool(nthread);
 	{
 		// create thread
