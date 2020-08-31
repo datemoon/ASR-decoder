@@ -70,6 +70,7 @@ int main(int argc,char *argv[])
 		}
 		memset(wavfile,0x00,sizeof(wavfile));
 	}
+	pool.WaitStopAll();
 	//sleep(10);
 	return 0;
 }

@@ -34,7 +34,9 @@ int main(int argc, char *argv[])
 
 	kaldi::ParseOptions po(usage);
 	std::string config_socket="";
+	int nthread = 1;
 	po.Register("config-socket", &config_socket, "Socket config file.(default NULL)");
+	po.Register("nthread", &nthread, "service thread number.(default 1)");
 	// init online featuer and nnet config
 	OnlineDecoderConf online_conf;
 	online_conf.Register(&po);
@@ -87,7 +89,6 @@ int main(int argc, char *argv[])
 	}
 
 	LOG_COM << "create ThreadPool start.";
-	int nthread = 3;
 	ThreadPoolBase<ThreadBase> pool(nthread);
 	{
 		// create thread

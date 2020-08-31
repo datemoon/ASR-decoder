@@ -27,10 +27,11 @@ void *RecvThreadFunc(void *connect_fd)
 		if(true != s2c_cli.S2CRead(sockfd))
 		{
 			std::cerr << "S2CRead failed." << std::endl;
+			return NULL;
 		}
-		s2c_cli.Print("s2c_cli");
 		if(true == s2c_cli.IsAllEnd())
 		{
+			s2c_cli.Print("s2c_cli");
 			return NULL;
 		}
 	}

@@ -110,6 +110,23 @@ typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::AddTask(TaskBase *task)
 }
 
 template<class T>
+typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::WaitStopAll()
+{
+	if(_shutdown)
+		return TPERROR;
+	while(1)
+	{
+		pthread_mutex_lock(&_pthread_pool_mutex);
+		if(_task_list.size() == 0)
+		{
+			pthread_mutex_unlock(&_pthread_pool_mutex);
+			return StopAll();
+		}
+		pthread_mutex_unlock(&_pthread_pool_mutex);
+		usleep(500000);// sleep 0.5s
+	}
+}
+template<class T>
 typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::StopAll()
 {
 	if(_shutdown)

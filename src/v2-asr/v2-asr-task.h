@@ -47,6 +47,9 @@ int32 V2ASRServiceTask::Run(void *data)
 	S2CPackageAnalysis &ser_s2c = asr_work_thread->_ser_s2c_package_analysys;
 	OnlineClgLatticeFastDecoder &online_clg_decoder = asr_work_thread->_online_clg_decoder;
 	//size_t chunk=0;
+	// V2ASRWorkThread reset
+	ser_c2s.Reset();
+	ser_s2c.Reset();
 	online_clg_decoder.InitDecoding(0, true);
 	int n=0; // read timeout times
 	int total_wav_len = 0;
@@ -83,9 +86,11 @@ int32 V2ASRServiceTask::Run(void *data)
 		VLOG_COM(0) << "from |" << _connfd << "| receive \"" << data_len << "\"";
 		// 8k ,16bit
 		// whether to end
-		bool eos=false;
-		if(ser_c2s.IsEnd())
+		bool eos= ser_c2s.IsEnd();
+		if(eos == false && data_len == 0)
 		{
+			LOG_WARN << "Recv data length is Zero and eos is false!!!"
+			   << "	It's not allow and eos will be change true.";
 			eos = true;
 		}
 		// get audio data type len

@@ -41,7 +41,8 @@ void *RecvThreadFunc(void *connect_fd)
 	{
 		if(true != s2c_cli.S2CRead(sockfd))
 		{
-			std::cerr << "S2CRead failed." << std::endl;
+			LOG_WARN << "S2CRead failed!!!";
+			return NULL;
 		}
 		s2c_cli.Print("s2c_cli");
 		if(true == s2c_cli.IsAllEnd())
@@ -56,10 +57,16 @@ int32 ASRClientTask::Run(void *data)
 {
 	signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
 	ASRClinetThread * asr_client_thread = static_cast<ASRClinetThread *>(data);
-	C2SPackageAnalysis &cli_c2s = asr_client_thread->_client_c2s_package_analysys;
-	S2CPackageAnalysis &cli_s2c = asr_client_thread->_client_s2c_package_analysys;
+	C2SPackageAnalysis cli_c2s;
 
-	int sockfd = asr_client_thread->_sockfd;
+	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	struct sockaddr_in &ser = asr_client_thread->_ser;
+	int res = connect(sockfd, (struct sockaddr *) &ser, sizeof(struct sockaddr));
+	if(res < 0)
+	{
+		LOG_WARN << "Client connect service failed!!!";
+		return -1;
+	}
 
 	// create recv thread
 	pthread_t thread_id;
@@ -96,7 +103,7 @@ int32 ASRClientTask::Run(void *data)
 			cli_c2s.SetNbest(1);
 			if(true != cli_c2s.C2SWrite(sockfd, sentbuf, sent_len, 0))
 			{
-				std::cout << "C2SWrite failed." << std::endl;
+				LOG_WARN << "C2SWrite failed.";
 				return -1;
 			}
 			cli_c2s.Print("cli_c2s");
@@ -106,7 +113,7 @@ int32 ASRClientTask::Run(void *data)
 			cli_c2s.SetNbest(5);
 			if(true != cli_c2s.C2SWrite(sockfd, sentbuf, sent_len, 1))
 			{
-				std::cout << "C2SWrite end failed." << std::endl;
+				LOG_WARN << "C2SWrite end failed.";
 				return -1;
 			}
 			cli_c2s.Print("cli_c2s");		
@@ -127,6 +134,8 @@ int32 ASRClientTask::Run(void *data)
 	fclose(fp);
 	LOG_COM << "Send wav: " << _wav_file << " ok.";
 	pthread_join(thread_id,NULL);
+	close(sockfd);
+	LOG_COM << "Recv wav: " << _wav_file << " result and colse scoket " << sockfd << " ok.";
 	gettimeofday(&decoder_end, NULL);
 	total_decoder_time = (decoder_end.tv_sec- decoder_start.tv_sec) +
 		(decoder_end.tv_usec - decoder_start.tv_usec)*1.0/1000000;

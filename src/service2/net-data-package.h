@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <unistd.h>
+#include "src/util/log-message.h"
 
 #include "src/util/namespace-start.h"
 
@@ -44,7 +45,7 @@ struct C2SPackageHead
 	uint _n                : 32;
 	uint _data_len         : 32;
 };
-void C2SPackageHeadPrint(C2SPackageHead &c2s, std::string flag="");
+void C2SPackageHeadPrint(C2SPackageHead &c2s, std::string flag="", int vlog=1);
 // from client to service pack and unpack.
 class C2SPackageAnalysis
 {
@@ -107,6 +108,8 @@ public:
 			return 2;
 		else if(_c2s_package_head._dtype == DFLOAT)
 			return 4;
+		else
+			return -1;
 	}
 
 	// set which one package,start from 0-2^32
@@ -286,7 +289,9 @@ public:
 		GetData(&nbest);
 		for(size_t i=0; i < nbest.size(); ++i)
 		{
-			std::cout << flag << " -> " << nbest[i] << std::endl;
+			if(nbest[i].length() == 0)
+				continue;
+			LOG_COM << flag << " -> " << nbest[i];
 		}
 	}
 
@@ -360,14 +365,14 @@ public:
 				_nbest_len_len*sizeof(uint));
 		if(ret1 < 0)
 		{
-			std::cout << "Write nbest_len failed." <<std::endl;
+			LOG_WARN << "Write nbest_len failed." <<std::endl;
 			return ret1;
 		}
 		ssize_t ret2 = write(sockfd, static_cast<void*>(_nbest_res),
 				_nbest_res_len*sizeof(char));
 		if(ret2 < 0)
 		{
-			std::cout << "Write nbest_res failed." << std::endl;
+			LOG_WARN << "Write nbest_res failed.";
 			return ret2;
 		}
 		return ret1+ret2;
@@ -389,12 +394,12 @@ public:
 			   	n*sizeof(uint));
 		if(ret1 < 0)
 		{
-			std::cerr << "Read _nbest_len failed."  << std::endl;
+			LOG_WARN << "Read _nbest_len failed." ;
 			return ret1;
 		}
 		else if((uint)ret1 != n*sizeof(uint))
 		{
-			std::cerr << "Read _nbest_len loss." << std::endl;
+			LOG_WARN << "Read _nbest_len loss.";
 			return ret1;
 		}
 		// calculate total length
@@ -413,7 +418,7 @@ public:
 				total_len*sizeof(char));
 		if((uint)ret2 != total_len*sizeof(char))
 		{
-			std::cerr << "Read _nbest_res loss." << std::endl;
+			LOG_WARN << "Read _nbest_res loss.";
 			return ret2;
 		}
 		return 0;
@@ -440,7 +445,7 @@ struct S2CPackageHead
 	unsigned int       :0;
 };
 
-void S2CPackageHeadPrint(S2CPackageHead &s2c, std::string flag="");
+void S2CPackageHeadPrint(S2CPackageHead &s2c, std::string flag="", int vlog=1);
 
 // from service to client pack and unpack.
 class S2CPackageAnalysis

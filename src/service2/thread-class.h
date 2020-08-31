@@ -26,6 +26,7 @@ public:
 	pthread_t GetThreadId() const;           // get pthread id
 	int32 GetThreadIndex() const;        // get pthread index
 	bool IsReady() { return _ready_ok;}
+	void Reset();
 protected:
 	pthread_t _thread_id;
 	int32 _index;

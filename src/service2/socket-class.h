@@ -82,6 +82,7 @@ public:
 		_n_listen = 5;
 		_rec_timeout.tv_sec = 5;
 		_rec_timeout.tv_usec = 0;
+		_linger = {1,0};
 	}
 	SocketBase(SocketConf *conf)
 	{
@@ -94,6 +95,7 @@ public:
 		_n_listen = conf->_n_listen;
 		_rec_timeout.tv_sec = conf->_rec_timeout/1000000;
 		_rec_timeout.tv_usec = conf->_rec_timeout%1000000;
+		_linger = {1,0};
 
 	}
 	SocketBase(std::string ip, int32 port, int32 keepalive=1,
@@ -104,6 +106,7 @@ public:
 	{
 		_rec_timeout.tv_sec = usec/1000000;
 		_rec_timeout.tv_usec = usec%1000000;
+		_linger = {1,0};
 	}
 
 	int32 Init()
@@ -158,6 +161,14 @@ public:
 			LOG_WARN << "socket set SO_REUSEADDR failed!!!";
 			return ERROR;
 		}
+/*
+		if(setsockopt(_sockfd, SOL_SOCKET, SO_LINGER,
+				   	&_linger, sizeof(_linger)) != 0)
+		{
+			LOG_WARN << "socket set SO_LINGER failed!!!";
+			return ERROR;
+		}
+*/
 		return _sockfd;
 	}
 
@@ -217,6 +228,7 @@ private:
 	int32 _n_listen;             // max listen, advised 5.
 
 	struct timeval _rec_timeout; // recive timeout
+	struct linger _linger;
 	int32 _sockfd;
 };
 

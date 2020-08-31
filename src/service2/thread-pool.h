@@ -102,6 +102,7 @@ public:
 	int32 AddTask(TaskBase *task);
 	// stop all thread
 	int32 StopAll();
+	int32 WaitStopAll();
 
 	int32 GetTaskSize()
 	{
