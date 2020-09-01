@@ -6,7 +6,7 @@ TESTFILES=testv1-service test-client test-service net-data-package-test
 LIBS=../util/libutil.a ../service2/libservice2.a
 
 OBJ=thread-class.o net-data-package.o \
-	asr-work-thread.o asr-source.o pthread-util.o
+	pthread-util.o
 
 LIBNAME=libservice2.a
 

@@ -5,7 +5,7 @@
 SUBDIRS=util hmm align lib pitch nnet \
 	newfst newlm \
 	decoder fst_format_convert_tool \
-	service2 kaldi-nnet3 v2-asr
+	service2 kaldi-nnet3 v2-asr v1-asr
 
 SUBDIRSBIN=service2bin kaldi-nnet3bin 
 

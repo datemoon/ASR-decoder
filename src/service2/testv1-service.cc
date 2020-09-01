@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 	memset(&ser, 0, sizeof(ser));
 	ser.sin_family = AF_INET;
 	inet_aton("127.0.0.1",&ser.sin_addr);
-	ser.sin_port = htons(6500);
+	ser.sin_port = htons(8000);
 
 	int keepalive = 1; // open keepalive
 	int keeptime = 5; // 5s no data
@@ -87,11 +87,6 @@ int main(int argc, char *argv[])
 		for(int i =0;i<nthread;++i)
 		{
 			TestWorkThread *asr_t = new TestWorkThread(&pool);
-			if (asr_t->Create() != 0)
-			{
-				printf("init thread failed.\n");
-				return -1;
-			}
 			tmp_threads.push_back(asr_t);
 		}
 		pool.Init(tmp_threads);

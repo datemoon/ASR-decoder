@@ -77,7 +77,7 @@ void *ASRClientTask::RecvThreadFunc(void *data)
 
 #define LEN 4096
 
-int32 ASRClientTask::Run(void *data)
+ASRClientTask::int32 ASRClientTask::Run(void *data)
 {
 	//signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
 	ASRClinetThread * asr_client_thread = static_cast<ASRClinetThread *>(data);

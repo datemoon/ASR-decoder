@@ -1,5 +1,5 @@
 
-#include "src/service2/asr-source.h"
+#include "src/v1-asr/asr-source.h"
 
 namespace kaldi {
 std::string LatticeToString(const Lattice &lat, const fst::SymbolTable &word_syms) 

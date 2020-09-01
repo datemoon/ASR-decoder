@@ -3,7 +3,8 @@ include ../hubo.mk
 BIN=asr-service asr-client asr-client-v1 asr-client-v2 \
 	v2-asr-service thread-client
 
-LIBS=../v2-asr/libv2asr.a ../kaldi-nnet3/libonlinedecode.a \
+LIBS=../v2-asr/libv2asr.a ../v1-asr/libv1asr.a \
+	 ../kaldi-nnet3/libonlinedecode.a \
 	 ../service2/libservice2.a \
 	 ../decoder/liboptimizedecode.a \
 	 ../newfst/liblatfst.a \

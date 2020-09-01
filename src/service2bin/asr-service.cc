@@ -16,11 +16,11 @@
 #include <vector>
 
 #include "src/service2/thread-pool.h"
-#include "src/service2/asr-work-thread.h"
-#include "src/service2/asr-task.h"
+#include "src/v1-asr/asr-work-thread.h"
+#include "src/v1-asr/asr-task.h"
 #include "src/util/log-message.h"
 #include "src/service2/socket-class.h"
-#include "src/service2/asr-source.h"
+#include "src/v1-asr/asr-source.h"
 
 using namespace std;
 

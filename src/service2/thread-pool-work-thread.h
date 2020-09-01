@@ -2,7 +2,6 @@
 #define __THREAD_POOL_WORK_THREAD_H__
 #include "src/service2/thread-class.h"
 #include "src/service2/thread-pool.h"
-#include "src/service2/asr-source.h"
 #include "src/service2/net-data-package.h"
 
 #include "src/util/namespace-start.h"

@@ -40,6 +40,12 @@ void TestWorkThread::Run()
 		pthread_mutex_lock(pthread_pool_mutex);
 		while(_thread_pool->GetTaskSize() == 0 && !_thread_pool->Shutdown())
 		{
+			// set thread ready ok, because pthread_cond_t can be loss,
+			// make sure pthread_pool_cond be get when task arrive.
+			if(_ready_ok == false)
+			{// run ok
+				_ready_ok = true;
+			}			
 			LOG_COM << "Thread " << tid << " wait task.";
 			pthread_cond_wait(pthread_pool_cond, pthread_pool_mutex);
 		}
@@ -58,7 +64,7 @@ void TestWorkThread::Run()
 
 		if(0 != task->Run(NULL))
 		{
-			LOG_WARN << "task run error!!!"
+			LOG_WARN << "task run error!!!";
 		}
 		delete task;
 

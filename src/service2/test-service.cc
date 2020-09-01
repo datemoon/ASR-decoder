@@ -32,10 +32,11 @@ int main(int argc, char *argv[])
 	ThreadSigPipeIng();
 	const char *usage = "This is a test service code.\n";
 	ConfigParseOptions conf(usage);
-	SocketBase net_io;
-	net_io.Register(&conf);
+	SocketConf net_conf;
+	net_conf.Register(&conf);
 	conf.Read(argc, argv);
-	conf.PrintUsage();
+	//conf.PrintUsage();
+	SocketBase net_io(&net_conf);
 
 	if(net_io.Init() < 0)
 	{
@@ -63,11 +64,6 @@ int main(int argc, char *argv[])
 		for(int i =0;i<nthread;++i)
 		{
 			TestWorkThread *asr_t = new TestWorkThread(&pool);
-			if (asr_t->Create() != 0)
-			{
-				printf("init thread failed.\n");
-				return -1;
-			}
 			tmp_threads.push_back(asr_t);
 		}
 		pool.Init(tmp_threads);
