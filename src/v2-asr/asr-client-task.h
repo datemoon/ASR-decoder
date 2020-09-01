@@ -14,6 +14,8 @@
 
 bool CreateResultHandle(std::string result_file = "result.txt", std::string mode = "a");
 
+void CloseResultHandle();
+
 class ASRClientTask:public TaskBase
 {
 public:

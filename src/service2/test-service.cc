@@ -20,6 +20,7 @@
 #include "src/service2/test-task.h"
 #include "src/util/log-message.h"
 #include "src/service2/socket-class.h"
+#include "src/service2/pthread-util.h"
 
 using namespace std;
 
@@ -28,6 +29,7 @@ using namespace datemoon;
 #endif
 int main(int argc, char *argv[])
 {
+	ThreadSigPipeIng();
 	const char *usage = "This is a test service code.\n";
 	ConfigParseOptions conf(usage);
 	SocketBase net_io;

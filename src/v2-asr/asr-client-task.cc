@@ -20,14 +20,23 @@ bool CreateResultHandle(std::string result_file, std::string mode)
 	return true;
 }
 
+void CloseResultHandle()
+{
+	if(_result_fp != NULL)
+		fclose(_result_fp);
+}
 pthread_mutex_t ASRClientTask::_outfile_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // asynchronous receive result, and print in result file.
 void *ASRClientTask::RecvThreadFunc(void *data)
 {
 	ASRClientTask *asrclient_task = (ASRClientTask*) data;
+
+	pthread_mutex_lock(&_outfile_mutex);
 	int sockfd = asrclient_task->_sockfd;
 	std::string &filename = asrclient_task->_wav_file;
+	pthread_mutex_unlock(&_outfile_mutex);
+
 	S2CPackageAnalysis s2c_cli;
 	std::vector<std::string> all_result;
 	while(1)
@@ -70,11 +79,20 @@ void *ASRClientTask::RecvThreadFunc(void *data)
 
 int32 ASRClientTask::Run(void *data)
 {
-	signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
+	//signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
 	ASRClinetThread * asr_client_thread = static_cast<ASRClinetThread *>(data);
 	C2SPackageAnalysis cli_c2s;
 
 	_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	// in centos signal(SIGPIPE, SIG_IGN); it still happends. so I set socket
+//	int set_nosignal = 1;
+//	if(setsockopt(_sockfd, SOL_SOCKET, MSG_NOSIGNAL, (void*)&set_nosignal, sizeof(int) ) != 0)
+//	{
+//		LOG_WARN << "set MSG_NOSIGNAL failed!!!";
+//		LOG_WARN << "errno: " << errno;
+//		return -1;
+//	} // ENOPROTOOPT     92      Protocol not available
+
 	struct sockaddr_in &ser = asr_client_thread->_ser;
 	int res = connect(_sockfd, (struct sockaddr *) &ser, sizeof(struct sockaddr));
 	if(res < 0)
@@ -118,7 +136,7 @@ int32 ASRClientTask::Run(void *data)
 			if(true != cli_c2s.C2SWrite(_sockfd, sentbuf, sent_len, 0))
 			{
 				LOG_WARN << "C2SWrite failed.";
-				return -1;
+				break;
 			}
 			cli_c2s.Print("cli_c2s");
 		}

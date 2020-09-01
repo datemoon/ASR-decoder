@@ -13,12 +13,16 @@
 #include "src/service2/thread-pool.h"
 #include "src/util/log-message.h"
 #include "src/util/config-parse-options.h"
+#include "src/service2/pthread-util.h"
 
 int main(int argc,char *argv[])
 {
 #ifdef NAMESPACE
 	using namespace datemoon;
 #endif
+	// Block SIGPIPE before starting any other threads; other threads
+	// created by main() will inherit a copy of the signal mask.
+	ThreadSigPipeIng();
 	const char *usage = "This is a multithreading asr client test code.\n"
 		        "Usage: thread-client [options] <wav-list>\n";
 	ConfigParseOptions opt(usage);
@@ -38,6 +42,14 @@ int main(int argc,char *argv[])
 		return 1;
 	}
 	std::string wavlist = opt.GetArg(1);
+
+	//sigset_t set;
+	//sigemptyset(&set);
+	//sigaddset(&set, SIGPIPE);
+	//pthread_sigmask(SIG_BLOCK, &set, NULL);
+
+	//signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
+
 
 	if(CreateResultHandle(outfile.c_str(), "w") != true)
 	{
@@ -78,6 +90,9 @@ int main(int argc,char *argv[])
 		memset(wavfile,0x00,sizeof(wavfile));
 	}
 	pool.WaitStopAll();
+
+	fclose(fp);
+	CloseResultHandle();
 	//sleep(10);
 	return 0;
 }

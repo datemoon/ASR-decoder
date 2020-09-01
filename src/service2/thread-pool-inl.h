@@ -103,9 +103,9 @@ typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::AddTask(TaskBase *task)
 		return -1;
 		// task cancel
 	}
+	pthread_cond_signal(&_pthread_pool_cond);
 	pthread_mutex_unlock(&_pthread_pool_mutex);
 
-	pthread_cond_signal(&_pthread_pool_cond);
 	return 0;
 }
 

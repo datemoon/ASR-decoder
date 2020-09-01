@@ -20,6 +20,7 @@
 #include "src/service2/socket-class.h"
 #include "src/v2-asr/v2-asr-work-thread.h"
 #include "src/v2-asr/v2-asr-task.h"
+#include "src/service2/pthread-util.h"
 
 using namespace std;
 
@@ -28,6 +29,9 @@ int main(int argc, char *argv[])
 	#ifdef NAMESPACE
 	using namespace datemoon;
 	#endif
+	// Block SIGPIPE before starting any other threads; other threads
+	// created by main() will inherit a copy of the signal mask.
+	ThreadSigPipeIng();
 	const char *usage = "This is a test v2 asr service test code.\n"
 		"Usage: v2-asr-service [options] <nnet3-in> "
 		"<fst-in> <hmm-fst-in> <word-symbol-table>\n";

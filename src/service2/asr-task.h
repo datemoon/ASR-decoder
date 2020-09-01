@@ -41,7 +41,7 @@ private:
 
 int32 ASRServiceTask::Run(void *data)
 {
-	signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
+	//signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
 	ASRWorkThread * asr_work_thread = static_cast<ASRWorkThread *>(data);
 	C2SPackageAnalysis &ser_c2s = asr_work_thread->_ser_c2s_package_analysys;
 	S2CPackageAnalysis &ser_s2c = asr_work_thread->_ser_s2c_package_analysys;

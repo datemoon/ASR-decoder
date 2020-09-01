@@ -11,6 +11,7 @@
 #include <pthread.h>
 
 #include "src/service2/net-data-package.h"
+#include "src/service2/pthread-util.h"
 
 #ifdef NAMESPACE
 using namespace datemoon;
@@ -40,6 +41,10 @@ void *RecvThreadFunc(void *connect_fd)
 
 int main(int argc, char *argv[])
 {
+	// Block SIGPIPE before starting any other threads; other threads
+	// created by main() will inherit a copy of the signal mask.
+	ThreadSigPipeIng();
+
 	if(argc != 3)
 	{
 		std::cerr << argv[0] << " port wavfile" << std::endl;

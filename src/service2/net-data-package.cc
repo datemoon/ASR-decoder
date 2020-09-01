@@ -155,7 +155,7 @@ bool S2CPackageAnalysis::S2CRead(int sockfd)
 	if(_s2c_package_head._nbest > 0)
 	{
 		ret = _nbest_res.Read(sockfd, _s2c_package_head._nbest);
-		if(ret < 0)
+		if(ret != 0)
 		{
 			LOG_WARN << "Read Nbest failed.";
 			return false;

@@ -1,4 +1,5 @@
 
+#include <pthread.h>
 #include "src/util/log-message.h"
 
 #include "src/util/namespace-start.h"
@@ -7,12 +8,17 @@ int g_verbose_level = 0;
 const char *g_program_name = NULL;
 static LogHandler g_log_handler = NULL; // function pointer.
 
+static pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 // If the program name was set (g_program_name != ""), GetProgramName
 // returns the program name (without the path).
 // Otherwise it returns the empty string "".
 const char *GetProgramName()
 {
-	return g_program_name == NULL ? "" : g_program_name;
+	pthread_mutex_lock(&log_mutex);
+	const char *tmp_name = (g_program_name == NULL ? "" : g_program_name);
+	pthread_mutex_unlock(&log_mutex);
+	return tmp_name;
+	//return g_program_name == NULL ? "" : g_program_name;
 }
 
 /***** HELPER FUNCTIONS *****/

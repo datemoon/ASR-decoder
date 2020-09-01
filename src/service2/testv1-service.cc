@@ -19,6 +19,7 @@
 #include "src/service2/test-work-thread.h"
 #include "src/service2/test-task.h"
 #include "src/util/log-message.h"
+#include "src/service2/pthread-util.h"
 
 using namespace std;
 #ifdef NAMESPACE
@@ -27,12 +28,15 @@ using namespace datemoon;
 
 int main(int argc, char *argv[])
 {
+	ThreadSigPipeIng();
+
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0 );
 	if(sockfd == -1)
 	{
 		LOG_COM << "socket error.";
 		return -1;
 	}
+	
 	struct sockaddr_in ser,cli;
 	memset(&ser, 0, sizeof(ser));
 	ser.sin_family = AF_INET;
