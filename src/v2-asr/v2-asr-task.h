@@ -48,7 +48,7 @@ int32 V2ASRServiceTask::Run(void *data)
 	OnlineClgLatticeFastDecoder &online_clg_decoder = asr_work_thread->_online_clg_decoder;
 	//size_t chunk=0;
 	// V2ASRWorkThread reset
-	ser_c2s.Reset();
+	ser_c2s.Reset(true);
 	ser_s2c.Reset();
 	online_clg_decoder.InitDecoding(0, true);
 	int n=0; // read timeout times

@@ -181,9 +181,9 @@ public:
 		_data_buffer_capacity = 0;
 	}
 public:
-	void Reset()
+	void Reset(bool eos=true)
 	{
-		if(_c2s_package_head._end_flag == 1)
+		if(_c2s_package_head._end_flag == 1 || eos == true)
 		{
 			_c2s_package_head._n = 0;
 		}

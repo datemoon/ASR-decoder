@@ -47,7 +47,7 @@ int32 ASRServiceTask::Run(void *data)
 	S2CPackageAnalysis &ser_s2c = asr_work_thread->_ser_s2c_package_analysys;
 	kaldi::ASRWorker *asr_work = asr_work_thread->_asr_work;
 	size_t chunk=0;
-	ser_c2s.Reset();
+	ser_c2s.Reset(true);
 	ser_s2c.Reset();
 	asr_work->Init(&chunk);
 	int n=0; // read timeout times
