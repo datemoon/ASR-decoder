@@ -57,7 +57,6 @@ int32 V2ASRServiceTask::Run(void *data)
 	struct timeval decoder_start, decoder_end;
 	while(1)
 	{
-
 		if(true != ser_c2s.C2SRead(_connfd))
 		{
 			// read data
@@ -96,7 +95,6 @@ int32 V2ASRServiceTask::Run(void *data)
 		// get audio data type len
 		uint dtype_len = ser_c2s.GetDtypeLen();
 
-		std::string msg;
 		int32 ret = 0;
 		gettimeofday(&decoder_start, NULL);
 		if(eos == true)
@@ -148,6 +146,7 @@ int32 V2ASRServiceTask::Run(void *data)
 					LOG_COM << "S2CWrite all end error.";
 					break;
 				}
+				ser_s2c.Print("ser_s2c" + ser_c2s.GetKey());
 			}
 			else if(ret == 1)
 			{
@@ -169,7 +168,7 @@ int32 V2ASRServiceTask::Run(void *data)
 			}
 		}
 		// send ok.
-		ser_s2c.Print("ser_s2c");
+		//ser_s2c.Print("ser_s2c" + ser_c2s.GetKey());
 		// reset service to client package info.
 		ser_s2c.Reset();
 		if(eos == true)

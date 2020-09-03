@@ -9,6 +9,24 @@
 
 #include "src/util/namespace-start.h"
 
+//////////////////////////////////////////////////////////////
+template <class T>
+T* Renew(T *src, size_t old_size, size_t new_size)
+{
+	if(new_size == 0)
+		return src;
+	size_t size = new_size;
+	T* tmp = new T[size];
+	memset(tmp, 0x00, size*sizeof(T));
+	if(src != NULL)
+	{
+		if(old_size != 0)
+			memcpy(tmp, src, old_size*sizeof(T));
+		delete [] src;
+	}
+	return tmp;
+}
+/////////////////////////////////////////////////////////////
 typedef unsigned int uint;
 // _dtype           : short,float        -> short:0, float:1
 // _bit             : 16bit,8bit,32bit   -> 16bit:0, 8bit:1, 32bit:2
@@ -20,6 +38,7 @@ typedef unsigned int uint;
 // _ali_info        : 0|1                -> 0:no align info, 1:have
 // _score_info      : 0|1                -> 0:no score info, 1:have
 // _end_flag        : 0|1                -> 0:it isn't end, 1:end send.
+// _have_key        : 0|1                -> 0:no key, 1:have key
 // _keep            : 0|1                -> 0:no keep bit, 1:have
 // _n               : 0...               -> which one package,start from 0.
 // _data_len        : 0...               -> data segment length.
@@ -38,12 +57,84 @@ struct C2SPackageHead
 	uint _score_info       : 1;
 	uint _nbest            : 6;
 	uint _end_flag         : 1;
+	uint _have_key         : 1;
 	uint _keep             : 1;
 	unsigned int           : 0;
 	// align to next unsigned int.
 
 	uint _n                : 32;
 	uint _data_len         : 32;
+};
+
+class C2SKey
+{
+private:
+	char *_key_string;
+	uint _key_len;
+	uint _key_string_capacity;
+public:
+
+	std::string GetKey()
+	{
+		if(_key_string != NULL)
+			return std::string(_key_string, _key_len);
+		else
+			return std::string("");
+	}
+	void Info()
+	{
+		if(_key_len != 0)
+			LOG_COM << "KEY : " << GetKey();
+	}
+	C2SKey():_key_string(NULL),_key_len(0),_key_string_capacity(0) { }
+	~C2SKey()
+	{
+		if(_key_string != NULL)
+			delete _key_string;
+		_key_string = NULL;
+		_key_len = 0;
+		_key_string_capacity = 0;
+	}
+	bool Write(int sockfd, std::string &key_string)
+	{
+		uint key_len = (uint)key_string.length();
+		int ret = write(sockfd, static_cast<void *>(&key_len), sizeof(key_len));
+		if(ret != sizeof(key_len))
+		{
+			LOG_WARN << "write key_len failed.";
+            return false;
+		}
+		ret = write(sockfd, (void *)(key_string.c_str()), sizeof(char)*key_len);
+		if(ret != sizeof(char)*key_len)
+		{
+			LOG_WARN << "write key_string failed.";
+			return false;
+		}
+		return true;
+	}
+	bool Read(int sockfd)
+	{
+		// read key length
+		int ret = read(sockfd, static_cast<void *>(&_key_len), sizeof(_key_len));
+		if(ret != sizeof(_key_len))
+		{
+			LOG_WARN << "read C2SKey len error!!!";
+			return false;
+		}
+		if(_key_len > _key_string_capacity)
+		{ // Renew space
+			_key_string = Renew(_key_string, _key_string_capacity, _key_len + 10);
+			_key_string_capacity = _key_len + 10;
+		}
+		ret = read(sockfd, static_cast<void *>(_key_string), sizeof(char)*_key_len);
+		if(ret != sizeof(char)*_key_len)
+		{
+			LOG_WARN << "read C2SKey key_string error!!!";
+			return false;
+		}
+		return true;
+	}
+
 };
 void C2SPackageHeadPrint(C2SPackageHead &c2s, std::string flag="", int vlog=1);
 // from client to service pack and unpack.
@@ -58,7 +149,8 @@ public:
 public:
 	C2SPackageAnalysis(uint dtype=DSHORT, uint bit=BIT_16, uint sample_rate=K_16,
 			uint audio_type=PCM, uint audio_head_flage = 0, uint lattice=0, uint ali_info=0,
-			uint score_info=0, uint nbest = 0, uint end_flag=0, uint keep=0,
+			uint score_info=0, uint nbest = 0, uint end_flag=0,
+			uint have_key = 0, uint keep=0,
 			uint n=0, uint data_len=0):
 		_data_buffer(NULL),_data_buffer_capacity(0)
 	{
@@ -68,11 +160,13 @@ public:
 		_c2s_package_head._sample_rate = sample_rate;
 		_c2s_package_head._audio_type = audio_type;
 		_c2s_package_head._audio_head_flage = audio_head_flage;
+		
 		_c2s_package_head._lattice = lattice;
 		_c2s_package_head._ali_info = ali_info;
 		_c2s_package_head._score_info = score_info;
 		_c2s_package_head._nbest = nbest;
 		_c2s_package_head._end_flag = end_flag;
+		_c2s_package_head._have_key = have_key;
 		_c2s_package_head._keep = keep;
 		_c2s_package_head._n = n;
 		_c2s_package_head._data_len = data_len;
@@ -89,7 +183,17 @@ public:
 public:
 	void Reset()
 	{
-		_c2s_package_head._n = 0;
+		if(_c2s_package_head._end_flag == 1)
+		{
+			_c2s_package_head._n = 0;
+		}
+		_c2s_package_head._lattice = 0;
+		_c2s_package_head._ali_info = 0;
+		_c2s_package_head._score_info = 0;
+		_c2s_package_head._nbest = 0;
+		_c2s_package_head._end_flag = 0;
+		_c2s_package_head._have_key = 0;
+		_c2s_package_head._keep = 0;
 	}
 
 	// set audil data type ,(short,float...)
@@ -117,6 +221,8 @@ public:
 	{
 		_c2s_package_head._n = n;
 	}
+
+	inline uint GetN() { return _c2s_package_head._n;}
 	// set data segment length.
 	inline void SetDataLen(uint data_len)
 	{
@@ -224,6 +330,24 @@ public:
 		_c2s_package_head._keep = keep;
 		return true;
 	}
+
+	// for write
+	inline bool SetHaveKey(uint have_key=0)
+	{
+		if(have_key >> 1 > 0)
+			return false;
+		_c2s_package_head._have_key = have_key;
+		return true;
+	}
+
+	// for read
+	inline bool IsHaveKey()
+	{
+		if(_c2s_package_head._have_key != 0)
+			return true;
+		else
+			return false;
+	}
 	//////////////////////////////////////////////////////////
 	// from client to service package write.
 	/*
@@ -234,12 +358,15 @@ public:
 	 * end_flag  : end flag
 	 * */
 	bool C2SWrite(int sockfd, const void *data, size_t data_size,
-			uint end_flag=0);
+			uint end_flag=0,
+			std::string key_str = "");
+
 	// from client to service package unpack.
 	bool C2SRead(int sockfd);
 	void Print(std::string flag="")
 	{
 		C2SPackageHeadPrint(_c2s_package_head, flag);
+		_c2skey.Info();
 	}
 
 	char* GetData(uint *data_len)
@@ -248,29 +375,18 @@ public:
 		return _data_buffer;
 	}
 
+	std::string GetKey()
+	{
+		return _c2skey.GetKey();
+	}
 private:
 	struct C2SPackageHead _c2s_package_head;
 	char *_data_buffer;
 	uint _data_buffer_capacity;
+	C2SKey _c2skey;
 };
 
 //////////////////////////////////////////////////////////////
-template <class T>
-T* Renew(T *src, size_t old_size, size_t new_size)
-{
-	if(new_size == 0)
-		return src;
-	size_t size = new_size;
-	T* tmp = new T[size];
-	memset(tmp, 0x00, size*sizeof(T));
-	if(src != NULL)
-	{
-		memcpy(tmp, src, old_size*sizeof(T));
-		delete [] src;
-	}
-	return tmp;
-}
-
 class S2CPackageNbest
 {
 public:
@@ -361,6 +477,8 @@ public:
 	}
 	ssize_t Write(int sockfd)
 	{
+		if(_nbest_len_len == 0)
+			return 0;
 		ssize_t ret1 = write(sockfd, static_cast<void*>(_nbest_len), 
 				_nbest_len_len*sizeof(uint));
 		if(ret1 < 0)
@@ -400,7 +518,7 @@ public:
 		else if((uint)ret1 != n*sizeof(uint))
 		{
 			LOG_WARN << "Read _nbest_len loss.";
-			return ret1;
+			return -1;
 		}
 		// calculate total length
 		size_t total_len = 0;
@@ -419,7 +537,7 @@ public:
 		if((uint)ret2 != total_len*sizeof(char))
 		{
 			LOG_WARN << "Read _nbest_res loss.";
-			return ret2;
+			return -1;
 		}
 		return 0;
 	}

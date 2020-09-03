@@ -39,9 +39,10 @@ void S2CPackageHeadPrint(S2CPackageHead &s2c, std::string flag, int vlog)
 }
 
 bool C2SPackageAnalysis::C2SWrite(int sockfd, 
-		const void *data, size_t data_size, uint end_flag)
+		const void *data, size_t data_size, 
+		uint end_flag, std::string key_str)
 {
-	if(end_flag == 0 && data_size == 0)
+	if(end_flag == 0 && data_size == 0 && key_str.length() == 0)
 	{
 		LOG_COM <<  "send null package.";
 		return true;
@@ -51,21 +52,41 @@ bool C2SPackageAnalysis::C2SWrite(int sockfd,
 		LOG_WARN << "SetEndFLag error.";
 		return false;
 	}
+	if(key_str.length() != 0)
+	{
+		SetHaveKey(1);
+	}
+	else
+	{
+		SetHaveKey(0);
+	}
+	VLOG_COM(3) << "key : " << key_str << " -> package : " << GetN();
 	//SetN(n);
 	_c2s_package_head._n++;
 	SetDataLen(data_size);
+	// write package head
 	ssize_t ret = write(sockfd, static_cast<void *>(&_c2s_package_head),
 			sizeof(C2SPackageHead));
-	C2SPackageHeadPrint(_c2s_package_head,"c2s-write");
-	if(ret < 0)
+	if(ret != sizeof(C2SPackageHead))
 	{
 		LOG_WARN << "write C2SPackageHead failed.";
 		return false;
 	}
+	C2SPackageHeadPrint(_c2s_package_head, "c2s-write");
+	// write key
+	if(key_str.length() != 0)
+	{
+		if(_c2skey.Write(sockfd, key_str) != true)
+		{
+			LOG_WARN << "write C2SKey error!!!";
+			return false;
+		}
+	}
+	// write data
 	if(data_size > 0)
 	{
 		ret = write(sockfd, data, data_size);
-		if(ret < 0)
+		if(ret != data_size)
 		{
 			LOG_WARN << "write data failed.";
 			return false;
@@ -80,7 +101,7 @@ bool C2SPackageAnalysis::C2SRead(int sockfd)
 	ssize_t ret = read(sockfd, static_cast<void *>(&_c2s_package_head),
 		   	sizeof(C2SPackageHead));
 	C2SPackageHeadPrint(_c2s_package_head,"c2s-read");
-	if(ret < 0)
+	if(ret != sizeof(C2SPackageHead))
 	{
 		LOG_WARN << "read 2SPackageHead failed.";
 		return false;
@@ -93,8 +114,9 @@ bool C2SPackageAnalysis::C2SRead(int sockfd)
 	// new space.
 	if(_c2s_package_head._data_len > _data_buffer_capacity)
 	{
-		_data_buffer_capacity = _c2s_package_head._data_len + 1024;
-		_data_buffer = Renew<char>(_data_buffer, _c2s_package_head._data_len, _data_buffer_capacity);
+		uint new_length = _c2s_package_head._data_len + 1024;
+		_data_buffer = Renew<char>(_data_buffer, _data_buffer_capacity, new_length);
+		_data_buffer_capacity = new_length;
 		//char *tmp = new char[_data_buffer_capacity];
 		//memset(tmp,0x00,_data_buffer_capacity * sizeof(char));
 		//if(_data_buffer != NULL)
@@ -103,6 +125,16 @@ bool C2SPackageAnalysis::C2SRead(int sockfd)
 		//	_data_buffer = NULL;
 		//}
 		//_data_buffer = tmp;
+	}
+	// judge key_sting
+	if(IsHaveKey() == true)
+	{
+		if(_c2skey.Read(sockfd) != true)
+		{
+			LOG_COM << "package : " << _c2s_package_head._n << " C2SKey read error!!!";
+			return false;
+		}
+		_c2skey.Info();
 	}
 	if(_c2s_package_head._data_len > 0)
 	{
@@ -129,6 +161,11 @@ bool S2CPackageAnalysis::S2CWrite(int sockfd, uint end_flag)
 	_s2c_package_head._end_flag = end_flag;
 	if(_s2c_package_head._end_flag != S2CNOEND)
 		_s2c_package_head._nres++;
+	if(_s2c_package_head._nbest == 0 && _s2c_package_head._end_flag != S2CEND)
+	{
+		VLOG_COM(1) << "No result and not end, so no send package to client.";
+		return true;
+	}
 	ssize_t ret = write(sockfd, static_cast<void *>(&_s2c_package_head), sizeof(S2CPackageHead));
 	if(ret < 0)
 	{
@@ -147,7 +184,7 @@ bool S2CPackageAnalysis::S2CWrite(int sockfd, uint end_flag)
 bool S2CPackageAnalysis::S2CRead(int sockfd)
 {
 	ssize_t ret = read(sockfd, static_cast<void *>(&_s2c_package_head), sizeof(S2CPackageHead));
-	if(ret < 0)
+	if(ret != sizeof(S2CPackageHead))
 	{
 		LOG_WARN << "Read S2CPackageHead failed.";
 		return false;

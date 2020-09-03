@@ -34,10 +34,11 @@ struct ASROpts
 	BaseFloat _chunk_length_secs;
 	BaseFloat _output_period;
 	bool _produce_time;
+	bool _use_endpoint;
 
 	ASROpts():
 		_samp_freq(16000.0), _chunk_length_secs(0.15),
-		_output_period(1.0),_produce_time(false) { }
+		_output_period(1.0),_produce_time(false),_use_endpoint(false) { }
 /*	ASROpts(const ASROpts &asr_opt):
 		_samp_freq(16000.0), _chunk_length_secs(0.15),
 		_output_period(1.0),_produce_time(false),
@@ -62,6 +63,8 @@ struct ASROpts
 				"How often in seconds, do we check for changes in output.");
 		conf->Register("produce-time", &_produce_time,
 				"Prepend begin/end times between endpoints (e.g. '5.46 6.81 <text_output>', in seconds)");
+		conf->Register("use-endpoint", &_use_endpoint,
+				"use endpoint (default, false)");
 
 	}
 };
@@ -237,7 +240,7 @@ public:
 			_check_count += _check_period;
 		}
 
-		if (_decoder->EndpointDetected(_asr_opts->_endpoint_opts))
+		if (_asr_opts->_use_endpoint == true && _decoder->EndpointDetected(_asr_opts->_endpoint_opts))
 		{
 			_decoder->FinalizeDecoding();
 			_frame_offset += _decoder->NumFramesDecoded();

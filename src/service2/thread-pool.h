@@ -113,6 +113,8 @@ public:
 	int32 AddThread(T *th);
 
 	int32 Init(std::vector<T *> &t_v);
+
+	void Info();
 };
 #include "src/util/namespace-end.h"
 

@@ -89,22 +89,33 @@ ThreadPoolBase<T>::~ThreadPoolBase()
 template<class T>
 typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::AddTask(TaskBase *task)
 {
-	// judge queue full or not and process
-	pthread_mutex_lock(&_pthread_pool_mutex);
-	if(_idle_pthread_id.size() != 0 || _wait_thread == true)
-	{ // have idle pthread
-		_task_list.push_back(task);
-	}
-	else
+	int ntimes = 0;
+	while(1)
 	{
-		pthread_mutex_unlock(&_pthread_pool_mutex);
-		LOG_WARN << "No idle pthread wait...";
-		task->Stop();
-		return -1;
-		// task cancel
+		// judge queue full or not and process
+		pthread_mutex_lock(&_pthread_pool_mutex);
+		if(_idle_pthread_id.size() != 0 || _wait_thread == true)
+		{ // have idle pthread
+			_task_list.push_back(task);
+			pthread_cond_signal(&_pthread_pool_cond);
+			pthread_mutex_unlock(&_pthread_pool_mutex);
+			break;
+		}
+		else
+		{
+			pthread_mutex_unlock(&_pthread_pool_mutex);
+			if(ntimes < 3)
+			{
+				ntimes ++;
+				usleep(100000); // 100ms
+				continue;
+			}
+			LOG_WARN <<  "Wait " << ntimes << " times and timeout. No idle pthread wait...";
+			task->Stop();
+			return -1;
+			// task cancel
+		}
 	}
-	pthread_cond_signal(&_pthread_pool_cond);
-	pthread_mutex_unlock(&_pthread_pool_mutex);
 
 	return 0;
 }
@@ -123,7 +134,7 @@ typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::WaitStopAll()
 			return StopAll();
 		}
 		pthread_mutex_unlock(&_pthread_pool_mutex);
-		usleep(500000);// sleep 0.5s
+		usleep(5000);// sleep 0.5s
 	}
 }
 template<class T>
@@ -142,6 +153,7 @@ typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::StopAll()
 	LOG_COM << "_shutdown set true.";
 	for(size_t i =0 ; i< _all_threads.size() ; ++i)
 	{
+		LOG_COM << "thread " << _all_threads[i]->GetThreadId() << " : " << i;
 		pthread_join(_all_threads[i]->GetThreadId(), NULL);
 	}
 
@@ -155,6 +167,19 @@ typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::StopAll()
 	LOG_COM << "End all threads ok!!";
 	LOG_COM << "*****************************";
 	return TPOK;
+}
+
+template<class T>
+void ThreadPoolBase<T>::Info()
+{
+	pthread_mutex_lock(&_pthread_pool_mutex);
+	LOG_COM << "******************Info*****************";
+	LOG_COM << "busy thread number: " << _busy_pthread_id.size();
+	for(size_t i=0;i<_busy_pthread_id.size();++i)
+	{
+		LOG_COM << "thread id : " << _busy_pthread_id[i];
+	}
+	pthread_mutex_unlock(&_pthread_pool_mutex);
 }
 
 /*

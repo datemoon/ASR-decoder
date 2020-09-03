@@ -39,6 +39,7 @@ void *ASRClientTask::RecvThreadFunc(void *data)
 
 	S2CPackageAnalysis s2c_cli;
 	std::vector<std::string> all_result;
+	int nrecv = 0;
 	while(1)
 	{
 		if(true != s2c_cli.S2CRead(sockfd))
@@ -46,7 +47,8 @@ void *ASRClientTask::RecvThreadFunc(void *data)
 			LOG_WARN << "S2CRead failed!!!";
 			return NULL;
 		}
-		s2c_cli.Print("s2c_cli");
+		nrecv ++;
+		s2c_cli.Print(filename);
 		// middle result or end result.
 		if( s2c_cli.IsMiddleEnd() == true || true == s2c_cli.IsAllEnd())
 		{
@@ -66,7 +68,7 @@ void *ASRClientTask::RecvThreadFunc(void *data)
 				for(size_t i =0;i<all_result.size(); ++i)
 				{
 					fprintf(fp, "%s %ld %s\n", filename.c_str(), i,
-							nbest[0].c_str());
+							all_result[i].c_str());
 				}
 				pthread_mutex_unlock(&_outfile_mutex);
 				return NULL;
@@ -75,7 +77,7 @@ void *ASRClientTask::RecvThreadFunc(void *data)
 	}// while(1) receive result
 }
 
-#define LEN 4096
+#define LEN 16000
 
 ASRClientTask::int32 ASRClientTask::Run(void *data)
 {
@@ -133,10 +135,21 @@ ASRClientTask::int32 ASRClientTask::Run(void *data)
 		if(sent_len > 0)
 		{
 			cli_c2s.SetNbest(1);
-			if(true != cli_c2s.C2SWrite(_sockfd, sentbuf, sent_len, 0))
+			if(cli_c2s.GetN() == 0)
+			{ // frist package and send key_string
+				if(true != cli_c2s.C2SWrite(_sockfd, sentbuf, sent_len, 0, _wav_file))
+				{
+					LOG_WARN << "C2SWrite failed.";
+					break;
+				}
+			}
+			else
 			{
-				LOG_WARN << "C2SWrite failed.";
-				break;
+				if(true != cli_c2s.C2SWrite(_sockfd, sentbuf, sent_len, 0))
+				{
+					LOG_WARN << "C2SWrite failed.";
+					break;
+				}
 			}
 			cli_c2s.Print("cli_c2s");
 		}

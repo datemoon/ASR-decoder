@@ -21,6 +21,7 @@
 #include "src/util/log-message.h"
 #include "src/service2/socket-class.h"
 #include "src/v1-asr/asr-source.h"
+#include "src/service2/pthread-util.h"
 
 using namespace std;
 
@@ -32,12 +33,20 @@ int main(int argc, char *argv[])
 	using namespace kaldi;
 	using namespace fst;
 
-	const char *usage = "This is a test service code.\n";
+	// Block SIGPIPE before starting any other threads; other threads
+	// created by main() will inherit a copy of the signal mask.
+	ThreadSigPipeIng();
+
+	const char *usage = "This is a test kaldi asr service test code.\n"
+		"Usage: asr-service [options] <nnet3-in> "
+		"<fst> <word-symbol-table>\n";
 	ParseOptions po(usage);
 	ASROpts asr_opts;
 	asr_opts.Register(&po);
 	std::string config_socket="";
+	int nthread = 1;
 	po.Register("config-socket", &config_socket, "Socket config file.(default NULL)");
+	po.Register("nthread", &nthread, "service thread number.(default 1)");
 
 	po.Read(argc, argv);
 	if (po.NumArgs() != 3)
@@ -51,8 +60,6 @@ int main(int argc, char *argv[])
 		word_syms_filename = po.GetArg(3);
 
 	ASRSource asr_source(nnet3_rxfilename, fst_rxfilename, word_syms_filename);
-
-	signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
 
 	//ConfigParseOptions conf(usage);
 	SocketConf net_conf;
@@ -78,7 +85,6 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	int nthread = 5;
 	ThreadPoolBase<ThreadBase> pool(nthread);
 	{
 		// create thread
