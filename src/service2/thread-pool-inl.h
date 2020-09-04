@@ -173,13 +173,16 @@ template<class T>
 void ThreadPoolBase<T>::Info()
 {
 	pthread_mutex_lock(&_pthread_pool_mutex);
-	LOG_COM << "******************Info*****************";
+	LOG_COM << "******************Info start*****************";
 	LOG_COM << "busy thread number: " << _busy_pthread_id.size();
 	for(size_t i=0;i<_busy_pthread_id.size();++i)
 	{
 		LOG_COM << "thread id : " << _busy_pthread_id[i];
 	}
 	pthread_mutex_unlock(&_pthread_pool_mutex);
+
+	TimeInfo();
+	LOG_COM << "******************Info end*******************";
 }
 
 /*

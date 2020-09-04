@@ -6,7 +6,7 @@
 #include <signal.h>
 //#include "src/service2/thread-pool.h"
 #include "src/v1-asr/asr-work-thread.h"
-#include "src/util/log-message.h"
+#include "src/util/util-common.h"
 
 #include "src/util/namespace-start.h"
 
@@ -51,6 +51,11 @@ int32 ASRServiceTask::Run(void *data)
 	ser_s2c.Reset();
 	asr_work->Init(&chunk);
 	int n=0; // read timeout times
+	// calculate time
+	Time keep_time;
+	int total_wav_len = 0;
+	double total_decoder_time = 0.0;
+	uint dtype_len=0;
 	while(1)
 	{
 
@@ -82,8 +87,15 @@ int32 ASRServiceTask::Run(void *data)
 		{
 			eos = true;
 		}
+		dtype_len = ser_c2s.GetDtypeLen();
 		std::string msg;
+		// time statistics
+		total_wav_len += data_len;
+		keep_time.Esapsed();
+		
 		int32 ret = asr_work->ProcessData(data, data_len, msg, eos, 2);
+		
+		total_decoder_time += keep_time.Esapsed();
 
 		ser_s2c.SetNbest(msg);
 		if(eos == true || ret == 1)
@@ -117,8 +129,25 @@ int32 ASRServiceTask::Run(void *data)
 		ser_s2c.Print("ser_s2c");
 		ser_s2c.Reset();
 		if(eos == true)
+		{
+			uint smaple_rate = 0;
+			if(ser_c2s.GetSampleRate() == C2SPackageAnalysis::K_16)
+				smaple_rate=16000;
+			else if(ser_c2s.GetSampleRate() == C2SPackageAnalysis::K_8)
+				smaple_rate=8000;
+			else if(ser_c2s.GetSampleRate() == C2SPackageAnalysis::K_32)
+				smaple_rate=32000;
+			else
+				break;
+			double wav_time = total_wav_len*1.0/(smaple_rate*dtype_len);
+			VLOG_COM(1) << "wav time(s)\t:" << wav_time;
+			VLOG_COM(1) << "run time(s)\t:" << total_decoder_time;
+			VLOG_COM(1) << "decoder rt\t: " << total_decoder_time/wav_time;
+			// send time to work thread.
+			asr_work_thread->SetTime(wav_time, total_decoder_time);
 			break; // end
-	}
+		}
+	} // while(1) end one audio
 	asr_work->Destory();
 	close(_connfd);
 	printf("close |%d| ok.\n",_connfd);

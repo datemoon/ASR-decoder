@@ -155,7 +155,7 @@ ASRClientTask::int32 ASRClientTask::Run(void *data)
 		}
 		else
 		{
-			cli_c2s.SetNbest(5);
+			cli_c2s.SetNbest(10);
 			if(true != cli_c2s.C2SWrite(_sockfd, sentbuf, sent_len, 1))
 			{
 				LOG_WARN << "C2SWrite end failed.";
@@ -186,10 +186,11 @@ ASRClientTask::int32 ASRClientTask::Run(void *data)
 		(decoder_end.tv_usec - decoder_start.tv_usec)*1.0/1000000;
 
 	float rt = total_decoder_time/wav_time;
-
-	LOG_COM << "wav time(s)\t:" << wav_time;
-	LOG_COM << "run time(s)\t:" << total_decoder_time;
-	LOG_COM << "decoder rt\t: " << rt ;
+	
+	asr_client_thread->SetTime(wav_time, total_decoder_time);
+	VLOG_COM(1) << "wav time(s)\t:" << wav_time;
+	VLOG_COM(1) << "run time(s)\t:" << total_decoder_time;
+	VLOG_COM(1) << "decoder rt\t: " << rt ;
 	return 0;
 }
 

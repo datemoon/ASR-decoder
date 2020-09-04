@@ -1,4 +1,3 @@
-#include "src/util/log-message.h"
 #include "src/v1-asr/asr-work-thread.h"
 
 #include "src/util/namespace-start.h"
@@ -8,7 +7,7 @@ bool ASRWorkThread::InitASRSource(kaldi::ASROpts *asr_opts, kaldi::ASRSource *as
 	_asr_work = new kaldi::ASRWorker(asr_opts, asr_source);
 	return true;
 }
-
+/*
 void ASRWorkThread::Run()
 {
 	pthread_t tid = GetThreadId();
@@ -52,5 +51,5 @@ void ASRWorkThread::Run()
 		pthread_mutex_unlock(pthread_pool_mutex);
 	}
 }
-
+*/
 #include "src/util/namespace-end.h"

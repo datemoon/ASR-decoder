@@ -6,6 +6,8 @@
 #include <vector>
 #include <pthread.h>
 #include "src/service2/thread-class.h"
+#include "src/service2/thread-info.h"
+#include "src/util/util-common.h"
 
 #include "src/util/namespace-start.h"
 class TaskBase
@@ -25,7 +27,7 @@ public:
 
 // T is work thread.
 template<class T>
-class ThreadPoolBase
+class ThreadPoolBase:public ThreadTimeInfo
 {
 public:
 	typedef int int32;
@@ -115,6 +117,37 @@ public:
 	int32 Init(std::vector<T *> &t_v);
 
 	void Info();
+
+	double GetDataTime() 
+	{ 
+		pthread_mutex_lock(&_pthread_pool_mutex);
+		double t = _data_time;
+		pthread_mutex_unlock(&_pthread_pool_mutex);
+		return t;
+	}
+	double GetWorkTime() 
+	{ 
+		pthread_mutex_lock(&_pthread_pool_mutex);
+		double t = _work_time;
+		pthread_mutex_unlock(&_pthread_pool_mutex);
+		return t;
+	}
+	virtual void SetTime(double data_time, double work_time)
+	{
+		pthread_mutex_lock(&_pthread_pool_mutex);
+		_data_time += data_time;
+		_work_time += work_time;
+		pthread_mutex_unlock(&_pthread_pool_mutex);
+	}
+	
+	void TimeInfo()
+	{
+		pthread_mutex_lock(&_pthread_pool_mutex);
+		LOG_COM << "Total data time is : " << _data_time;
+		LOG_COM << "Total work time is : " << _work_time;
+		LOG_COM << "Work rt is : " << _work_time/_data_time;
+		pthread_mutex_unlock(&_pthread_pool_mutex);
+	}
 };
 #include "src/util/namespace-end.h"
 

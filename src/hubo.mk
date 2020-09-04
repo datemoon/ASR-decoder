@@ -1,10 +1,11 @@
 
-CXXFLAGS=-std=c++11 -Wall -Wno-sign-compare \
+CXXFLAGS=-Wall -Wno-sign-compare \
 		 -Wno-unused-local-typedefs -Wno-deprecated-declarations \
 		 -Winit-self \
 		 -msse -msse2 \
 		 -pthread \
-		 -O2 #-gdwarf-2 #-gstabs+ #-DDEBUGTOKEN -g #-pg #-DDEBUG #-DDEBUGGRAPH
+		 -std=c++11 \
+		 -O3 #-gdwarf-2 #-gstabs+ #-DDEBUGTOKEN -g #-pg #-DDEBUG #-DDEBUGGRAPH
 
 CXXFLAGS += -fPIC -I../..
 CXXFLAGS += -DNAMESPACE

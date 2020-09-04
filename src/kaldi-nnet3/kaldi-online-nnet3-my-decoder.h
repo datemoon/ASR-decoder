@@ -114,7 +114,8 @@ public:
 		_online_info(online_info),
 		_decodable_info(online_info._online_conf._decodable_opts, &online_info._am_nnet),
 	   	_decoder(&online_info._clgfst, _online_info._decoder_opts), 
-		_decodable(NULL),_feature_pipeline(NULL) 
+		_decodable(NULL),_feature_pipeline(NULL),
+		_wav_time(0),_nnet_time(0),_decoder_time(0)
 	{
 	   InitDecoding(0, true);	
 	}
@@ -147,8 +148,12 @@ public:
 					_feature_pipeline->InputFeature(), 
 					_feature_pipeline->IvectorFeature());
 			_decodable->SetFrameOffset(frame_offset);
+			_wav_time = 0.0;
+			_nnet_time = 0.0;
+			_decoder_time = 0.0;
 		}
 		_decoder.InitDecoding();
+
 	}
 	
 	// input data to decoder
@@ -201,5 +206,8 @@ private:
 	kaldi::nnet3::DecodableAmNnetLoopedOnline *_decodable;
 	// feature pipe
 	kaldi::OnlineNnet2FeaturePipeline *_feature_pipeline;
+	float _wav_time;
+	float _nnet_time;
+	float _decoder_time;
 };
 

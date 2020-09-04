@@ -2,20 +2,19 @@
 #define __THREAD_POOL_WORK_THREAD_H__
 #include "src/service2/thread-class.h"
 #include "src/service2/thread-pool.h"
-#include "src/service2/net-data-package.h"
 
 #include "src/util/namespace-start.h"
 
 /// This class for the convenience of using thread-pool.h
-class ThreadPoolWorkThread:public ThreadBase
+class ThreadPoolWorkThread:public ThreadBase, public ThreadTimeInfo
 {
 public:
 	typedef ThreadBase::int32 int32;
 public:
 	ThreadPoolWorkThread(ThreadPoolBase<ThreadBase> *tp)
 		:_thread_pool(tp) { }
-	~ThreadPoolWorkThread() { _thread_pool = NULL; }
-	void Run()
+	virtual ~ThreadPoolWorkThread() { _thread_pool = NULL; }
+	virtual void Run()
 	{
 		pthread_t tid = GetThreadId();
 		// thread synchronization lock
@@ -58,6 +57,24 @@ public:
 			_thread_pool->MoveToIdle(tid); // add idle list
 			pthread_mutex_unlock(pthread_pool_mutex);
 		}
+	}
+	virtual void SetTime(double data_time, double work_time)
+	{
+		_data_time += data_time;
+		_work_time += work_time;
+		_thread_pool->SetTime(data_time, work_time);
+	}
+
+	virtual void TimeInfo() { WorkEfficiencyInfo(); }
+private:
+	void WorkEfficiencyInfo()
+	{
+		LOG_COM << "ThreadIndex = " << GetThreadIndex()
+			<< " -> wav data time is : " << _data_time;
+		LOG_COM << "ThreadIndex = " << GetThreadIndex()
+			<< " -> work time is : " << _work_time;
+		LOG_COM << "ThreadIndex = " << GetThreadIndex()
+			<< " -> WorkEfficiencyInfo is rt : " << GetEfficiency();
 	}
 private:
 	// use thread pool mutex

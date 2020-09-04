@@ -3,10 +3,9 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/time.h>
 #include <signal.h>
 #include "src/v2-asr/v2-asr-work-thread.h"
-#include "src/util/log-message.h"
+#include "src/util/util-common.h"
 
 #include "src/util/namespace-start.h"
 
@@ -52,9 +51,11 @@ int32 V2ASRServiceTask::Run(void *data)
 	ser_s2c.Reset();
 	online_clg_decoder.InitDecoding(0, true);
 	int n=0; // read timeout times
+	// time calculate
+	Time keep_time;
 	int total_wav_len = 0;
 	float total_decoder_time = 0.0;
-	struct timeval decoder_start, decoder_end;
+	uint dtype_len = 0;
 	while(1)
 	{
 		if(true != ser_c2s.C2SRead(_connfd))
@@ -93,10 +94,10 @@ int32 V2ASRServiceTask::Run(void *data)
 			eos = true;
 		}
 		// get audio data type len
-		uint dtype_len = ser_c2s.GetDtypeLen();
+		dtype_len = ser_c2s.GetDtypeLen();
 
 		int32 ret = 0;
-		gettimeofday(&decoder_start, NULL);
+		keep_time.Esapsed();
 		if(eos == true)
 		{
 			ret = online_clg_decoder.ProcessData(data, data_len, 2, dtype_len);
@@ -105,9 +106,7 @@ int32 V2ASRServiceTask::Run(void *data)
 		{
 			ret = online_clg_decoder.ProcessData(data, data_len, 0, dtype_len);
 		}
-		gettimeofday(&decoder_end, NULL);
-		total_decoder_time += (decoder_end.tv_sec- decoder_start.tv_sec) +
-			(decoder_end.tv_usec - decoder_start.tv_usec)*1.0/1000000;
+		total_decoder_time += keep_time.Esapsed();
 		//LOG_COM << "decoder_time = " << total_decoder_time;
 		// according to ser_c2s request , return package.
 		uint nbest = ser_c2s.GetNbest();
@@ -183,10 +182,12 @@ int32 V2ASRServiceTask::Run(void *data)
 			else
 				break;
 			float wav_time = total_wav_len*1.0/(smaple_rate*dtype_len);
-			float rt = total_decoder_time/wav_time;
-			LOG_COM << "wav time(s)\t:" << wav_time;
-			LOG_COM << "run time(s)\t:" << total_decoder_time;
-			LOG_COM << "decoder rt\t: " << rt ;
+			VLOG_COM(1) << "wav time(s)\t:" << wav_time;
+			VLOG_COM(1) << "run time(s)\t:" << total_decoder_time;
+			VLOG_COM(1) << "decoder rt\t: " << total_decoder_time/wav_time ;
+			// send time to work thread.
+			asr_work_thread->SetTime(static_cast<double>(wav_time),
+				   static_cast<double>(total_decoder_time));
 			break; // end
 		}
 	}

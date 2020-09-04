@@ -20,5 +20,6 @@
 #include "src/util/util-type.h"
 #include "src/util/hash-key.h"
 #include "src/util/hash-list.h"
+#include "src/util/time.h"
 
 #endif

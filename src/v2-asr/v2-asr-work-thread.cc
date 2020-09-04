@@ -42,6 +42,7 @@ void V2ASRWorkThread::Run()
 			LOG_WARN << "task run error!!!";
 		}
 		delete task;
+		WorkEfficiencyInfo();
 
 		pthread_mutex_lock(pthread_pool_mutex);
 		_thread_pool->MoveToIdle(tid); // add idle list
