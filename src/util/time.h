@@ -28,7 +28,7 @@ public:
 		double start_t = _tv_start.tv_sec +
 		   	static_cast<double>(_tv_start.tv_usec)/(1000*1000);
 		double end_t = tv_end.tv_sec + 
-			static_cast<double>(_tv_start.tv_usec)/(1000*1000);
+			static_cast<double>(tv_end.tv_usec)/(1000*1000);
 		Reset();
 		return end_t - start_t;
 	}
