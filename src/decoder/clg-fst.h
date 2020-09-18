@@ -5,7 +5,7 @@
 
 #include "src/util/namespace-start.h"
 
-typedef long long int ClgTokenStateId;
+typedef int ClgTokenStateId;
 
 class ClgFst
 {
@@ -136,7 +136,7 @@ public:
 	ClgTokenStateId MapClgTokenStateId(ClgTokenStateId curstate, const Arc *arc)
 	{
 		if(curstate >= _offset )
-		{ // curstate in clg arc
+		{ // curstate in clg arc (hmm)
 			if(arc->_input == 0)
 			{ // it's hmm end state
 				// first get arcid
@@ -166,6 +166,12 @@ public:
 			}
 		}
 	}
+
+	size_t NumInputEpsilons(StateId stateid)
+	{
+		return GetState(stateid)->_niepsilons;
+	}
+
 	inline StateId TotState()
 	{
 		return _clg_fst->TotState();
@@ -175,11 +181,158 @@ public:
 		return _clg_fst->TotArc();
 	}
 
+	inline Fst *GetClg() { return _clg_fst;}
 private:
 	Fst *_clg_fst;
 	vector<Fst *> _hmm_fst;
 	ClgTokenStateId _offset; // _clg_fst->TotArc() + 1
 };
 
+
+// Add ArcIterator for clg and hclg or other extend method.
+template<class FST>
+class ArcIterator
+{
+public:
+	ArcIterator(FST *fst, StateId s):
+		_arcs(fst->GetState(s)->Arcs()),
+		_narcs(fst->GetState(s)->GetArcSize()), 
+		_i(0) { }
+
+	ArcIterator(StdState *state):
+		_arcs(state->Arcs()),
+		_narcs(state->GetArcSize()),
+		_i(0) { }
+
+	bool Done() const { return _i >= _narcs; }
+
+	const Arc &Value() const 	{ return _arcs[_i];	}
+
+	inline StateId NextState() {return _arcs[_i]._to;}
+
+	void Next() { ++_i; }
+	void Reset() { _i=0;}
+	void Seek(size_t o) {_i = o;}
+	size_t Position() const { return _i;}
+
+	unsigned int Flags() const { return 0;}
+	void SetFlags(unsigned , unsigned) { }
+private:
+	const Arc *_arcs;
+	size_t _narcs;
+	size_t _i;
+};
+/*
+class ArcIterator
+{
+public:
+	ArcIterator(Fst *fst, StateId s): 
+		_iter(fst, s), 
+		_clgfst(NULL), _stateid(0), _cur_hmmstateid(0), _hmmarcs(NULL), _narcs(0), _i(0) { } // hclg
+
+
+	ArcIterator(ClgFst *fst, StateId s): 
+		_iter(fst, s),
+		_clgfst(fst), _stateid(s), _cur_hmmstateid(0), _hmmarcs(NULL), _narcs(0), _i(0) 
+	{// clg
+		if(_clgfst->StateIdInClg(_stateid))
+		{ // in clg fst
+			for(; !_iter.Done(); _iter.Next())
+			{ 
+				const Arc &clgarc = _iter.Value(); // clg arc
+				if(clgarc._input != 0)
+				{ // get hmm state .
+					_cur_hmmstateid = _clgfst->MapClgTokenStateId(_stateid, &clgarc);
+					_hmmarcs = _clgfst->GetState(_cur_hmmstateid)->Arcs();
+					_narcs = _clgfst->GetState(_cur_hmmstateid)->GetArcSize();
+					_i = 0;
+					break;
+				}
+			}
+		} // clg state init ok
+		else
+		{ // in hmm fst it's same hclg,but next state need process.
+			_clgfst = NULL;
+			_cur_hmmstateid = s;
+			_hmmarcs = _clgfst->GetState(_cur_hmmstateid)->Arcs();
+			_narcs = _clgfst->GetState(_cur_hmmstateid)->GetArcSize();
+			_i = 0;
+		}
+	} 
+
+	bool Done() const { return _iter.Done() || (_hmmarcs != NULL && _i >= _narcs); }
+
+	const Arc &Value() const
+	{
+		if(_clgfst != NULL) // clg
+		{
+			return _hmmarcs[_i];
+		}
+		else // hclg
+			return _iter.Value();
+	}
+
+	StateId NextState()
+	{
+		if (_hmmarcs != NULL)
+		{
+			return _clgfst->MapClgTokenStateId(_cur_hmmstateid, &_hmmarcs[_i]);
+		}
+		else
+			return Value()._to;
+	}
+
+	void Next() 
+	{
+		if(_clgfst != NULL) // clg
+		{
+			++_i;
+			if(_i >= _narcs)
+			{ // this hmm ok,next clg arc
+				_iter.Next();
+				for(; !_iter.Done(); _iter.Next())
+				{ // get next clg arc and extend hmmfst
+					const Arc &clgarc = _iter.Value(); // clg arc
+					if(clgarc._input != 0)
+					{
+						_cur_hmmstateid = _clgfst->MapClgTokenStateId(_stateid, &clgarc);
+						_hmmarcs = _clgfst->GetState(_cur_hmmstateid)->Arcs();
+						_narcs = _clgfst->GetState(_cur_hmmstateid)->GetArcSize();
+						_i = 0;
+					}
+				}
+			}
+		}
+		else
+		{
+			++_i;
+			_iter.Next();
+		}
+	}
+	void Reset() 
+	{
+		_iter.Reset();  
+		_i=0;
+	}
+	void Seek(size_t o) {_i = o;}
+	size_t Position() const 
+	{
+		return _iter.Position(); // clg or hclg position, not hmm position
+	}
+
+	unsigned int Flags() const {return 0;}
+	void SetFlags(unsigned , unsigned) { }
+
+private:
+	// record current fst state.
+	ArcIteratorBase _iter;  // clg iterator
+	ClgFst * _clgfst;
+	StateId _stateid;
+	StateId _cur_hmmstateid;
+	const Arc *_hmmarcs;
+	size_t _narcs;
+	size_t _i;
+};
+*/
 #include "src/util/namespace-end.h"
 #endif

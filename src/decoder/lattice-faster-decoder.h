@@ -6,83 +6,50 @@
 #include <unordered_map>
 #include <limits>
 #include <algorithm>
-#include "src/nnet/nnet-nnet.h"
-#include "src/decoder/optimize-fst.h"
-#include "src/fst/lattice-fst.h"
+#include "src/itf/decodable-itf.h"
+
+#include "src/newfst/optimize-fst.h"
+#include "src/newfst/lattice-fst.h"
 #include "src/util/config-parse-options.h"
+#include "src/decoder/lattice-faster-decoder-conf.h"
 
 using namespace std;
 using std::unordered_map;
 
 #include "src/util/namespace-start.h"
+
 #ifndef FLOAT_INF
 #define FLOAT_INF std::numeric_limits<float>::infinity()
 #endif
 
 //typedef int Label;
 //typedef int Stateid;
-struct LatticeFasterDecoderConfig 
-{
-	float _beam;
-	int _max_active;
-	int _min_active;
-	float _lattice_beam;
-	int _prune_interval;
-	bool _determinize_lattice; // no use
-
-	float _beam_delta;
-	float _hash_ratio;
-	float _prune_scale; // Note: we don't make this configurable on the command line,
-						// it's not a very important parameter.  It affects the
-						// algorithm that prunes the tokens as we go.
-	
-	LatticeFasterDecoderConfig(): 
-		_beam(16.0),
-		_max_active(std::numeric_limits<int>::max()),
-		_min_active(200),
-		_lattice_beam(10.0),
-		_prune_interval(25),
-		_determinize_lattice(true),
-		_beam_delta(0.5),
-		_hash_ratio(2.0),
-		_prune_scale(0.1) { }
-
-	void Register(ConfigParseOptions *conf)
-	{
-		conf->Register("beam", &_beam, "Decoding beam.  Larger->slower, more accurate.");
-		conf->Register("max-active", &_max_active, "Decoder max active states.  Larger->slower; more accurate");
-		conf->Register("min-active", &_min_active, "Decoder minimum #active states.");
-		conf->Register("lattice-beam", &_lattice_beam, "Lattice generation beam.  Larger->slower, and deeper lattices");
-		conf->Register("prune-interval", &_prune_interval, "Interval (in frames) at which to prune tokens");
-		conf->Register("determinize-lattice", &_determinize_lattice, "If true, "
-				"determinize the lattice (lattice-determinization, keeping only "
-				"best pdf-sequence for each word-sequence).");
-		conf->Register("beam-delta", &_beam_delta, "Increment used in decoding-- this "
-				"parameter is obscure and relates to a speedup in the way the "
-				"max-active constraint is applied.  Larger is more accurate.");
-		conf->Register("hash-ratio", &_hash_ratio, "Setting used in decoder to "
-				"control hash behavior");
-	}
-	void Check() const 
-	{
-		assert(_beam > 0.0 && _max_active > 1 && _lattice_beam > 0.0
-				&& _prune_interval > 0 && _beam_delta > 0.0 && _hash_ratio >= 1.0
-				&& _prune_scale > 0.0 && _prune_scale < 1.0);
-	}
-};
-
 class LatticeFasterDecoder 
 {
 private:
 	struct Token;
+	typedef HashList<StateId, Token*>::Elem Elem;
 public:
+	struct BestPathIterator
+   	{
+		void *tok;
+		int frame;
+		// note, "frame" is the frame-index of the frame you'll get the
+		// transition-id for next time, if you call TraceBackBestPath on this
+		// iterator (assuming it's not an epsilon transition).  Note that this
+	    // is one less than you might reasonably expect, e.g. it's -1 for
+	    // the nonemitting transitions before the first frame.			
+		BestPathIterator(void *t, int f): tok(t), frame(f) { }
+		bool Done() { return tok == NULL; }
+	};
 
 	LatticeFasterDecoder(Fst *graph,
 			const LatticeFasterDecoderConfig &config):
-		_cur_toks(1000), _prev_toks(1000),
+//		_cur_toks(1000), _prev_toks(1000),
 		_graph(graph), _delete_fst(false), _config(config),
 		_num_toks(0), _num_links(0),_num_frames_decoded(0)
 	{
+		_toks.SetSize(1024);
 		_config.Check();
 	}
 	
@@ -114,7 +81,8 @@ public:
 	void AdvanceDecoding(AmInterface *decodable,
 			int max_num_frames = -1);
 
-	float GetCutoff();
+	float GetCutoff(Elem *list_head, size_t *tok_count,
+		float *adaptive_beam, Elem **best_elem);
 
 	void PruneActiveTokens(float delta);
 
@@ -138,6 +106,36 @@ public:
 			vector<int> &best_words_arr, vector<int> &best_phones_arr,
 			float &best_tot_score, float &best_lm_score);
 
+	// Outputs an FST corresponding to the single best path through the lattice.
+	// This is quite efficient because it doesn't get the entire raw lattice and find
+	// the best path through it; insterad, it uses the BestPathEnd and BestPathIterator
+	// so it basically traces it back through the lattice.
+	// Returns true if result is nonempty (using the return status is deprecated,
+	// it will become void).  If "use_final_probs" is true AND we reached the
+	// final-state of the graph then it will include those as final-probs, else
+	// it will treat all final-probs as one.
+	bool GetBestPath(Lattice *ofst, bool use_final_probs = true) const;
+
+	// This function returns an iterator that can be used to trace back
+	// the best path.  If use_final_probs == true and at least one final state
+	// survived till the end, it will use the final-probs in working out the best
+	// final Token, and will output the final cost to *final_cost (if non-NULL),
+	// else it will use only the forward likelihood, and will put zero in
+	// *final_cost (if non-NULL).
+	// Requires that NumFramesDecoded() > 0.
+	BestPathIterator BestPathEnd(bool use_final_probs,
+			float *final_cost = NULL) const;
+
+	// This function can be used in conjunction with BestPathEnd() to trace back
+	// the best path one link at a time (e.g. this can be useful in endpoint
+	// detection).  By "link" we mean a link in the graph; not all links cross
+	// frame boundaries, but each time you see a nonzero ilabel you can interpret
+	// that as a frame.  The return value is the updated iterator.  It outputs
+	// the ilabel and olabel, and the (graph and acoustic) weight to the "arc" pointer,
+	// while leaving its "nextstate" variable unchanged.
+	BestPathIterator TraceBackBestPath(
+			BestPathIterator iter, LatticeArc *arc) const;
+
 	// Returns the number of frames decoded so far.  The value returned changes
 	// whenever we call ProcessEmitting().
 	inline int NumFramesDecoded() const { return _active_toks.size() - 1; }
@@ -150,8 +148,9 @@ public:
 	/// The raw lattice will be topologically sorted.
 	bool GetRawLattice(Lattice *ofst,
 			bool use_final_probs) const;
+
 private:
-	Token * FindOrAddToken(StateId stateid,int frame_plus_one, float tot_cost, bool *changed);
+	Elem * FindOrAddToken(StateId stateid,int frame_plus_one, float tot_cost, Token *backpointer, bool *changed);
 
 	// Prune away any tokens on this frame that have no forward links.
 	// [we don't do this in PruneForwardLinks because it would give us
@@ -200,6 +199,8 @@ private:
 	// the algorithm to output a list that contains NULLs.
 	static void TopSortTokens(Token *tok_list,
 			std::vector<Token*> *topsorted_list);
+	
+	void PossiblyResizeHash(size_t num_toks);
 private:
 	// ForwardLinks are the links from a token to a token on the next frame.
 	// or sometimes on the current frame (for input-epsilon links).
@@ -233,10 +234,16 @@ private:
 		ForwardLink *_links; // from current state forward arc record.
 		Token *_next; // Next in list of tokens for this frame.
 
+		Token *_backpointer; // best preceding Token (could be on this frame or a
+                             // previous frame).  This is only required for an
+							 // efficient GetBestPath function, it plays no part in
+							 // the lattice generation (the "links" list is what
+							 // stores the forward links, for that).
+									 
 		inline Token(float tot_cost, float extra_cost, ForwardLink *links,
-				Token *next):
+				Token *next, Token *backpointer):
 			_tot_cost(tot_cost), _extra_cost(extra_cost), 
-			_links(links), _next(next) { }
+			_links(links), _next(next), _backpointer(backpointer) { }
 
 		inline void DeleteForwardLinks(int &num_links)
 		{
@@ -266,11 +273,16 @@ private:
 	};
 
 	// At a frame ,a token can be indexed by StateId.
-	std::unordered_map<StateId,Token *> _cur_toks;
-	std::unordered_map<StateId,Token *> _prev_toks;
+	//std::unordered_map<StateId,Token *> _cur_toks;
+	//std::unordered_map<StateId,Token *> _prev_toks;
+
+	// At a frame ,a token can be indexed by StateId.
+	HashList<StateId, Token *> _toks;
+	
 	std::vector<TokenList> _active_toks;
 	
-	vector<StateId> _queue;
+	typedef std::unordered_map<StateId,Token *> MapElem;
+	std::vector<const Elem *> _queue;
 
 	std::vector<float> _tmp_array;  // used in GetCutoff.
 
@@ -286,10 +298,10 @@ private:
 
 	// next parameters for cut off .
 	// record current frame best token , best stateid .
-	Token *_best_tok;
-	StateId _best_stateid;
+//	Token *_best_tok;
+//	StateId _best_stateid;
 	//adaptive_beam : for adapt next frame
-	float _adaptive_beam;
+//	float _adaptive_beam;
 
 	bool _warned;
 

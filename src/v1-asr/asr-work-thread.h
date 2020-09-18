@@ -15,6 +15,7 @@ public:
 	ASRWorkThread(ThreadPoolBase<ThreadBase> *tp, 
 			kaldi::ASROpts *asr_opts, kaldi::ASRSource *asr_source):
 		ThreadPoolWorkThread(tp),
+		_decodable_info(NULL),_feature_info(NULL),
 		_asr_work(NULL)
 	{ 
 		InitASRSource(asr_opts, asr_source);
@@ -24,10 +25,20 @@ public:
 		if(_asr_work != NULL)
 			delete _asr_work;
 		_asr_work = NULL;
+		if(_decodable_info != NULL)
+			delete _decodable_info;
+		_decodable_info = NULL;
+		if(_feature_info != NULL)
+			delete _feature_info;
+		_feature_info = NULL;
 	}
 //	void Run();
 private:
 	bool InitASRSource(kaldi::ASROpts *asr_opts, kaldi::ASRSource *asr_source);
+
+	kaldi::nnet3::DecodableNnetSimpleLoopedInfo *_decodable_info;
+	kaldi::OnlineNnet2FeaturePipelineInfo *_feature_info;
+
 	// recv data from client
 	C2SPackageAnalysis _ser_c2s_package_analysys;
 	// send data to client

@@ -67,12 +67,12 @@ int32 V2ASRServiceTask::Run(void *data)
 				n++;
 				if(n>2)
 				{
-					LOG_COM << "|" << _connfd << "| timeout and disconnet";
+					LOG_WARN << "|" << _connfd << "| timeout and disconnet";
 					break;
 				}
 				continue;
 			}
-			LOG_COM << "C2SRead error." << std::endl;
+			LOG_WARN << "C2SRead error!!!" <<  " connect fd is " << _connfd;
 			break;
 		}
 		ser_c2s.Print("ser_c2s");
@@ -83,7 +83,7 @@ int32 V2ASRServiceTask::Run(void *data)
 		// first audio type
 		// todo convert to pcm format.
 		//
-		VLOG_COM(0) << "from |" << _connfd << "| receive \"" << data_len << "\"";
+		VLOG_COM(2) << "from |" << _connfd << "| receive \"" << data_len << "\"";
 		// 8k ,16bit
 		// whether to end
 		bool eos= ser_c2s.IsEnd();
@@ -142,7 +142,7 @@ int32 V2ASRServiceTask::Run(void *data)
 			{
 				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CEND))
 				{
-					LOG_COM << "S2CWrite all end error.";
+					LOG_WARN << "S2CWrite all end error.";
 					break;
 				}
 				ser_s2c.Print("ser_s2c" + ser_c2s.GetKey());
@@ -152,7 +152,7 @@ int32 V2ASRServiceTask::Run(void *data)
 				// end point judge cut audio.
 				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CMIDDLEEND))
 				{
-					LOG_COM << "S2CWrite middle end error.";
+					LOG_WARN << "S2CWrite middle end error.";
 					break;
 				}
 				online_clg_decoder.InitDecoding(0, false);
@@ -161,7 +161,7 @@ int32 V2ASRServiceTask::Run(void *data)
 			{
 				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CNOEND))
 				{
-					LOG_COM << "S2CWrite error.";
+					LOG_WARN << "S2CWrite error.";
 					break;
 				}
 			}
@@ -192,7 +192,7 @@ int32 V2ASRServiceTask::Run(void *data)
 		}
 	}
 	close(_connfd);
-	LOG_COM << "close " << _connfd << " ok.";
+	VLOG_COM(2) << "close " << _connfd << " ok.";
 	return 0;
 }
 

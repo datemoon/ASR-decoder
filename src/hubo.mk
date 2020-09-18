@@ -9,6 +9,7 @@ CXXFLAGS=-Wall -Wno-sign-compare \
 
 CXXFLAGS += -fPIC -I../..
 CXXFLAGS += -DNAMESPACE
+#CXXFLAGS += -DUSE_CLG
 
 LDFLAGS = -rdynamic
 
@@ -21,8 +22,8 @@ LDLIBS = -lm -lpthread -ldl
 
 GCC=gcc
 CC = g++
-CXX = g++
-GXX = g++
+CXX = $(CC)
+GXX = $(CC)
 AR = ar
 AS = as
 RANLIB = ranlib

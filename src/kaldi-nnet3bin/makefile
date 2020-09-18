@@ -6,16 +6,23 @@ LIBS=../kaldi-nnet3/libonlinedecode.a \
 
 OBJ=kaldi-online-nnet3-my-decoder-bin.o
 
-BIN=kaldi-online-nnet3-my-decoder-bin
+BIN=kaldi-online-nnet3-my-decoder-bin kaldi-my-decoder kaldi-hclg-my-decoder
 
 all:$(BIN)
 
 kaldi-online-nnet3-my-decoder-bin:kaldi-online-nnet3-my-decoder-bin.o
-	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB) $(LIBS) $(KALDI_LIB_DYNAMIC) $(CBLAS_LIB) 
+	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB) $(LIBS) $(KALDI_LIBS) $(CBLAS_LIB)
+
+kaldi-my-decoder:kaldi-my-decoder.o
+	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB) $(LIBS)  $(KALDI_LIBS) $(CBLAS_LIB)
+
+kaldi-hclg-my-decoder:kaldi-hclg-my-decoder.o
+	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB) $(LIBS)  $(KALDI_LIBS) $(CBLAS_LIB)
+
 %.o:%.cc
 	$(GXX) $(CXXFLAGS) -c -o $@ $< 
 
 .PHONY:
 
 clean:
-	rm -f *.o kaldi-online-nnet3-my-decoder-bin
+	rm -f *.o $(BIN)

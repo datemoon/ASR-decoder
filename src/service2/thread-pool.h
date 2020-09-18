@@ -46,6 +46,8 @@ protected:
 
 	pthread_mutex_t _pthread_pool_mutex;  // thread synchronization lock
 	pthread_cond_t _pthread_pool_cond;    // thread condition lock
+
+	pthread_mutex_t _time_mutex;
 	bool _wait_thread;
 
 	void OneToTwo(pthread_t tid, std::vector<pthread_t> &one, std::vector<pthread_t> &two)
@@ -120,33 +122,33 @@ public:
 
 	double GetDataTime() 
 	{ 
-		pthread_mutex_lock(&_pthread_pool_mutex);
+		pthread_mutex_lock(&_time_mutex);
 		double t = _data_time;
-		pthread_mutex_unlock(&_pthread_pool_mutex);
+		pthread_mutex_unlock(&_time_mutex);
 		return t;
 	}
 	double GetWorkTime() 
 	{ 
-		pthread_mutex_lock(&_pthread_pool_mutex);
+		pthread_mutex_lock(&_time_mutex);
 		double t = _work_time;
-		pthread_mutex_unlock(&_pthread_pool_mutex);
+		pthread_mutex_unlock(&_time_mutex);
 		return t;
 	}
 	virtual void SetTime(double data_time, double work_time)
 	{
-		pthread_mutex_lock(&_pthread_pool_mutex);
+		pthread_mutex_lock(&_time_mutex);
 		_data_time += data_time;
 		_work_time += work_time;
-		pthread_mutex_unlock(&_pthread_pool_mutex);
+		pthread_mutex_unlock(&_time_mutex);
 	}
 	
 	void TimeInfo()
 	{
-		pthread_mutex_lock(&_pthread_pool_mutex);
+		pthread_mutex_lock(&_time_mutex);
 		LOG_COM << "Total data time is : " << _data_time;
 		LOG_COM << "Total work time is : " << _work_time;
 		LOG_COM << "Work rt is : " << _work_time/_data_time;
-		pthread_mutex_unlock(&_pthread_pool_mutex);
+		pthread_mutex_unlock(&_time_mutex);
 	}
 };
 #include "src/util/namespace-end.h"

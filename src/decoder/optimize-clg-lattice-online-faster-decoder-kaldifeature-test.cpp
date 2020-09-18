@@ -5,16 +5,16 @@
 #include <utility>
 #include <assert.h>
 #include <string>
-#include "optimize-mem-decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
-#include "nnet/nnet-nnet.h"
-#include "nnet/nnet-feature-api.h"
-#include "decoder/wordid-to-wordstr.h"
-#include "align/phone-to-word.h"
-#include "fst/lattice-functions.h"
-#include "fst/lattice-to-nbest.h"
-#include "fst/rmepsilon.h"
-#include "fst/lattice-determinize.h"
-#include "fst/lattice-functions.h"
+#include "src/optimize-mem-decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
+#include "src/nnet/nnet-nnet.h"
+#include "src/nnet/nnet-feature-api.h"
+#include "src/decoder/wordid-to-wordstr.h"
+#include "src/align/phone-to-word.h"
+#include "src/fst/lattice-functions.h"
+#include "src/fst/lattice-to-nbest.h"
+#include "src/fst/rmepsilon.h"
+#include "src/fst/lattice-determinize.h"
+#include "src/fst/lattice-functions.h"
 
 using namespace std;
 

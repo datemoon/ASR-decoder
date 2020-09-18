@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 		vector<ThreadBase*> tmp_threads;
 		for(int i =0;i<nthread;++i)
 		{
-			V2ASRWorkThread *asr_t = new V2ASRWorkThread(&pool, online_info);
+			V2ASRWorkThread *asr_t = new V2ASRWorkThread(&pool, online_info, i);
 			tmp_threads.push_back(asr_t);
 		}
 		pool.Init(tmp_threads);
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 			{
 				printf(".");
 				fflush(stdout);
-				//pool.Info();
+				pool.Info();
 				//printf("no cli connect requst %d %d %d %d.\n", connectfd,errno,EINPROGRESS,EAGAIN);
 			}
 			else

@@ -1,5 +1,5 @@
-#ifndef __LATTICE_FASTER_DECODE_H__
-#define __LATTICE_FASTER_DECODE_H__
+#ifndef __LATTICE_FASTER_DECODE_CONF_H__
+#define __LATTICE_FASTER_DECODE_CONF_H__
 
 #include "src/util/config-parse-options.h"
 

@@ -90,6 +90,7 @@ int main(int argc,char *argv[])
 		memset(wavfile,0x00,sizeof(wavfile));
 	}
 	pool.WaitStopAll();
+	pool.Info();
 
 	fclose(fp);
 	CloseResultHandle();

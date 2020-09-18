@@ -1,32 +1,33 @@
 
+#include <assert.h>
 #include <iostream>
 #include <math.h>
 #include <unordered_set>
-#include "src/util/log-message.h"
-#include "src/decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
+#include "src/decoder/mem-optimize-hclg-lattice-faster-online-decoder.h"
 
 #include "src/util/namespace-start.h"
-
-void MemOptimizeClgLatticeFasterOnlineDecoder::InitDecoding()
+void MemOptimizeHclgLatticeFasterOnlineDecoder::InitDecoding()
 {
 	ClearActiveTokens();
-	DeletePool();
 	// clean up from last time:
 	_toks.DeleteElems();
-//	_prev_toks.clear();
 	_active_toks.clear();
 	_queue.clear();
 	_tmp_array.clear(); // for calculate cutoff score
 	_cost_offsets.clear();
 	_final_costs.clear();
+//	_best_tok = NULL;
+//	_best_stateid = 0;
+//	_adaptive_beam = 0.0;
+
 
 	_num_toks = 0;
-	LOG_ASSERT(_num_toks == 0);
-	LOG_ASSERT(_num_links == 0);
+	assert(_num_toks == 0);
+	assert(_num_links == 0);
 
 	_decoding_finalized = false;
 
-	ClgTokenStateId start_state = _graph->Start();
+	StateId start_state = _graph->Start();
 
 	_active_toks.resize(1);
 	Token *start_tok = NewToken(0.0, 0.0, NULL, NULL, NULL);
@@ -38,7 +39,7 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::InitDecoding()
 	_num_frames_decoded = 0;
 }
 
-void MemOptimizeClgLatticeFasterOnlineDecoder::ClearActiveTokens()
+void MemOptimizeHclgLatticeFasterOnlineDecoder::ClearActiveTokens()
 {// a cleanup routine, at utt end/begin
 	for(size_t i = 0; i < _active_toks.size(); ++i)
 	{
@@ -46,23 +47,23 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::ClearActiveTokens()
 		{
 			DeleteForwardLinks(tok);
 			Token *next_tok = tok->_next;
-			LOG_ASSERT(tok->CheckNoLink());
-			DeleteToken(tok);
+			assert(tok->CheckNoLink());
+			_token_pools.DeleteT(tok);
 			_num_toks--;
 			tok = next_tok;
 		}
 	}
 	_active_toks.clear();
-	LOG_ASSERT(_num_toks == 0 && _num_links == 0);
+	assert(_num_toks == 0 && _num_links == 0);
 }
 
-// FindOrAddToken either locates a token in hash of _toks,
-MemOptimizeClgLatticeFasterOnlineDecoder::Elem *MemOptimizeClgLatticeFasterOnlineDecoder::FindOrAddToken(ClgTokenStateId stateid,
+// FindOrAddToken either locates a token in hash of _cur_toks,
+MemOptimizeHclgLatticeFasterOnlineDecoder::Elem *MemOptimizeHclgLatticeFasterOnlineDecoder::FindOrAddToken(StateId stateid,
 		int frame_plus_one, float tot_cost, Token *backpointer, bool *changed)
 {
 	// Returns the Token pointer.  Sets "changed" (if non-NULL) to true
 	// if the token was newly created or the cost changed.
-	LOG_ASSERT((size_t)frame_plus_one < _active_toks.size());
+	assert((size_t)frame_plus_one < _active_toks.size());
 	Token *&toks = _active_toks[frame_plus_one]._toks;
 
 	Elem *e_found = _toks.Find(stateid);
@@ -107,31 +108,36 @@ MemOptimizeClgLatticeFasterOnlineDecoder::Elem *MemOptimizeClgLatticeFasterOnlin
 /*************
  * before ProcessEmitting, call GetCutoff, get this frame cutoff.
  *************/
-float MemOptimizeClgLatticeFasterOnlineDecoder::GetCutoff(Elem *list_head, size_t *tok_count,
+float MemOptimizeHclgLatticeFasterOnlineDecoder::GetCutoff(Elem *list_head, size_t *tok_count,
 		float *adaptive_beam, Elem **best_elem)
 {
-	size_t count = 0;
+	//size_t tok_count = 0;
 	float best_weight = FLOAT_INF;
 
+	size_t count = 0;
 	if(_config._max_active == std::numeric_limits<int>::max() &&
 			_config._min_active == 0)
 	{
-		for(Elem *e=list_head; e!= NULL; e = e->tail, ++count)
+		for(Elem *e = list_head; e!= NULL; e = e->tail, ++count)
 		{
 			float w = e->val->_tot_cost;
 			if(w < best_weight)
 			{
 				best_weight = w;
-				*best_elem = e;
+				if(best_elem != NULL)
+					*best_elem = e;
 			}
 		}
-		*tok_count = count;
-		*adaptive_beam = _config._beam;
+		if(tok_count != NULL)
+			*tok_count = count;
+		if(adaptive_beam != NULL)
+			*adaptive_beam = _config._beam;
 		return best_weight + _config._beam;
 	}
 	else
 	{ // record the best socre , and add score to _tmp_array for cut off.
 		_tmp_array.clear();
+		//for(auto it = _cur_toks.begin(); it != _cur_toks.end();++it,++tok_count)
 		for(Elem *e=list_head; e!= NULL; e = e->tail, ++count)
 		{
 			float w = e->val->_tot_cost;
@@ -139,18 +145,19 @@ float MemOptimizeClgLatticeFasterOnlineDecoder::GetCutoff(Elem *list_head, size_
 			if(w < best_weight)
 			{
 				best_weight = w;
-				*best_elem = e;
+				if(best_elem != NULL)
+					*best_elem = e;
 			}
 		}
-		*tok_count = count;
+		if (tok_count != NULL) *tok_count = count;
 
 		float beam_cutoff = best_weight + _config._beam;
 		float min_active_cutoff = FLOAT_INF;
 		float max_active_cutoff = FLOAT_INF;
 
 #ifdef DEBUG
-		VLOG(2) << "Number of tokens active on frame " << NumFramesDecoded() 
-			<< "is" << _tmp_array.size() ;
+		std::cerr << "Number of tokens active on frame " << NumFramesDecoded() 
+			<< "is" << _tmp_array.size() << std::endl;
 #endif
 		if(_tmp_array.size() > static_cast<size_t>(_config._max_active))
 		{
@@ -164,7 +171,8 @@ float MemOptimizeClgLatticeFasterOnlineDecoder::GetCutoff(Elem *list_head, size_
 		if(max_active_cutoff < beam_cutoff)
 		{ // max_active is tighter than beam.
 			// turn down beam.
-			*adaptive_beam = max_active_cutoff - best_weight + _config._beam_delta;
+			if(adaptive_beam != NULL)
+				*adaptive_beam = max_active_cutoff - best_weight + _config._beam_delta;
 			return max_active_cutoff;
 		}
 
@@ -186,39 +194,46 @@ float MemOptimizeClgLatticeFasterOnlineDecoder::GetCutoff(Elem *list_head, size_
 		if(min_active_cutoff > beam_cutoff)
 		{ // min_active is looser than beam.
 			// turn up beam.
-			*adaptive_beam = min_active_cutoff - best_weight + _config._beam_delta;
+			if (adaptive_beam != NULL)
+				*adaptive_beam = min_active_cutoff - best_weight + _config._beam_delta;
 			return min_active_cutoff;
 		}
 		else
 		{
-			*adaptive_beam = _config._beam;
+			if (adaptive_beam != NULL)
+				*adaptive_beam = _config._beam;
 			return beam_cutoff;
 		}
 	}// end if
 }
 
-void MemOptimizeClgLatticeFasterOnlineDecoder::PossiblyResizeHash(size_t num_toks)
+void MemOptimizeHclgLatticeFasterOnlineDecoder::PossiblyResizeHash(size_t num_toks)
 {
-	size_t new_sz = static_cast<size_t>(static_cast<float>(num_toks) 
-			* _config._hash_ratio);
+    size_t new_sz = static_cast<size_t>(static_cast<float>(num_toks) * _config._hash_ratio);
 	if(new_sz > _toks.Size())
 	{
 		_toks.SetSize(new_sz);
 	}
 }
 
-float MemOptimizeClgLatticeFasterOnlineDecoder::ProcessEmitting(DecodableInterface *decodable)
+float MemOptimizeHclgLatticeFasterOnlineDecoder::ProcessEmitting(AmInterface *decodable)
 {
-	LOG_ASSERT(_active_toks.size() > 0 && "it's serious bug.");
+	assert(_active_toks.size() > 0 && "it's serious bug.");
 
 	int nnetframe = _num_frames_decoded;
 	int frame = _active_toks.size() - 1;
 	_active_toks.resize(_active_toks.size() + 1);
 
-//	ClgTokenStateId tot_state = _graph->TotState();
-//	Label blkid = decodable->GetBlockTransitionId();
+	StateId tot_state = _graph->TotState();
+	//Label blkid = decodable->GetBlockTransitionId();
+	Label blkid = -1;
 
-	Elem *final_toks = _toks.Clear(); // analogous to swapping prev_toks_ / cur_toks_
+//	Token *best_tok = NULL;
+//	StateId best_stateid = -1;
+//	float adaptive_beam = 0.0;
+//	size_t tok_cnt = 0;
+
+	Elem *final_toks = _toks.Clear();
 
 	Elem *best_elem = NULL;
 	float adaptive_beam;
@@ -230,10 +245,11 @@ float MemOptimizeClgLatticeFasterOnlineDecoder::ProcessEmitting(DecodableInterfa
 
 	float cur_cutoff = GetCutoff(final_toks, &tok_cnt, &adaptive_beam, &best_elem);
 #ifdef DEBUG
-	VLOG(2) << "Adaptive beam on frame " << NumFramesDecoded() 
+	std::cerr << "Adaptive beam on frame " << NumFramesDecoded() 
 		<< "nnet frame " << nnetframe 
-		<< " is " << adaptive_beam ;
+		<< " is " << adaptive_beam << std::endl;
 #endif
+
 	PossiblyResizeHash(tok_cnt);  // This makes sure the hash is always big enough.
 
 	float next_cutoff = FLOAT_INF;//std::numeric_limits<float>::infinity();
@@ -246,136 +262,97 @@ float MemOptimizeClgLatticeFasterOnlineDecoder::ProcessEmitting(DecodableInterfa
 	// products of the next block are "next_cutoff" and "cost_offset".
 	if (best_elem != NULL)
 	{
-		ClgTokenStateId stateid = best_elem->key; 
+		StateId stateid = best_elem->key;
 		Token *tok = best_elem->val;
-		StdState *state = _graph->GetState(stateid);
-		if(_graph->StateIdInClg(stateid))
-		{ // in clg fst
-			for(int i = 0; i < static_cast<int>(state->GetArcSize()); ++i)
-			{
-				StdArc *clgarc = state->GetArc((unsigned)i);
-				if(clgarc->_input != 0)
-				{
-					ClgTokenStateId hmmstateid = _graph->MapClgTokenStateId(stateid, clgarc);
-					StdState *hmmstate = _graph->GetState(hmmstateid);
-					// in hmm propagate
-					for(int j = 0; j < static_cast<int>(hmmstate->GetArcSize()); ++j)
-					{
-						StdArc *arc = hmmstate->GetArc((unsigned)j);
-						if (arc->_input != 0)
-						{ // propagate
-							float tot_score =  tok->_tot_cost + clgarc->_w + arc->_w - decodable->LogLikelihood(nnetframe, arc->_input);
-							if(tot_score + adaptive_beam < next_cutoff)
-								next_cutoff = tot_score + adaptive_beam;
-						}
-					}
-				}
+		StdState *state = _graph->GetState((unsigned)stateid);
+		for(int i = 0; i < static_cast<int>(state->GetArcSize()); ++i)
+		{
+			StdArc *arc = state->GetArc((unsigned)i);
+			if (arc->_input != 0 && arc->_to != (stateid - tot_state))
+			{ // propagate
+				float tot_score =  tok->_tot_cost + arc->_w - decodable->LogLikelihood(nnetframe, arc->_input);
+				if(tot_score + adaptive_beam < next_cutoff)
+					next_cutoff = tot_score + adaptive_beam;
 			}
 		}
-		else
-		{ // in hmm fst
-			for(int i = 0; i < static_cast<int>(state->GetArcSize()); ++i)
-			{
-				StdArc *arc = state->GetArc((unsigned)i);
-				if (arc->_input != 0)
-				{ // propagate
-					float tot_score =  tok->_tot_cost + arc->_w - decodable->LogLikelihood(nnetframe, arc->_input);
-					if(tot_score + adaptive_beam < next_cutoff)
-						next_cutoff = tot_score + adaptive_beam;
-				}
-			}
+		// at here process black arc
+		if(blkid >= 0)
+		{
+			float ac_cost = - decodable->LogLikelihood(nnetframe, blkid);
+			double new_weight = tok->_tot_cost + ac_cost;
+			if (new_weight + adaptive_beam < next_cutoff)
+				next_cutoff = new_weight + adaptive_beam;
 		}
 		if(next_cutoff == FLOAT_INF)
 		{
 			next_cutoff = tok->_tot_cost + adaptive_beam;
-			LOG_WARN << "it shouldn't happen!!!";
-			LOG_WARN << "frame is : " << frame << " -> current cutoff " << cur_cutoff << " next cutoff " << next_cutoff ;
 		}
 	}
 	else
 	{
-		LOG_ERR << "it's serious error." ;
+		std::cerr << "it's serious error." << std::endl;
+		exit(1);
 	}
 
 	VLOG_COM(2) << "frame is : " << frame << " -> current cutoff " << cur_cutoff << " next cutoff " << next_cutoff ;
-	VLOG_COM(2) << "tokens is " << _num_toks  << " links is " << _num_links ;
+    VLOG_COM(2) << "tokens is " << _num_toks  << " links is " << _num_links ;
+
 #ifdef DEBUG
-	VLOG(2) << "current cutoff " << cur_cutoff << " next cutoff " << next_cutoff ;
+	std::cerr << "current cutoff " << cur_cutoff << " next cutoff " << next_cutoff << std::endl;
 #endif
 	// the tokens are now owned here, in _prev_toks.
-	//for(auto it = _prev_toks.begin(); it != _prev_toks.end(); ++it)
 	for(Elem *e = final_toks, *e_tail = NULL; e != NULL; e = e_tail)
 	{
-		ClgTokenStateId stateid = e->key;
+		StateId stateid = e->key;
 		Token *tok = e->val;
-		if(tok->_tot_cost < cur_cutoff)
+		if(tok->_tot_cost <= cur_cutoff)
 		{// it's OK.
 			StdState *state = _graph->GetState((unsigned)stateid);
-			if(_graph->StateIdInClg(stateid))
-			{ // in clg fst
-				for(int i = 0; i < static_cast<int>(state->GetArcSize()); ++i)
-				{
-					StdArc *clgarc = state->GetArc((unsigned)i);
-					if(clgarc->_input != 0)
-					{
-						ClgTokenStateId hmmstateid = _graph->MapClgTokenStateId(stateid, clgarc);
-						StdState *hmmstate = _graph->GetState(hmmstateid);
-						// hmm propagate
-						for(int j = 0; j < static_cast<int>(hmmstate->GetArcSize()); ++j)
-						{
-							StdArc *arc = hmmstate->GetArc((unsigned)j);
-							if (arc->_input != 0)
-							{
-								float ac_cost = - decodable->LogLikelihood(nnetframe, arc->_input);
-								float graph_cost = arc->_w + clgarc->_w;
-								float cur_cost = tok->_tot_cost;
-								float tot_cost = cur_cost + ac_cost + graph_cost;
-								if(tot_cost > next_cutoff)
-									continue;
-								else if(tot_cost + adaptive_beam < next_cutoff)
-									next_cutoff = tot_cost + adaptive_beam; // prune by best current token
-								// Note: the frame indexes into _active_toks are one-based,
-								// hence the + 1.
-								ClgTokenStateId arrivestateid = _graph->MapClgTokenStateId(hmmstateid, arc);
-								Elem *next_tok = FindOrAddToken(arrivestateid,
-										frame + 1, tot_cost, tok, NULL);
-								// Add ForwardLink from tok to next_tok (put on head of list tok->links)
-								tok->_links = NewForwardLink(next_tok->val, arc->_input, clgarc->_output,
-										graph_cost, ac_cost, tok->_links);
-								_num_links++;
-							}
-						}
-					}
-				} // all clg arc
-			}
-			else
-			{ // in hmm state
-				for(int i = 0; i < static_cast<int>(state->GetArcSize()); ++i)
-				{
-					const StdArc *arc = state->GetArc((unsigned)i);
-					if(arc->_input != 0) // can't be black state
-					{ // propagate
-						float ac_cost = - decodable->LogLikelihood(nnetframe, arc->_input);
-						float graph_cost = arc->_w;
-						float cur_cost = tok->_tot_cost;
-						float tot_cost = cur_cost + ac_cost + graph_cost;
-						if(tot_cost > next_cutoff)
-							continue;
-						else if(tot_cost + adaptive_beam < next_cutoff)
-							next_cutoff = tot_cost + adaptive_beam; // prune by best current token
-						// Note: the frame indexes into _active_toks are one-based,
-						// hence the + 1.
-						ClgTokenStateId arrivestateid = _graph->MapClgTokenStateId(stateid, arc);
-						Elem *next_tok = FindOrAddToken(arrivestateid,
-								frame + 1, tot_cost, tok, NULL);
-						// Add ForwardLink from tok to next_tok (put on head of list tok->links)
-						tok->_links = NewForwardLink(next_tok->val, arc->_input, arc->_output,
-								graph_cost, ac_cost, tok->_links);
-						_num_links++;
-					}
+			for(int i = 0; i < static_cast<int>(state->GetArcSize()); ++i)
+			{
+				const StdArc *arc = state->GetArc((unsigned)i);
+				if(arc->_input != 0
+						&& arc->_to != (stateid - tot_state)) // can't be black state
+				{ // propagate
+					float ac_cost = - decodable->LogLikelihood(nnetframe, arc->_input);
+					float graph_cost = arc->_w;
+					float cur_cost = tok->_tot_cost;
+					float tot_cost = cur_cost + ac_cost + graph_cost;
+					if(tot_cost > next_cutoff)
+						continue;
+					else if(tot_cost + adaptive_beam < next_cutoff)
+						next_cutoff = tot_cost + adaptive_beam; // prune by best current token
+					// Note: the frame indexes into _active_toks are one-based,
+					// hence the + 1.
+					Elem *next_tok = FindOrAddToken(arc->_to,
+							frame + 1, tot_cost, tok, NULL);
+					// Add ForwardLink from tok to next_tok (put on head of list tok->links)
+					tok->_links = NewForwardLink(next_tok->val, arc->_input, arc->_output,
+							graph_cost, ac_cost, tok->_links);
+					_num_links++;
 				}
 			}// for all arc.
-		} // this state ok
+			if(blkid >= 0)
+			{ // now process black arc
+				float ac_cost = - decodable->LogLikelihood(nnetframe, blkid);
+				float tot_cost = tok->_tot_cost + ac_cost;
+				StateId toblkid = stateid;
+				if(toblkid < tot_state)
+					toblkid = stateid + tot_state;
+				StdArc arc(blkid,0,toblkid,0);
+				if (tot_cost > next_cutoff)
+					continue;
+				else if(tot_cost + adaptive_beam < next_cutoff)
+					 next_cutoff = tot_cost + adaptive_beam; 
+			
+				Elem *next_tok = FindOrAddToken(arc._to,frame + 1, tot_cost, tok, NULL);
+				// Add ForwardLink from tok to next_tok (put on head of list tok->links)
+
+				tok->_links = NewForwardLink(next_tok->val, arc._input, arc._output,
+						0.0, ac_cost, tok->_links);
+				_num_links++;
+			}
+		}
 		e_tail = e->tail;
 		_toks.Delete(e); // e give back hash
 	} // end propagate
@@ -384,9 +361,9 @@ float MemOptimizeClgLatticeFasterOnlineDecoder::ProcessEmitting(DecodableInterfa
 	return next_cutoff;
 }
 
-void MemOptimizeClgLatticeFasterOnlineDecoder::ProcessNonemitting(float cutoff)
+void MemOptimizeHclgLatticeFasterOnlineDecoder::ProcessNonemitting(float cutoff)
 {
-	LOG_ASSERT(!_active_toks.empty() && "_active_toks shouldn't be empty.");
+	assert(!_active_toks.empty() && "_active_toks shouldn't be empty.");
 	int frame = static_cast<int>(_active_toks.size()) - 1;
 	// frame is the time-index, if frame=1 , it's the first frame.
 	// call from InitDecoding()
@@ -395,28 +372,33 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::ProcessNonemitting(float cutoff)
 	// Note-- this queue structure is not very optimal as
 	// it may cause us to process states unnecessarily (e.g. more than once),
 	// but I think this problem did not reduce speed.
-	LOG_ASSERT(_queue.empty() && "_queue must be empty.");
+	assert(_queue.empty() && "_queue must be empty.");
 
-	//for(auto it = _cur_toks.begin(); it != _cur_toks.end();++it)
 	for(const Elem *e = _toks.GetList(); e!= NULL; e = e->tail)
-		_queue.push_back(e);
-
-	if (_queue.empty())
 	{
-		LOG_ERR << "Error, no surviving tokens: frame is " 
-			<< frame ;
+		StateId state = e->key;
+		if(_graph->NumInputEpsilons(state) != 0)
+			_queue.push_back(e);
+	}
+	if (_queue.empty()) 
+	{
+		std::cerr<< "Error, no surviving tokens: frame is " 
+			<< frame << std::endl;
+	}
+	if (_toks.GetList() == NULL) 
+	{
+		std::cerr << "Error, no surviving tokens: frame is " << frame << std::endl;
 	}
 
 	while (!_queue.empty())
 	{
-		const Elem *e= _queue.back();
+		const Elem *elem = _queue.back();
 		_queue.pop_back();
 
-		ClgTokenStateId stateid = e->key;
-		Token *tok = e->val; // would segfault if state not in toks_ but this can't happen.
-		//Token *tok = _cur_toks[stateid];
+		StateId stateid = elem->key;
+		Token *tok = elem->val;
 		float cur_cost = tok->_tot_cost;
-		if(cur_cost > cutoff) // Don't process
+		if(cur_cost >= cutoff) // Don't process
 			continue;
 
 		// If "tok" has any existing forward links, delete them,
@@ -428,29 +410,32 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::ProcessNonemitting(float cutoff)
 // up need process ,but now don't change it.
 // all code is ok,I will optomize.
 		StdState *state = _graph->GetState((unsigned)stateid);
-		LOG_ASSERT(state != NULL && "can not find this state.");
+		assert(state != NULL && "can not find this state.");
 
 		for(int i=0; i < static_cast<int>(state->GetArcSize()); ++i)
 		{
 			const StdArc *arc = state->GetArc((unsigned)i);
-			if(arc->_input == 0)
+			if(arc->_input == 0) // you must make sure input is sort
 			{ // propagate eps edge
 				float graph_cost = arc->_w;
 				float tot_cost = cur_cost + graph_cost;
 				if(tot_cost < cutoff)
 				{
 					bool changed = false;
-					ClgTokenStateId arrivestateid = _graph->MapClgTokenStateId(stateid, arc);
-					Elem *new_tok = FindOrAddToken(arrivestateid, frame, tot_cost,
-							tok, &changed);
+					Elem *new_tok = FindOrAddToken(arc->_to, frame, tot_cost, tok,
+							&changed);
 					tok->_links = NewForwardLink(new_tok->val, 0, arc->_output,
 							graph_cost, 0, tok->_links);
 					_num_links++;
 					// if add node have exist and the tot_cost > this tot_cost
 					// this situation don't add this node to _queue.
-					if(changed)
+					if(changed && _graph->NumInputEpsilons(arc->_to) != 0)
 						_queue.push_back(new_tok);
 				}
+			}
+			else
+			{
+				break;
 			}
 		}// for all arcs in this node.
 	}// while queue not empty.
@@ -461,12 +446,10 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::ProcessNonemitting(float cutoff)
 //  that.  We go backwards through the frames and stop when we reach a point
 //  where the delta-costs are not changing (and the delta controls when we consider
 // a cost to have "not changed").
-void MemOptimizeClgLatticeFasterOnlineDecoder::PruneActiveTokens(float delta)
+void MemOptimizeHclgLatticeFasterOnlineDecoder::PruneActiveTokens(float delta)
 {
 	int cur_frame_plus_one = NumFramesDecoded();
-#ifdef DEBUG
 	int num_toks_begin = _num_toks;
-#endif
 	// The index "f" below represents a "frame plus one", i.e. you'd have to subtract
 	// one to get the corresponding index for the decodable object.
 	for (int f = cur_frame_plus_one - 1; f >= 0; f--) 
@@ -502,19 +485,17 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::PruneActiveTokens(float delta)
 			_active_toks[f+1]._must_prune_tokens = false;
 		}
 	}
-#ifdef DEBUG
-	VLOG(2) << "pruned tokens from " << num_toks_begin
-   		<< " to " << _num_toks ;
-#endif
+	VLOG_COM(2) << "pruned tokens from " << num_toks_begin
+   		<< " to " << _num_toks << std::endl;
 }
 
-void MemOptimizeClgLatticeFasterOnlineDecoder::PruneForwardLinks(int frame_plus_one,
+void MemOptimizeHclgLatticeFasterOnlineDecoder::PruneForwardLinks(int frame_plus_one,
 		bool *extra_costs_changed, bool *links_pruned,
 		float delta)
 {
-	LOG_ASSERT(frame_plus_one >= 0 && 
+	assert(frame_plus_one >= 0 && 
 			(size_t)frame_plus_one < _active_toks.size() && "it's error.");
-	LOG_ASSERT(_active_toks[frame_plus_one]._toks != NULL && "empty list; should not happen.");
+	assert(_active_toks[frame_plus_one]._toks != NULL && "empty list; should not happen.");
 	*extra_costs_changed = false;
 	*links_pruned = false;
 
@@ -524,11 +505,12 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::PruneForwardLinks(int frame_plus_
 	// prev_link_pruned is set to true if token have no links.
 	// links_pruned is set to true if any link in any token was pruned
 	
-	LOG_ASSERT(frame_plus_one >= 0 && (size_t)frame_plus_one < _active_toks.size());
+	assert(frame_plus_one >= 0 && (size_t)frame_plus_one < _active_toks.size());
 	if(_active_toks[frame_plus_one]._toks == NULL)
 	{
 		//empty list; should not happen.
-		LOG_ERR << "No tokens alive [doing pruning].. warning first time only for each utterance" ;
+		std::cerr << "No tokens alive [doing pruning].. warning first time only for each utterance" << std::endl;
+		exit(1);
 	}
 
 	// We have to iterate until there is no more change, because the links
@@ -553,7 +535,7 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::PruneForwardLinks(int frame_plus_
 				// link_exta_cost is the difference in score between the best paths
 				// through link source state and through link destination state
 			
-				LOG_ASSERT(link_extra_cost == link_extra_cost);  // check for NaN;
+				assert(link_extra_cost == link_extra_cost);  // check for NaN;
 				if ( link_extra_cost > _config._lattice_beam )
 				{ // excise link
 					ForwardLink *next_link = link->_next;
@@ -561,8 +543,8 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::PruneForwardLinks(int frame_plus_
 					   	prev_link->_next = next_link;
 					else
 						tok->_links = next_link;
-					DeleteForwardLink(link);
-					_num_links--;
+					_link_pools.DeleteT(link);
+				   	_num_links--;
 					link = next_link;
 					*links_pruned = true;
 				}
@@ -571,8 +553,8 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::PruneForwardLinks(int frame_plus_
 					if (link_extra_cost < 0.0) 
 					{  // this is just a precaution.
 						if (link_extra_cost < -0.01)
-							LOG_WARN << "Negative extra_cost: " 
-								<< link_extra_cost ;
+							std::cerr << "Negative extra_cost: " 
+								<< link_extra_cost << std::endl;
 						link_extra_cost = 0.0;
 					}
 					if(link_extra_cost < tok_extra_cost)
@@ -601,13 +583,13 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::PruneForwardLinks(int frame_plus_
 // [we don't do this in PruneForwardLinks because it would give us
 // a problem with dangling pointers].
 // It's called by PruneActiveTokens if any forward links have been pruned
-void MemOptimizeClgLatticeFasterOnlineDecoder::PruneTokensForFrame(int frame_plus_one)
+void MemOptimizeHclgLatticeFasterOnlineDecoder::PruneTokensForFrame(int frame_plus_one)
 {
-	LOG_ASSERT(frame_plus_one >= 0 && (size_t)frame_plus_one < _active_toks.size());
+	assert(frame_plus_one >= 0 && (size_t)frame_plus_one < _active_toks.size());
 	Token *&toks = _active_toks[frame_plus_one]._toks;
 
 	if(toks == NULL)
-		LOG_WARN << "No tokens alive [doing pruning]" ;
+		std::cerr << "No tokens alive [doing pruning]" << std::endl;
 
 	Token *tok, *next_tok, *prev_tok = NULL;
 	for (tok = toks; tok != NULL; tok = next_tok)
@@ -621,8 +603,8 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::PruneTokensForFrame(int frame_plu
 			else 
 				toks = tok->_next;
 			// check token
-			LOG_ASSERT(tok->CheckNoLink());
-			DeleteToken(tok);
+			assert(tok->CheckNoLink());
+			_token_pools.DeleteT(tok);
 			_num_toks -- ;
 		}
 		else
@@ -630,19 +612,21 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::PruneTokensForFrame(int frame_plu
 			prev_tok = tok;
 		}
 	}
+	assert(toks != NULL && "_active_toks shouldn't be NULL!!!");
 }
 
-bool MemOptimizeClgLatticeFasterOnlineDecoder::Decode(DecodableInterface *decodable)
+bool MemOptimizeHclgLatticeFasterOnlineDecoder::Decode(AmInterface *decodable)
 {
 	InitDecoding();
 
+	//while (!decodable->ExamineFrame(_num_frames_decoded - 1))
 	while((_num_frames_decoded - 1) < decodable->NumFramesReady())
 	{
 		// prune active tokens.
 		if (NumFramesDecoded() % _config._prune_interval == 0)
 			PruneActiveTokens(_config._lattice_beam * _config._prune_scale);
-//		_prev_toks.clear();
-//		_cur_toks.swap(_prev_toks);
+		//_prev_toks.clear();
+		//_cur_toks.swap(_prev_toks);
 		float cost_cutoff = ProcessEmitting(decodable);
 		ProcessNonemitting(cost_cutoff);
 	}
@@ -651,17 +635,17 @@ bool MemOptimizeClgLatticeFasterOnlineDecoder::Decode(DecodableInterface *decoda
 	return !_active_toks.empty() && _active_toks.back()._toks != NULL;
 }
 
-void MemOptimizeClgLatticeFasterOnlineDecoder::AdvanceDecoding(DecodableInterface *decodable,
+void MemOptimizeHclgLatticeFasterOnlineDecoder::AdvanceDecoding(AmInterface *decodable,
 		int max_num_frames)
 {
-	LOG_ASSERT(_num_frames_decoded >= 0 && !_decoding_finalized &&
+	assert(_num_frames_decoded >= 0 && !_decoding_finalized &&
 			"You must call InitDecoding() before AdvanceDecoding");
 	int num_frames_ready = decodable->NumFramesReady();
 	// num_frames_ready must be >= num_frames_decoded, or else
 	// the number of frames ready must have decreased (which doesn't
 	// make sense) or the decodable object changed between calls
 	// (which isn't allowed).
-	LOG_ASSERT(num_frames_ready >= _num_frames_decoded);
+	assert(num_frames_ready >= _num_frames_decoded);
 
 	int target_frames_decoded = num_frames_ready;
 	if(max_num_frames >= 0)
@@ -676,41 +660,40 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::AdvanceDecoding(DecodableInterfac
 		{
 			_num_frames_decoded++;
 			continue;
-		}
-		*/
+		}*/
 #ifdef DEBUG
-		VLOG(2) << "frame:" << _num_frames_decoded << "@number links " << _num_links << " number tokens "
-			<< _num_toks ;
+		std::cerr << "frame:" << _num_frames_decoded << "@number links " << _num_links << " number tokens "
+			<< _num_toks << std::endl;
 #endif
 		// prune active tokens.
 		if (NumFramesDecoded() % _config._prune_interval == 0)
 			PruneActiveTokens(_config._lattice_beam * _config._prune_scale);
-//		_prev_toks.clear();
-//		_cur_toks.swap(_prev_toks);
+		//_prev_toks.clear();
+		//_cur_toks.swap(_prev_toks);
 		// note: ProcessEmitting() increments num_frames_decoded_
 		float weight_cutoff = ProcessEmitting(decodable);
 		ProcessNonemitting(weight_cutoff);
 	}
 }
 
-void MemOptimizeClgLatticeFasterOnlineDecoder::ComputeFinalCosts(
+void MemOptimizeHclgLatticeFasterOnlineDecoder::ComputeFinalCosts(
 		unordered_map<Token*, float> *final_costs,
 		float *final_relative_cost,
 		float *final_best_cost) const
 {
-	LOG_ASSERT(!_decoding_finalized);
+	assert(!_decoding_finalized);
 	if (final_costs != NULL)
 		final_costs->clear();
+
+	const Elem *final_toks = _toks.GetList();
 
 	float infinity = FLOAT_INF;
 	float best_cost = infinity;
 	float best_cost_with_final = infinity;
 
-	const Elem *final_toks = _toks.GetList();
-	//for(_cur_toks.begin() ; it != _cur_toks.end() ; ++it)
 	while(final_toks != NULL)
 	{
-		ClgTokenStateId stateid = final_toks->key;
+		StateId stateid = final_toks->key;
 		Token *tok = final_toks->val;
 		const Elem *next = final_toks->tail;
 		bool fst_final = _graph->IsFinal(stateid); // here I don't use infinity inside of log(0).
@@ -747,21 +730,20 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::ComputeFinalCosts(
 // PruneForwardLinksFinal is a version of PruneForwardLinks that we call
 // on the final frame.  If there are final tokens active, it uses
 // the final-probs for pruning, otherwise it treats all tokens as final.
-void MemOptimizeClgLatticeFasterOnlineDecoder::PruneForwardLinksFinal()
+void MemOptimizeHclgLatticeFasterOnlineDecoder::PruneForwardLinksFinal()
 {
 	typedef unordered_map<Token*, float>::const_iterator IterType;
-	LOG_ASSERT(!_active_toks.empty());
+	assert(!_active_toks.empty());
 //	float infinity = FLOAT_INF;
 	int frame_plus_one = _active_toks.size() - 1;
 	ComputeFinalCosts(&_final_costs, &_final_relative_cost, &_final_best_cost);
 	_decoding_finalized = true;
-	
+
 	// We call DeleteElems() as a nicety, not because it's really necessary;
 	// otherwise there would be a time, after calling PruneTokensForFrame() on the
 	// final frame, when toks_.GetList() or toks_.Clear() would contain pointers
 	// to nonexistent tokens.
 	_toks.DeleteElems();
-
 	// Now go through tokens on this frame, pruning forward links...  may have to
 	// iterate a few times until there is no more change, because the list is not
 	// in topological order.  This is a modified version of the code in
@@ -813,7 +795,7 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::PruneForwardLinksFinal()
 						prev_link->_next = next_link;
 					else
 						tok->_links = next_link;
-					DeleteForwardLink(link);
+					_link_pools.DeleteT(link);
 					_num_links--;
 					link = next_link; // advance link but leave prev_link the same.
 				}
@@ -823,7 +805,7 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::PruneForwardLinksFinal()
 					{ // this is just a precaution.
 						if (link_extra_cost < -0.01)
 						{
-							LOG_WARN << "Negative extra_cost: " << link_extra_cost ;
+							std::cerr << "Negative extra_cost: " << link_extra_cost << std::endl;
 						}
 						link_extra_cost = 0.0;
 					}
@@ -851,12 +833,10 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::PruneForwardLinksFinal()
 // FinalizeDecoding() is a version of PruneActiveTokens that we call
 // (optionally) on the final frame.  Takes into account the final-prob of
 // tokens.  This function used to be called PruneActiveTokensFinal().
-void MemOptimizeClgLatticeFasterOnlineDecoder::FinalizeDecoding() 
+void MemOptimizeHclgLatticeFasterOnlineDecoder::FinalizeDecoding() 
 {
 	int final_frame_plus_one = NumFramesDecoded();
-#ifdef DEBUG
 	int num_toks_begin = _num_toks;
-#endif
 	// PruneForwardLinksFinal() prunes final frame (with final-probs), and
 	// sets _decoding_finalized.
 	PruneForwardLinksFinal();
@@ -868,28 +848,25 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::FinalizeDecoding()
 	    PruneTokensForFrame(f + 1);
 	}
 	PruneTokensForFrame(0);
-#ifdef DEBUG
-	VLOG(2) << "pruned tokens from " << num_toks_begin
-		<< " to " << _num_toks ;
-#endif
+	VLOG_COM(2) << "pruned tokens from " << num_toks_begin
+		<< " to " << _num_toks << std::endl;
 }
 
 
 // Outputs an FST corresponding to the raw, state-level
 // tracebacks.
-bool MemOptimizeClgLatticeFasterOnlineDecoder::GetRawLattice(Lattice *ofst,
-		bool use_final_probs)
+bool MemOptimizeHclgLatticeFasterOnlineDecoder::GetRawLattice(Lattice *ofst,
+		bool use_final_probs) const
 {
 	typedef LatticeArc Arc;
-//typedef Arc::StateId StateId;
+	//typedef Arc::StateId StateId;
 	typedef Arc::Weight Weight;
-//	typedef Arc::Label Label;
-
+	
 	// Note: you can't use the old interface (Decode()) if you want to
 	// get the lattice with use_final_probs = false.  You'd have to do
 	// InitDecoding() and then AdvanceDecoding().
 	if(_decoding_finalized && !use_final_probs)
-		LOG_ERR << "You cannot call FinalizeDecoding() and then call "
+		LOG_WARN << "You cannot call FinalizeDecoding() and then call "
 			<< "GetRawLattice() with use_final_probs == false";
 
 	unordered_map<Token*, float> final_costs_local;
@@ -898,25 +875,23 @@ bool MemOptimizeClgLatticeFasterOnlineDecoder::GetRawLattice(Lattice *ofst,
 		(_decoding_finalized ? _final_costs : final_costs_local);
 
 	if (!_decoding_finalized && use_final_probs)
-	{
-		PruneActiveTokens(_config._lattice_beam * _config._prune_scale);
 		ComputeFinalCosts(&final_costs_local, NULL, NULL);
-	}
+
 	ofst->DeleteStates();
 	// num-frames plus one (since frames are one-based, and we have
 	// an extra frame for the start-state).
 	int num_frames = _active_toks.size() - 1;
-	LOG_ASSERT(num_frames > 0);
+	assert(num_frames > 0);
 
 	const int bucket_count = _num_toks/2+3;
-	unordered_map<Token*, ClgTokenStateId> tok_map(bucket_count);
+	unordered_map<Token*, StateId> tok_map(bucket_count);
 	// First create all states.
 	std::vector<Token*> token_list;
 	for(int f = 0; f <= num_frames; ++f)
 	{
 		if(_active_toks[f]._toks == NULL)
 		{
-			LOG_WARN << "GetRawLattice: no tokens active on frame " << f
+			std::cerr << "GetRawLattice: no tokens active on frame " << f
 				<< ": not producing lattice.\n";
 			return false;
 		}
@@ -932,9 +907,9 @@ bool MemOptimizeClgLatticeFasterOnlineDecoder::GetRawLattice(Lattice *ofst,
 	ofst->SetStart(0);
 
 #ifdef DEBUG
-	VLOG(2) << "init:" << _num_toks/2 + 3 << " buckets:"
+	std::cerr << "init:" << _num_toks/2 + 3 << " buckets:"
 		<< tok_map.bucket_count() << " load:" << tok_map.load_factor()
-		<< " max:" << tok_map.max_load_factor() ;
+		<< " max:" << tok_map.max_load_factor() << std::endl;
 #endif
 
 	// Now create all arcs.
@@ -942,18 +917,18 @@ bool MemOptimizeClgLatticeFasterOnlineDecoder::GetRawLattice(Lattice *ofst,
 	{
 		for (Token *tok = _active_toks[f]._toks; tok != NULL; tok = tok->_next)
 		{
-			ClgTokenStateId cur_state = tok_map[tok];
+			StateId cur_state = tok_map[tok];
 			for (ForwardLink *l = tok->_links; l != NULL; l = l->_next)
 			{
-				unordered_map<Token*, ClgTokenStateId>::const_iterator iter =
+				unordered_map<Token*, StateId>::const_iterator iter =
 					tok_map.find(l->_next_tok);
-				ClgTokenStateId nextstate = iter->second;
-				LOG_ASSERT(iter != tok_map.end());
+				StateId nextstate = iter->second;
+				assert(iter != tok_map.end());
 				float cost_offset = 0.0;
 				/* don't use _cost_offsets
 				if (l->_ilabel != 0) 
 				{ // emitting
-					LOG_ASSERT(f >= 0 && f < _cost_offsets.size());
+					assert(f >= 0 && f < _cost_offsets.size());
 					cost_offset = _cost_offsets[f];
 				}
 				*/
@@ -981,7 +956,7 @@ bool MemOptimizeClgLatticeFasterOnlineDecoder::GetRawLattice(Lattice *ofst,
 	return (ofst->NumStates() > 0);
 }
 
-void MemOptimizeClgLatticeFasterOnlineDecoder::TopSortTokens(Token *tok_list,
+void MemOptimizeHclgLatticeFasterOnlineDecoder::TopSortTokens(Token *tok_list,
 		std::vector<Token*> *topsorted_list)
 {
 	unordered_map<Token*, int> token2pos;
@@ -1024,7 +999,7 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::TopSortTokens(Token *tok_list,
 				}
 				else
 				{
-					LOG_ASSERT("this shouldn't append.");
+					assert("this shouldn't append.");
 				}
 			}
 		}
@@ -1068,7 +1043,7 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::TopSortTokens(Token *tok_list,
 			}
 		}
 	}
-	LOG_ASSERT(loop_count < max_loop && "Epsilon loops exist in your decoding "
+	assert(loop_count < max_loop && "Epsilon loops exist in your decoding "
 			"graph (this is not allowed!)");
 
 	topsorted_list->clear();
@@ -1077,9 +1052,46 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::TopSortTokens(Token *tok_list,
 	for (IterType iter = token2pos.begin(); iter != token2pos.end(); ++iter)
 		(*topsorted_list)[iter->second] = iter->first;
 }
+bool MemOptimizeHclgLatticeFasterOnlineDecoder::GetBestPath(Lattice &best_path, 
+		vector<int> &best_words_arr, vector<int> &best_phones_arr,
+		float &best_tot_score, float &best_lm_score)
+{
+	if(best_path.Start() == kNoStateId)
+		return false;
+	best_tot_score = 0;
+	// here best_path can't be top sort
+	LatticeState * cur_state = best_path.GetState(0);
+	while(!cur_state->IsFinal())
+	{
+		// beacause one best path , so every state have only one arc.
+		LatticeArc *arc = cur_state->GetArc(0);
+		StateId next_stateid = arc->_to;
+		if(arc->_input != 0)
+			best_phones_arr.push_back(arc->_input);
+		if(arc->_output != 0)
+			best_words_arr.push_back(arc->_output);
+		best_lm_score += arc->_w.Value1();
+		best_tot_score += arc->_w.Value1() + arc->_w.Value2();
+		cur_state = best_path.GetState(next_stateid);
+	}/*
+	for(StateId s = 0 ; s < best_path.NumStates(); ++s)
+	{
+		// beacause one best path , so every state have only one arc.
+		if(best_path.GetState(s)->GetArcSize() == 1)
+		{
+			Arc *arc = best_path.GetState(s)->GetArc(0);
+			if(arc->_input != 0)
+				best_phones_arr.push_back(arc->_input);
+			if(arc->_output != 0)
+				best_words_arr.push_back(arc->_output);
+			best_tot_score += arc->_w;
+		}// else is final
+	}*/
+	return true;
+}
 
 // Outputs an FST corresponding to the single best path through the lattice.
-bool MemOptimizeClgLatticeFasterOnlineDecoder::GetBestPath(Lattice *ofst, 
+bool MemOptimizeHclgLatticeFasterOnlineDecoder::GetBestPath(Lattice *ofst, 
 		bool use_final_probs) const
 {
 	ofst->DeleteStates();
@@ -1103,7 +1115,7 @@ bool MemOptimizeClgLatticeFasterOnlineDecoder::GetBestPath(Lattice *ofst,
 
 }
 
-MemOptimizeClgLatticeFasterOnlineDecoder::BestPathIterator MemOptimizeClgLatticeFasterOnlineDecoder::BestPathEnd(
+MemOptimizeHclgLatticeFasterOnlineDecoder::BestPathIterator MemOptimizeHclgLatticeFasterOnlineDecoder::BestPathEnd(
 		bool use_final_probs, float *final_cost_out) const
 {
 	if (_decoding_finalized && !use_final_probs)
@@ -1166,7 +1178,7 @@ MemOptimizeClgLatticeFasterOnlineDecoder::BestPathIterator MemOptimizeClgLattice
 	return BestPathIterator(best_tok, NumFramesDecoded() - 1);
 }
 
-MemOptimizeClgLatticeFasterOnlineDecoder::BestPathIterator MemOptimizeClgLatticeFasterOnlineDecoder::TraceBackBestPath(
+MemOptimizeHclgLatticeFasterOnlineDecoder::BestPathIterator MemOptimizeHclgLatticeFasterOnlineDecoder::TraceBackBestPath(
 		BestPathIterator iter, LatticeArc *oarc) const
 {
 	LOG_ASSERT(!iter.Done() && oarc != NULL);
@@ -1205,90 +1217,6 @@ MemOptimizeClgLatticeFasterOnlineDecoder::BestPathIterator MemOptimizeClgLattice
 		oarc->_w = LatticeWeight::One();; // zero costs.
 	}
 	return BestPathIterator(tok->_backpointer, ret_t);
-}
-
-MemOptimizeClgLatticeFasterOnlineDecoder::Token *MemOptimizeClgLatticeFasterOnlineDecoder::NewToken(
-		float tot_cost, float extra_cost, ForwardLink *links,
-		Token *next, Token *backpointer)
-{
-	if(_token_pool_head == NULL)
-	{
-		Token *tok = new Token[_allocate_block_size];
-		for(size_t i=0; i+1<_allocate_block_size; ++i)
-			tok[i]._next = tok+i+1;
-		tok[_allocate_block_size-1]._next = NULL;
-		_token_pool_head = tok;
-		_token_pool_size += _allocate_block_size;
-		_token_pools.push_back(tok);
-	}
-	Token *tok = _token_pool_head;
-	_token_pool_head = _token_pool_head->_next;
-	_token_pool_size--;
-	tok->_tot_cost = tot_cost;
-	tok->_extra_cost = extra_cost;
-	tok->_links = links;
-	tok->_next = next;
-	tok->_backpointer = backpointer;
-	return tok;
-}
-
-MemOptimizeClgLatticeFasterOnlineDecoder::ForwardLink *MemOptimizeClgLatticeFasterOnlineDecoder::NewForwardLink(Token *next_tok, Label ilabel, Label olabel,
-		float graph_cost, float acoustic_cost, ForwardLink *next)
-{
-	if(_link_pool_head == NULL)
-	{
-		ForwardLink *link = new ForwardLink[_allocate_block_size];
-		for(size_t i=0; i+1<_allocate_block_size; ++i)
-			link[i]._next = link+i+1;
-		link[_allocate_block_size-1]._next = NULL;
-		_link_pool_head = link;
-		_link_pool_size += _allocate_block_size;
-		_link_pools.push_back(link);
-	}
-	ForwardLink *link = _link_pool_head;
-	_link_pool_head = _link_pool_head->_next;
-	_link_pool_size--;
-	link->_next_tok = next_tok;
-	link->_ilabel = ilabel;
-	link->_olabel = olabel;
-	link->_graph_cost = graph_cost;
-	link->_acoustic_cost = acoustic_cost;
-	link->_next = next;
-	return link;
-}
-
-void MemOptimizeClgLatticeFasterOnlineDecoder::DeleteToken(Token *tok)
-{
-	tok->_next = _token_pool_head;
-	_token_pool_head = tok;
-	_token_pool_size++;
-}
-
-void MemOptimizeClgLatticeFasterOnlineDecoder::DeleteForwardLink(ForwardLink *link)
-{
-	link->_next = _link_pool_head;
-	_link_pool_head = link;
-	_link_pool_size++;
-}
-
-void MemOptimizeClgLatticeFasterOnlineDecoder::DeletePool()
-{
-	ClearActiveTokens();
-	for(size_t i=0;i<_token_pools.size();++i)
-	{
-		delete []_token_pools[i];
-		_token_pool_size -= _allocate_block_size;
-	}
-	_token_pools.clear();
-	_token_pool_head = NULL;
-	for(size_t i=0;i<_link_pools.size();++i)
-	{
-		delete []_link_pools[i];
-		_link_pool_head -= _allocate_block_size;
-	}
-	_link_pools.clear();
-	_link_pool_head = NULL;
-	LOG_ASSERT(_token_pool_size == 0 && _link_pool_head == 0);
 }
 
 #include "src/util/namespace-end.h"

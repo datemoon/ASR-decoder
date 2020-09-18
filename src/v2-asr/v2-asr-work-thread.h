@@ -20,7 +20,8 @@ public:
 
 	//
 	V2ASRWorkThread(ThreadPoolBase<ThreadBase> *thread_pool, 
-			OnlineDecoderInfo &online_info):
+			OnlineDecoderInfo &online_info, int32 index=-1):
+		ThreadBase(index),
 		_thread_pool(thread_pool),
 		_online_clg_decoder(online_info){ }
 

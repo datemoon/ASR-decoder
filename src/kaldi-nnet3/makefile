@@ -9,13 +9,12 @@ LIB=libonlinedecode.a
 
 TESTBIN=kaldi-online-nnet3-my-decoder-test
 
-all:$(LIB) test 
+all:$(LIB)
 
 test:$(TESTBIN)
 
 kaldi-online-nnet3-my-decoder-test:kaldi-online-nnet3-my-decoder-test.o
-	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(KALDI_LIB_DYNAMIC) $(CBLAS_LIB)
-	#$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIB_STATIC) $(CBLAS_LIB) $(FST_LIB_STATIC)
+	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIBS) $(KALDI_LIBS) $(CBLAS_LIB)
 
 libonlinedecode.a:$(OBJ)
 	$(AR) -rcu $@ $^

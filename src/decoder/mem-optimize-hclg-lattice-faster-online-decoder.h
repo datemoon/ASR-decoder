@@ -1,35 +1,36 @@
-#ifndef __MEM_OPTIMIZE_CLG_LATTICE_FASTER_ONLINE_DECODE_H__
-#define __MEM_OPTIMIZE_CLG_LATTICE_FASTER_ONLINE_DECODE_H__
+#ifndef __MEM_OPTIMIZE_HCLG_LATTICE_FASTER_ONLINE_DECODE_H__
+#define __MEM_OPTIMIZE_HCLG_LATTICE_FASTER_ONLINE_DECODE_H__
 
 #include <assert.h>
 #include <vector>
 #include <unordered_map>
 #include <limits>
 #include <algorithm>
-#include "src/decoder/clg-fst.h"
-#include "src/newfst/lattice-fst.h"
-#include "src/decoder/lattice-faster-decoder-conf.h"
 #include "src/itf/decodable-itf.h"
 
-#include "src/util/util-common.h"
+#include "src/newfst/optimize-fst.h"
+#include "src/newfst/lattice-fst.h"
+#include "src/decoder/lattice-faster-decoder-conf.h"
+
+#include "src/util/config-parse-options.h"
+#include "src/util/mem-pool.h"
 
 using namespace std;
 using std::unordered_map;
 
 #include "src/util/namespace-start.h"
+
 #ifndef FLOAT_INF
-#define FLOAT_INF std::numeric_limits<BaseFloat>::infinity()
+#define FLOAT_INF std::numeric_limits<float>::infinity()
 #endif
 
 //typedef int Label;
 //typedef int Stateid;
-
-class MemOptimizeClgLatticeFasterOnlineDecoder 
+class MemOptimizeHclgLatticeFasterOnlineDecoder 
 {
 private:
 	struct Token;
-	typedef HashList<ClgTokenStateId, Token*>::Elem Elem;
-	
+	typedef HashList<StateId, Token*>::Elem Elem;
 public:
 	struct BestPathIterator
    	{
@@ -44,27 +45,26 @@ public:
 		bool Done() { return tok == NULL; }
 	};
 
-	MemOptimizeClgLatticeFasterOnlineDecoder(ClgFst *graph,
+	MemOptimizeHclgLatticeFasterOnlineDecoder(Fst *graph,
 			const LatticeFasterDecoderConfig &config):
+//		_cur_toks(1000), _prev_toks(1000),
 		_graph(graph), _delete_fst(false), _config(config),
-		_num_toks(0), _num_links(0), _num_frames_decoded(0),
-		_token_pool_head(NULL), _link_pool_head(NULL), _token_pool_size(0), _link_pool_size(0)
+		_num_toks(0), _num_links(0),_num_frames_decoded(0),
+		_token_pools(1024), _link_pools(1024)
 	{
 		_toks.SetSize(1024);
 		_config.Check();
 	}
 	
-	~MemOptimizeClgLatticeFasterOnlineDecoder()
+	~MemOptimizeHclgLatticeFasterOnlineDecoder()
 	{
-		_toks.DeleteElems();
 		ClearActiveTokens();
-		DeletePool();
 		if(_delete_fst)
 			delete _graph;
 	}
 	// Processes emitting arcs for one frame.  Propagates from prev_toks_ to cur_toks_.
 	// Returns the cost cutoff for subsequent ProcessNonemitting() to use.
-	float ProcessEmitting(DecodableInterface *decodable);
+	float ProcessEmitting(AmInterface *decodable);
 
 	// Processes nonemitting (epsilon) arcs for one frame.  Called after
 	// ProcessEmitting() on each frame.  The cost cutoff is computed by the
@@ -81,12 +81,15 @@ public:
 	/// object.  You can keep calling it each time more frames become available.
 	/// If max_num_frames is specified, it specifies the maximum number of frames
 	/// the function will decode before returning.
-	void AdvanceDecoding(DecodableInterface *decodable,
+	void AdvanceDecoding(AmInterface *decodable,
 			int max_num_frames = -1);
+
+	float GetCutoff(Elem *list_head, size_t *tok_count,
+		float *adaptive_beam, Elem **best_elem);
 
 	void PruneActiveTokens(float delta);
 
-	bool Decode(DecodableInterface *decodable);
+	bool Decode(AmInterface *decodable);
 
 	/// This function may be optionally called after AdvanceDecoding(), when you
 	/// do not plan to decode any further.  It does an extra pruning step that
@@ -101,6 +104,10 @@ public:
 	/// false.
 	void FinalizeDecoding();
 
+	// get best path
+	bool GetBestPath(Lattice &best_path, 
+			vector<int> &best_words_arr, vector<int> &best_phones_arr,
+			float &best_tot_score, float &best_lm_score);
 	// Outputs an FST corresponding to the single best path through the lattice.
 	// This is quite efficient because it doesn't get the entire raw lattice and find
 	// the best path through it; insterad, it uses the BestPathEnd and BestPathIterator
@@ -142,10 +149,11 @@ public:
 	/// it will treat all final-probs as one.
 	/// The raw lattice will be topologically sorted.
 	bool GetRawLattice(Lattice *ofst,
-			bool use_final_probs);
+			bool use_final_probs) const;
+
 private:
-	Elem * FindOrAddToken(ClgTokenStateId stateid,int frame_plus_one, float tot_cost, 
-			Token *backpointer, bool *changed);
+	Elem * FindOrAddToken(StateId stateid,int frame_plus_one, float tot_cost,
+		   Token *backpointer, bool *changed);
 
 	// Prune away any tokens on this frame that have no forward links.
 	// [we don't do this in PruneForwardLinks because it would give us
@@ -207,15 +215,14 @@ private:
 		float _graph_cost; // graph cost of traversing arc (contains LM, etc.)
 		float _acoustic_cost; // acoustic cost (pre-scaled) of traversing arc
 		ForwardLink *_next; //next in singly-linked list of forward arcs from a token.
-		inline ForwardLink(Token *next_tok, Label ilabel, Label olabel,
+
+		ForwardLink():_next_tok(NULL), _ilabel(0), _olabel(0), _graph_cost(0), _acoustic_cost(0){ }
+		ForwardLink(Token *next_tok, Label ilabel, Label olabel,
 				float graph_cost, float acoustic_cost,
 				ForwardLink *next):
 			_next_tok(next_tok), _ilabel(ilabel), _olabel(olabel),
 			_graph_cost(graph_cost), _acoustic_cost(acoustic_cost),
 			_next(next) { }
-		inline ForwardLink():
-			_next_tok(NULL), _ilabel(0), _olabel(0), _graph_cost(0.0),
-			_acoustic_cost(0.0), _next(NULL){ }
 	};
 
 	// Token is what's resident in a particular state at a particular time.
@@ -238,15 +245,17 @@ private:
 							 // the lattice generation (the "links" list is what
 							 // stores the forward links, for that).
 
+
 		inline Token():
 			_tot_cost(0.0), _extra_cost(0.0), _links(NULL),
 			_next(NULL), _backpointer(NULL) { }
+
 		inline Token(float tot_cost, float extra_cost, ForwardLink *links,
 				Token *next, Token *backpointer):
 			_tot_cost(tot_cost), _extra_cost(extra_cost), 
 			_links(links), _next(next), _backpointer(backpointer) { }
-
-/*		inline void DeleteForwardLinks(int &num_links, ForwardLink* pool)
+/*
+		inline void DeleteForwardLinks(int &num_links)
 		{
 			ForwardLink *l = _links, *m;
 			while (l != NULL)
@@ -257,8 +266,8 @@ private:
 				 l = m;
 			}
 			_links = NULL;
-		}*/
-		bool CheckNoLink()
+		}
+*/		bool CheckNoLink()
 		{
 			return _links == NULL ? true : false;
 		}
@@ -266,23 +275,19 @@ private:
 
 	inline void DeleteForwardLinks(Token *tok)
 	{
-		ForwardLink *l = tok->_links;
-		if(l == NULL)
-			return ;
-		ForwardLink *m = l;
+		ForwardLink *l = tok->_links, *m;
 		size_t num_link = 0;
 		while (l != NULL)
 		{
+			m = l->_next;
 			num_link++;
-			m = l;
-			l = l->_next;
+			_link_pools.DeleteT(l);
+			_num_links--;
+			l = m;
 		}
-		_num_links -= num_link;
-		_link_pool_size += num_link;
-		m->_next = _link_pool_head;
-		_link_pool_head = tok->_links;
 		tok->_links = NULL;
 	}
+
 	struct TokenList 
 	{
 		Token *_toks;
@@ -292,21 +297,21 @@ private:
 			 _must_prune_tokens(true) { }
 	};
 
-	// Gets the weight cutoff.  Also counts the active tokens.
-	float GetCutoff(Elem *list_head, size_t *tok_count,
-			float *adaptive_beam, Elem **best_elem);
-	
 	// At a frame ,a token can be indexed by StateId.
-	HashList<ClgTokenStateId,Token *> _toks;
-//	std::unordered_map<ClgTokenStateId,Token *> _cur_toks;
-//	std::unordered_map<ClgTokenStateId,Token *> _prev_toks;
+	//std::unordered_map<StateId,Token *> _cur_toks;
+	//std::unordered_map<StateId,Token *> _prev_toks;
+
+	// At a frame ,a token can be indexed by StateId.
+	HashList<StateId, Token *> _toks;
+	
 	std::vector<TokenList> _active_toks;
 	
-	vector<const Elem *> _queue;
+	typedef std::unordered_map<StateId,Token *> MapElem;
+	std::vector<const Elem *> _queue;
 
 	std::vector<float> _tmp_array;  // used in GetCutoff.
 
-	ClgFst *_graph;
+	Fst *_graph;
 	bool _delete_fst;
 
 	LatticeFasterDecoderConfig _config;
@@ -315,6 +320,13 @@ private:
 	int _num_links; // total forwardlinks
 	
 	std::vector<float> _cost_offsets; // now I don't use _cost_offsets
+
+	// next parameters for cut off .
+	// record current frame best token , best stateid .
+//	Token *_best_tok;
+//	StateId _best_stateid;
+	//adaptive_beam : for adapt next frame
+//	float _adaptive_beam;
 
 	bool _warned;
 
@@ -328,31 +340,38 @@ private:
 	// Keep track of the number of frames decoded in the current file.
 	// beacuse I can skip block frame , so add this true frame number.
 	int _num_frames_decoded;
-	
-	// Add pool avoid frequent new and delete .
-	std::vector<Token *> _token_pools;
-	std::vector<ForwardLink *> _link_pools;
 
-	Token *_token_pool_head;
-	ForwardLink *_link_pool_head;
-	size_t _token_pool_size;
-	size_t _link_pool_size;
+private:
+	// add memory pool save token and forwardlink.
+	MemPool<Token> _token_pools;
+	MemPool<ForwardLink> _link_pools;
 
-	inline Token *NewToken(float tot_cost, float extra_cost, 
-			ForwardLink *links, Token *next, Token *backpointer);
-	inline void DeleteToken(Token *tok);
-	inline ForwardLink *NewForwardLink(Token *next_tok, Label ilabel, 
-			Label olabel, float graph_cost, float acoustic_cost, 
-			ForwardLink *next);
-	inline void DeleteForwardLink(ForwardLink *link);
+	inline Token *NewToken(float tot_cost, float extra_cost, ForwardLink *links,
+			Token *next, Token *backpointer)
+	{
+		Token *tok = _token_pools.NewT();
+		tok->_tot_cost = tot_cost;
+		tok->_extra_cost = extra_cost;
+	    tok->_links = links;
+	    tok->_next = next;
+	    tok->_backpointer = backpointer;
+		return tok;
+	}
 
-	void DeletePool();
+	inline ForwardLink *NewForwardLink(Token *next_tok, 
+			Label ilabel, Label olabel, float graph_cost, 
+			float acoustic_cost, ForwardLink *next)
+	{
+		ForwardLink *link = _link_pools.NewT();
+		link->_next_tok = next_tok;
+		link->_ilabel = ilabel;
+		link->_olabel = olabel;
+		link->_graph_cost = graph_cost;
+		link->_acoustic_cost = acoustic_cost;
+		link->_next = next;
+		return link;
+	}
 
-	static const size_t _allocate_block_size = 1024 * 128;
-	// Numbers of Elements to allocate in one block. Must be largish so storing
-	//_allocated doesn't become a problem.
-	// Pool end
 };
-
 #include "src/util/namespace-end.h"
 #endif

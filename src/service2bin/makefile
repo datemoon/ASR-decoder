@@ -15,6 +15,7 @@ OBJ=
 LIBNAME=libservice2.a
 all:$(BIN)
 
+
 asr-client:asr-client.o
 	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
 
@@ -28,12 +29,10 @@ asr-client-v2:asr-client-v2.o
 	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS)
 
 asr-service:asr-service.o
-	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIB_DYNAMIC) $(FST_LIB_DYNAMIC) $(CBLAS_LIB)
-	#$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIB_STATIC) $(FST_LIB_STATIC) $(CBLAS_LIB)
+	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIBS) $(CBLAS_LIB)
 
 v2-asr-service:v2-asr-service.o
-	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIB_DYNAMIC) $(FST_LIB_DYNAMIC) $(CBLAS_LIB)
-	#$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIB_STATIC) $(FST_LIB_STATIC) $(CBLAS_LIB)
+	$(CXX) $(CXXFLAGS) -o  $@ $^ $(LIBS) $(KALDI_LIBS) $(CBLAS_LIB)
 
 %.o:%.c
 	$(CXX) $(CXXFLAGS) -c  -o $@ $<

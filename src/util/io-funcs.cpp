@@ -4,6 +4,7 @@
 #include <ostream>
 #include <assert.h>
 #include <string.h>
+#include <unistd.h>
 #include <string>
 #include <stdexcept>
 #include "src/util/io-funcs.h"
@@ -207,5 +208,50 @@ template<> void ReadBasicType<double>(std::istream &is, bool binary, double *f)
 		LOG_ERR << "ReadBasicType: failed to read, at file position "
 			<< is.tellg() << std::endl;
 	}
+}
+
+ssize_t ReadN(int fd, void *vptr, ssize_t n)
+{
+	ssize_t nr = 0;
+	char *ptr = static_cast<char*>(vptr);
+	ssize_t nleft = n;
+	while(nleft > 0)
+	{
+		nr = read(fd, ptr, nleft);
+		if(nr < 0)
+		{
+			if(errno == EINTR)
+				continue; // call read again
+			else
+				return -1;
+		}
+		else if(nr == 0)
+			break; // end fd
+
+		nleft -= nr;
+		ptr += nr;
+	}
+	return n-nleft;
+}
+
+ssize_t WriteN(int fd, const void *vptr, ssize_t n)
+{
+	ssize_t nw = 0;
+	const char *ptr = static_cast<const char*>(vptr);
+	ssize_t nleft = n;
+	while(nleft > 0)
+	{
+		nw = write(fd, ptr, nleft);
+		if(nw <= 0)
+		{
+			if(nw < 0 && errno == EINTR)
+				continue; // call read again
+			else
+				return -1;
+		}
+		nleft -= nw;
+		ptr += nw;
+	}
+	return n-nleft;
 }
 #include "src/util/namespace-end.h"

@@ -114,6 +114,7 @@ public:
 		}
 	}
 
+	nnet3::AmNnetSimple _am_nnet;
 private:
 	std::string _nnet_filename;
 	std::string _fst_filename;
@@ -121,7 +122,6 @@ private:
 
 	fst::Fst<fst::StdArc> *_decode_fst;
 	fst::SymbolTable *_word_syms;
-	nnet3::AmNnetSimple _am_nnet;
 	TransitionModel _trans_model;
 };
 std::string LatticeToString(const Lattice &lat, const fst::SymbolTable &word_syms);
@@ -137,9 +137,10 @@ public:
 
 	//typedef ASTType::int32 int32;
 	//typedef ASTType::BaseFloat BaseFloat;
-	ASRWorker(ASROpts *asr_opts, ASRSource *asr_source):
+	ASRWorker(ASROpts *asr_opts, ASRSource *asr_source, 
+			nnet3::DecodableNnetSimpleLoopedInfo *decodable_info, OnlineNnet2FeaturePipelineInfo *feature_info):
 		_asr_opts(asr_opts), _asr_source(asr_source),
-		_decodable_info(NULL), _feature_info(NULL), _feature_pipeline(NULL), 
+		_decodable_info(decodable_info), _feature_info(feature_info), _feature_pipeline(NULL), 
 		_decoder(NULL) {}
 	~ASRWorker() { Destory();}
 	void Init(size_t *chunk_len, int32 frame_offset=0)
@@ -153,12 +154,12 @@ public:
 		*chunk_len = _chunk_len;
 		_check_period = static_cast<int32>(_samp_freq * _asr_opts->_output_period);
 		_check_count = _check_period;
-
+/*
 		_decodable_info = new nnet3::DecodableNnetSimpleLoopedInfo(_asr_opts->_decodable_opts,
 				(nnet3::AmNnetSimple*)&(_asr_source->_am_nnet));
 
 		_feature_info = new OnlineNnet2FeaturePipelineInfo(_asr_opts->_feature_opts);
-
+*/
 		
 		_feature_pipeline = new OnlineNnet2FeaturePipeline(*_feature_info);
 		_decoder = new SingleUtteranceNnet3Decoder(_asr_opts->_decoder_opts, 
@@ -180,7 +181,7 @@ public:
 		_decoder->InitDecoding(_frame_offset);
 	}
 	void Destory()
-	{
+	{/*
 		if(_decodable_info != NULL)
 		{
 			delete _decodable_info;
@@ -191,6 +192,7 @@ public:
 			delete _feature_info;
 			_feature_info = NULL;
 		}
+		*/
 		if (_feature_pipeline != NULL)
 		{
 			delete _feature_pipeline;

@@ -7,6 +7,12 @@
 #include "feat/wave-reader.h"
 #include "nnet3/nnet-utils.h"
 
+#include "src/decoder/lattice-faster-decoder.h"
+#include "src/decoder/mem-optimize-hclg-lattice-faster-online-decoder.h"
+#include "src/decoder/online-decoder-base.h"
+#include "src/decoder/online-decoder-mempool-base.h"
+#include "src/decoder/online-clg-decoder-mempool-base.h"
+
 #include "src/decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
 #include "src/decoder/wordid-to-wordstr.h"
 
@@ -51,9 +57,11 @@ public:
 	
 	kaldi::nnet3::AmNnetSimple _am_nnet;
     kaldi::TransitionModel _trans_model;
-	
-	datemoon::ClgFst _clgfst;
-
+#ifdef USE_CLG	
+	datemoon::ClgFst _graphfst;
+#else
+	datemoon::Fst _graphfst;
+#endif
 	const std::string &_nnet3_filename;
 	const std::string &_fst_in_filename;
 	const std::string &_hmm_in_filename;
@@ -95,7 +103,11 @@ public:
 			kaldi::nnet3::CollapseModel(kaldi::nnet3::CollapseModelConfig(),
 					&(_am_nnet.GetNnet()));
 		} // load am ok
-		if(_clgfst.Init(_fst_in_filename.c_str(), _hmm_in_filename.c_str())!= true)
+#ifdef USE_CLG
+		if(_graphfst.Init(_fst_in_filename.c_str(), _hmm_in_filename.c_str())!= true)
+#else
+		if(_graphfst.ReadFst(_fst_in_filename.c_str())!= true)
+#endif
 		{ // init clg fst
 			LOG_ERR << "load clg fst: " << fst_in_filename 
 				<< " and " <<  hmm_in_filename << " error.";
@@ -113,9 +125,8 @@ public:
 	OnlineClgLatticeFastDecoder(OnlineDecoderInfo &online_info):
 		_online_info(online_info),
 		_decodable_info(online_info._online_conf._decodable_opts, &online_info._am_nnet),
-	   	_decoder(&online_info._clgfst, _online_info._decoder_opts), 
-		_decodable(NULL),_feature_pipeline(NULL),
-		_wav_time(0),_nnet_time(0),_decoder_time(0)
+	   	_decoder(&online_info._graphfst, _online_info._decoder_opts), 
+		_decodable(NULL),_feature_pipeline(NULL) 
 	{
 	   InitDecoding(0, true);	
 	}
@@ -148,12 +159,8 @@ public:
 					_feature_pipeline->InputFeature(), 
 					_feature_pipeline->IvectorFeature());
 			_decodable->SetFrameOffset(frame_offset);
-			_wav_time = 0.0;
-			_nnet_time = 0.0;
-			_decoder_time = 0.0;
 		}
 		_decoder.InitDecoding();
-
 	}
 	
 	// input data to decoder
@@ -201,13 +208,18 @@ private:
 	kaldi::nnet3::DecodableNnetSimpleLoopedInfo _decodable_info;
 	
 	// decoder
-	datemoon::MemOptimizeClgLatticeFasterOnlineDecoder _decoder;
+#ifdef USE_CLG
+	//datemoon::MemOptimizeClgLatticeFasterOnlineDecoder _decoder;
+	datemoon::OnlineClgLatticeDecoderMempool _decoder;
+#else
+	//datemoon::LatticeFasterDecoder _decoder;
+	//datemoon::MemOptimizeHclgLatticeFasterOnlineDecoder _decoder;
+	//datemoon::OnlineLatticeDecoder _decoder;
+	datemoon::OnlineLatticeDecoderMempool _decoder;
+#endif
 	// nnet forward
 	kaldi::nnet3::DecodableAmNnetLoopedOnline *_decodable;
 	// feature pipe
 	kaldi::OnlineNnet2FeaturePipeline *_feature_pipeline;
-	float _wav_time;
-	float _nnet_time;
-	float _decoder_time;
 };
 

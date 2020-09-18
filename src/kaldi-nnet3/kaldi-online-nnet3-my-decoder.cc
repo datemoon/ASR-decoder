@@ -10,8 +10,7 @@
 int OnlineClgLatticeFastDecoder::ProcessData(char *data, int data_len, int eos, int data_type)
 {
 	assert(data_len%data_type == 0 && "data_len \% datatype is not 0");
-	struct timeval t_start, t_end;
-
+	
 	if(data_len > 0)
 	{
 		kaldi::Vector<kaldi::BaseFloat> wave_part;
@@ -28,44 +27,22 @@ int OnlineClgLatticeFastDecoder::ProcessData(char *data, int data_len, int eos, 
 				wave_part(i) = ((short*)(data))[i];
 			}
 		}
-		gettimeofday(&t_start, NULL);
 		_feature_pipeline->AcceptWaveform(samp_freq, wave_part);
-		gettimeofday(&t_end, NULL);
-		_nnet_time += (t_end.tv_sec-t_start.tv_sec) +
-			(t_end.tv_usec - t_start.tv_usec)*1.0/1000000;
-		_wav_time += wave_part.Dim()*1.0/samp_freq;
 	}
-	gettimeofday(&t_start, NULL);
 	if(eos == 0)
 	{ // send data
 		_decoder.AdvanceDecoding(_decodable);
-		gettimeofday(&t_end, NULL);
-		_decoder_time += (t_end.tv_sec-t_start.tv_sec) +
-			(t_end.tv_usec - t_start.tv_usec)*1.0/1000000;
 	}
 	else if(eos == 1)
 	{ // end point check end and continue send data.
 		_decoder.AdvanceDecoding(_decodable);
 		_decoder.FinalizeDecoding();
-		gettimeofday(&t_end, NULL);
-		_decoder_time += (t_end.tv_sec-t_start.tv_sec) +
-			(t_end.tv_usec - t_start.tv_usec)*1.0/1000000;
 	}
 	else if(eos == 2)
 	{ // send data end 
 		_feature_pipeline->InputFinished();
-		gettimeofday(&t_end, NULL);
-		_nnet_time += (t_end.tv_sec-t_start.tv_sec) +
-			(t_end.tv_usec - t_start.tv_usec)*1.0/1000000;
-		
 		_decoder.AdvanceDecoding(_decodable);
 		_decoder.FinalizeDecoding();
-		gettimeofday(&t_start, NULL);
-		_decoder_time += (t_start.tv_sec - t_end.tv_sec) +
-			(t_start.tv_usec - t_end.tv_usec)*1.0/1000000;
-		VLOG_COM(1) << "wav time (s): " << _wav_time;
-		VLOG_COM(1) << "nnet time (s): " << _nnet_time << ", nnet rt = " << _nnet_time/_wav_time;
-		VLOG_COM(1) << "decoder time (s): " << _decoder_time << ", decoder rt = " << _decoder_time/_wav_time;
 	}
 	return 0;
 }

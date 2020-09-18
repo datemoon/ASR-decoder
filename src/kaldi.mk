@@ -1,6 +1,3 @@
-
-
-
 KALDI_ROOT=/home/hubo/git/github-online/github/kaldi/src
 OPENFSTINC = $(KALDI_ROOT)/../tools/openfst-1.6.7/include
 
@@ -22,8 +19,13 @@ else
 ATLASINC=$(KALDI_ROOT)/../tools/ATLAS_headers/include
 CBLAS_LIB=/usr/lib64/atlas/libsatlas.so.3 \
 		  /usr/lib64/atlas/libtatlas.so.3 \
-		  -Wl,-rpath=/usr/lib64/atlas
+		  -Wl,-rpath=/usr/lib64/atlas 
+#		  -L/opt/intel/mkl/lib/intel64 \
+#		  -Wl,-rpath=/opt/intel/mkl/lib/intel64 \
+#		  -lmkl_intel_lp64  -lmkl_core  -lmkl_sequential -ldl
 endif
+
+
 KALDI_LIB_DYNAMIC=$(KALDI_ROOT)/online2/libkaldi-online2.so  $(KALDI_ROOT)/ivector/libkaldi-ivector.so \
 				  $(KALDI_ROOT)/nnet3/libkaldi-nnet3.so  $(KALDI_ROOT)/chain/libkaldi-chain.so \
 				  $(KALDI_ROOT)/nnet2/libkaldi-nnet2.so  $(KALDI_ROOT)/cudamatrix/libkaldi-cudamatrix.so \
@@ -41,6 +43,10 @@ KALDI_LIB_STATIC=$(KALDI_ROOT)/online2/kaldi-online2.a $(KALDI_ROOT)/ivector/kal
 				 $(KALDI_ROOT)/feat/kaldi-feat.a $(KALDI_ROOT)/transform/kaldi-transform.a \
 				 $(KALDI_ROOT)/gmm/kaldi-gmm.a $(KALDI_ROOT)/tree/kaldi-tree.a $(KALDI_ROOT)/util/kaldi-util.a \
 				 $(KALDI_ROOT)/matrix/kaldi-matrix.a $(KALDI_ROOT)/base/kaldi-base.a
+
+KALDI_LIBS=$(KALDI_LIB_DYNAMIC) $(FST_LIB_DYNAMIC)
+
+#KALDI_LIBS=$(KALDI_LIB_STATIC) $(FST_LIB_STATIC)
 
 CXXFLAGS+= -I$(KALDI_ROOT) -I$(OPENFSTINC) -I$(ATLASINC) \
 		   -Wl,-rpath=$(KALDI_ROOT)/../tools/openfst-1.6.7/lib \

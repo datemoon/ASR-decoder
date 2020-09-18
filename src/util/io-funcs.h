@@ -42,5 +42,9 @@ template<> void ReadBasicType<double>(std::istream &is, bool binary, double *f);
 
 void CheckToken(const char *token);
 
+ssize_t ReadN(int fd, void *vptr, ssize_t n);
+
+ssize_t WriteN(int fd,const void *vptr, ssize_t n);
+
 #include "src/util/namespace-end.h"
 #endif

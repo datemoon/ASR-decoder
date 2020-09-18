@@ -107,6 +107,7 @@ int main(int argc, char *argv[])
 				printf(".");
 				fflush(stdout);
 				//printf("no cli connect requst %d %d %d %d.\n", connectfd,errno,EINPROGRESS,EAGAIN);
+				pool.Info();
 			}
 			else
 				printf("cli connect error.\n");

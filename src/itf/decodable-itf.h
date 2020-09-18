@@ -55,8 +55,10 @@
 #ifdef KALDI
 #include "itf/decodable-itf.h"
 #include "src/util/namespace-start.h"
-using DecodableInterface = typename kaldi::DecodableInterface;
-//typedef kaldi::DecodableInterface DecodableInterface;
+//using DecodableInterface = typename kaldi::DecodableInterface;
+//using AmInterface = typename kaldi::DecodableInterface;
+typedef typename kaldi::DecodableInterface DecodableInterface;
+typedef typename kaldi::DecodableInterface AmInterface;
 #include "src/util/namespace-end.h"
 #else
 #include "src/util/namespace-start.h"

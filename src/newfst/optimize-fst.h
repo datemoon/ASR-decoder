@@ -1,5 +1,5 @@
-#ifndef _OPTIMIZE_FST__
-#define _OPTIMIZE_FST__
+#ifndef _OPTIMIZE_FST_H__
+#define _OPTIMIZE_FST_H__
 
 #include <assert.h>
 #include <iostream>
@@ -13,19 +13,25 @@ class State
 {
 public:
 	Arc *_arcs;
-	int _num_arcs;
+	unsigned int _num_arcs;
+	unsigned int _niepsilons; // number of input epsilons.
+	unsigned int _noepsilons; // Number of output epsilons.
 public:
-	State():_arcs(NULL),_num_arcs(0){}
+	State():_arcs(NULL),_num_arcs(0), _niepsilons(0), _noepsilons(0){}
 	State(const State &A):
-		_arcs(A._arcs),_num_arcs(A._num_arcs) {}
+		_arcs(A._arcs),_num_arcs(A._num_arcs),
+		_niepsilons(A._niepsilons), _noepsilons(A._noepsilons) {}
 	~State(){}
 
 	State& operator=(const State &A)
 	{
 		_arcs = A._arcs;
 		_num_arcs = A._num_arcs;
+		_niepsilons = A._niepsilons;
+		_noepsilons = A._noepsilons;
 		return *this;
 	}
+
 	inline Arc *GetArc(unsigned int arcid)
 	{
 		if(arcid < (unsigned)_num_arcs)
@@ -33,10 +39,9 @@ public:
 		else
 			return NULL;
 	}
-	inline unsigned GetArcSize()
-	{
-		return _num_arcs;
-	}
+	inline Arc *Arcs() { return _arcs; }
+	inline unsigned NumArcs() { return _num_arcs; }
+	inline unsigned GetArcSize() { return _num_arcs; }
 };
 
 
@@ -95,6 +100,17 @@ public:
 	{
 		return &_arc_arr[arcid];
 	}
+
+	size_t NumInputEpsilons(StateId stateid)
+	{
+		return _state_arr[stateid]._niepsilons;
+	}
+
+	size_t NumOutputEpsilons(StateId stateid)
+	{
+		return _state_arr[stateid]._noepsilons;
+	}
+
 	int GetArcId(const Arc *arc)
 	{
 		return arc - _arc_arr;
@@ -154,10 +170,17 @@ public:
 		for(i = 0 ; i < _total_states ; ++i)
 		{
 			unsigned int num_arc = 0;
+			// read num_arc,_niepsilons,_noepsilons
 			if(1 != fread(&num_arc,sizeof(int),1,fp))
 				return false;
+
 			_state_arr[i]._num_arcs = num_arc;
 			_state_arr[i]._arcs = &_arc_arr[arc_offset];
+			if(1 != fread(&_state_arr[i]._niepsilons,sizeof(int),1,fp))
+				return false;
+			if(1 != fread(&_state_arr[i]._noepsilons,sizeof(int),1,fp))
+				return false;
+
 			if(num_arc > 0)
 			{
 				if(num_arc != fread(_state_arr[i]._arcs,sizeof(Arc),num_arc,fp))

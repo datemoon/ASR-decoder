@@ -20,6 +20,12 @@ ThreadPoolBase<T>::ThreadPoolBase(int32 thread_num, bool wait_thread):
 		LOG_ERR << "pthread_cond_init _pthread_pool_cond failed.";
 		return ;
 	}
+
+	if(pthread_mutex_init(&_time_mutex, NULL) != 0)
+	{
+		LOG_ERR << "pthread_mutex_init _time_mutex failed.";
+        return ;
+	}
 }
 
 template<class T>
@@ -107,7 +113,7 @@ typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::AddTask(TaskBase *task)
 			if(ntimes < 3)
 			{
 				ntimes ++;
-				usleep(100000); // 100ms
+				usleep(10*1000); // 10ms
 				continue;
 			}
 			LOG_WARN <<  "Wait " << ntimes << " times and timeout. No idle pthread wait...";

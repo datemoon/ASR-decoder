@@ -6,6 +6,7 @@
 #include <iostream>
 #include <unistd.h>
 #include "src/util/log-message.h"
+#include "src/util/io-funcs.h"
 
 #include "src/util/namespace-start.h"
 
@@ -81,10 +82,10 @@ public:
 		else
 			return std::string("");
 	}
-	void Info()
+	void Info(int n=2)
 	{
 		if(_key_len != 0)
-			LOG_COM << "KEY : " << GetKey();
+			VLOG_COM(n) << "KEY : " << GetKey();
 	}
 	C2SKey():_key_string(NULL),_key_len(0),_key_string_capacity(0) { }
 	~C2SKey()
@@ -98,13 +99,13 @@ public:
 	bool Write(int sockfd, std::string &key_string)
 	{
 		uint key_len = (uint)key_string.length();
-		int ret = write(sockfd, static_cast<void *>(&key_len), sizeof(key_len));
+		int ret = WriteN(sockfd, static_cast<void *>(&key_len), sizeof(key_len));
 		if(ret != sizeof(key_len))
 		{
 			LOG_WARN << "write key_len failed.";
             return false;
 		}
-		ret = write(sockfd, (void *)(key_string.c_str()), sizeof(char)*key_len);
+		ret = WriteN(sockfd, (void *)(key_string.c_str()), sizeof(char)*key_len);
 		if(ret != sizeof(char)*key_len)
 		{
 			LOG_WARN << "write key_string failed.";
@@ -115,7 +116,7 @@ public:
 	bool Read(int sockfd)
 	{
 		// read key length
-		int ret = read(sockfd, static_cast<void *>(&_key_len), sizeof(_key_len));
+		int ret = ReadN(sockfd, static_cast<void *>(&_key_len), sizeof(_key_len));
 		if(ret != sizeof(_key_len))
 		{
 			LOG_WARN << "read C2SKey len error!!!";
@@ -126,7 +127,7 @@ public:
 			_key_string = Renew(_key_string, _key_string_capacity, _key_len + 10);
 			_key_string_capacity = _key_len + 10;
 		}
-		ret = read(sockfd, static_cast<void *>(_key_string), sizeof(char)*_key_len);
+		ret = ReadN(sockfd, static_cast<void *>(_key_string), sizeof(char)*_key_len);
 		if(ret != sizeof(char)*_key_len)
 		{
 			LOG_WARN << "read C2SKey key_string error!!!";
@@ -181,9 +182,9 @@ public:
 		_data_buffer_capacity = 0;
 	}
 public:
-	void Reset(bool eos=true)
+	void Reset(bool eos=false)
 	{
-		if(_c2s_package_head._end_flag == 1 || eos == true)
+		if(_c2s_package_head._end_flag == 1 || eos == true )
 		{
 			_c2s_package_head._n = 0;
 		}
@@ -363,10 +364,10 @@ public:
 
 	// from client to service package unpack.
 	bool C2SRead(int sockfd);
-	void Print(std::string flag="")
+	void Print(std::string flag="", int vlog=2)
 	{
-		C2SPackageHeadPrint(_c2s_package_head, flag);
-		_c2skey.Info();
+		C2SPackageHeadPrint(_c2s_package_head, flag, vlog);
+		_c2skey.Info(vlog);
 	}
 
 	char* GetData(uint *data_len)
@@ -479,14 +480,14 @@ public:
 	{
 		if(_nbest_len_len == 0)
 			return 0;
-		ssize_t ret1 = write(sockfd, static_cast<void*>(_nbest_len), 
+		ssize_t ret1 = WriteN(sockfd, static_cast<void*>(_nbest_len), 
 				_nbest_len_len*sizeof(uint));
 		if(ret1 < 0)
 		{
 			LOG_WARN << "Write nbest_len failed." <<std::endl;
 			return ret1;
 		}
-		ssize_t ret2 = write(sockfd, static_cast<void*>(_nbest_res),
+		ssize_t ret2 = WriteN(sockfd, static_cast<void*>(_nbest_res),
 				_nbest_res_len*sizeof(char));
 		if(ret2 < 0)
 		{
@@ -508,7 +509,7 @@ public:
 			_nbest_len = Renew<uint>(_nbest_len, 0, 
 					_nbest_len_capacity);
 		}
-		ssize_t ret1 = read(sockfd, static_cast<void *>(_nbest_len),
+		ssize_t ret1 = ReadN(sockfd, static_cast<void *>(_nbest_len),
 			   	n*sizeof(uint));
 		if(ret1 < 0)
 		{
@@ -532,7 +533,7 @@ public:
 			_nbest_res_capacity = total_len +128;
 			_nbest_res = Renew<char>(_nbest_res, 0, _nbest_res_capacity);
 		}
-		ssize_t ret2 = read(sockfd, static_cast<void *>(_nbest_res),
+		ssize_t ret2 = ReadN(sockfd, static_cast<void *>(_nbest_res),
 				total_len*sizeof(char));
 		if((uint)ret2 != total_len*sizeof(char))
 		{

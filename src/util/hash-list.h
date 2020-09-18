@@ -54,7 +54,7 @@ public:
 	// already exists will result in duplicate elements in the structure, and
 	// Find() will find the first one that was added.
 	// [but we don't guarantee this behavior].
-	inline void Insert(I key, T val);
+	inline Elem *Insert(I key, T val);
 
 	// Insert inserts another element with same key into hashtable/
 	// stored list.

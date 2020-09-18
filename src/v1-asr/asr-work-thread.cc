@@ -4,7 +4,12 @@
 
 bool ASRWorkThread::InitASRSource(kaldi::ASROpts *asr_opts, kaldi::ASRSource *asr_source)
 {
-	_asr_work = new kaldi::ASRWorker(asr_opts, asr_source);
+	_decodable_info = new kaldi::nnet3::DecodableNnetSimpleLoopedInfo(asr_opts->_decodable_opts,
+			(kaldi::nnet3::AmNnetSimple*)&(asr_source->_am_nnet));
+
+	_feature_info = new kaldi::OnlineNnet2FeaturePipelineInfo(asr_opts->_feature_opts);
+
+	_asr_work = new kaldi::ASRWorker(asr_opts, asr_source, _decodable_info, _feature_info);
 	return true;
 }
 /*

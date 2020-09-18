@@ -17,6 +17,7 @@ void C2SPackageHeadPrint(C2SPackageHead &c2s, std::string flag, int vlog)
 	VLOG_COM(vlog) << flag << "->" << "_score_info\t: " << c2s._score_info;
 	VLOG_COM(vlog) << flag << "->" << "_nbest\t: " << c2s._nbest;
 	VLOG_COM(vlog) << flag << "->" << "_end_flag\t: " << c2s._end_flag;
+	VLOG_COM(vlog) << flag << "->" << "_have_key\t: " << c2s._have_key;
 	VLOG_COM(vlog) << flag << "->" << "_keep\t: " << c2s._keep;
 	VLOG_COM(vlog) << flag << "->" << "_n\t: " << c2s._n;
 	VLOG_COM(vlog) << flag << "->" << "_data_len\t: " << c2s._data_len;
@@ -65,7 +66,7 @@ bool C2SPackageAnalysis::C2SWrite(int sockfd,
 	_c2s_package_head._n++;
 	SetDataLen(data_size);
 	// write package head
-	ssize_t ret = write(sockfd, static_cast<void *>(&_c2s_package_head),
+	ssize_t ret = WriteN(sockfd, static_cast<void *>(&_c2s_package_head),
 			sizeof(C2SPackageHead));
 	if(ret != sizeof(C2SPackageHead))
 	{
@@ -85,7 +86,7 @@ bool C2SPackageAnalysis::C2SWrite(int sockfd,
 	// write data
 	if(data_size > 0)
 	{
-		ret = write(sockfd, data, data_size);
+		ret = WriteN(sockfd, data, data_size);
 		if(ret != data_size)
 		{
 			LOG_WARN << "write data failed.";
@@ -98,7 +99,7 @@ bool C2SPackageAnalysis::C2SWrite(int sockfd,
 bool C2SPackageAnalysis::C2SRead(int sockfd)
 {
 	uint prev_n = _c2s_package_head._n;
-	ssize_t ret = read(sockfd, static_cast<void *>(&_c2s_package_head),
+	ssize_t ret = ReadN(sockfd, static_cast<void *>(&_c2s_package_head),
 		   	sizeof(C2SPackageHead));
 	C2SPackageHeadPrint(_c2s_package_head,"c2s-read");
 	if(ret != sizeof(C2SPackageHead))
@@ -108,6 +109,7 @@ bool C2SPackageAnalysis::C2SRead(int sockfd)
 	}
 	if(prev_n + 1 != _c2s_package_head._n)
 	{
+		Print("c2s-read-error", 0);
 		LOG_WARN << "Error: package loss : " << prev_n  << " + 1 != " << _c2s_package_head._n;
 		return false;
 	}
@@ -139,7 +141,7 @@ bool C2SPackageAnalysis::C2SRead(int sockfd)
 	if(_c2s_package_head._data_len > 0)
 	{
 		// have data and read data segment.
-		ret = read(sockfd, static_cast<void *>(_data_buffer), _c2s_package_head._data_len);
+		ret = ReadN(sockfd, static_cast<void *>(_data_buffer), _c2s_package_head._data_len);
 		if(ret < 0)
 		{
 			LOG_WARN << "read data failed.";
@@ -183,7 +185,7 @@ bool S2CPackageAnalysis::S2CWrite(int sockfd, uint end_flag)
 
 bool S2CPackageAnalysis::S2CRead(int sockfd)
 {
-	ssize_t ret = read(sockfd, static_cast<void *>(&_s2c_package_head), sizeof(S2CPackageHead));
+	ssize_t ret = ReadN(sockfd, static_cast<void *>(&_s2c_package_head), sizeof(S2CPackageHead));
 	if(ret != sizeof(S2CPackageHead))
 	{
 		LOG_WARN << "Read S2CPackageHead failed.";

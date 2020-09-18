@@ -140,9 +140,9 @@ int32 ASRServiceTask::Run(void *data)
 			else
 				break;
 			double wav_time = total_wav_len*1.0/(smaple_rate*dtype_len);
-			VLOG_COM(1) << "wav time(s)\t:" << wav_time;
-			VLOG_COM(1) << "run time(s)\t:" << total_decoder_time;
-			VLOG_COM(1) << "decoder rt\t: " << total_decoder_time/wav_time;
+			LOG_COM << "wav time(s)\t:" << wav_time;
+			LOG_COM << "run time(s)\t:" << total_decoder_time;
+			LOG_COM << "decoder rt\t: " << total_decoder_time/wav_time;
 			// send time to work thread.
 			asr_work_thread->SetTime(wav_time, total_decoder_time);
 			break; // end

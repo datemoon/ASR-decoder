@@ -1,4 +1,3 @@
-// reference kaldi parse-options.h
 // src/util/config-parse-options.h
 //
 // author: hubo
