@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 {
 	if(argc != 3)
 	{
-		std::cerr << argv[0] << " port wavfile" << std::endl;
+		LOG_WARN << argv[0] << " port wavfile";
 		return -1;
 	}
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 	int res = connect(sockfd, (struct sockaddr *) &ser, sizeof(ser));
 	if(res < 0)
 	{
-		std::cerr << "connect error!!!" << std::endl;
+		LOG_WARN << "connect error!!!";
 		return -1;
 	}
 	FILE *fp = fopen(wav_file, "r");
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 		{
 			if(true != c2s_cli.C2SWrite(sockfd, sentbuf, sent_len, 0))
 			{
-				 std::cout << "C2SWrite failed." << std::endl;
+				 LOG_WARN << "C2SWrite failed!!!";
 				 return -1;
 			}
 			c2s_cli.Print("c2s_cli");
@@ -62,14 +62,14 @@ int main(int argc, char *argv[])
 		{
 			if(true != c2s_cli.C2SWrite(sockfd, sentbuf, sent_len, 1))
 			{
-				 std::cout << "C2SWrite end failed." << std::endl;
+				 LOG_WARN << "C2SWrite end failed!!!";
 				 return -1;
 			}
 			c2s_cli.Print("c2s_cli");
 
 			if(true != s2c_cli.S2CRead(sockfd))
 			{
-				std::cerr << "S2CRead failed." << std::endl;
+				LOG_WARN << "S2CRead failed!!!";
 				return false;
 			}
 			s2c_cli.Print("s2c_cli");
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 
 		if(true != s2c_cli.S2CRead(sockfd))
 		{
-			std::cerr << "S2CRead failed." << std::endl;
+			LOG_WARN << "S2CRead failed!!!";
 			return false;
 		}
 		s2c_cli.Print("s2c_cli");

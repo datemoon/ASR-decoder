@@ -320,5 +320,4 @@ inline bool ApproxEqual(const LatticeWeightTpl<FloatType> &w1,
 	return (fabs((w1.Value1() + w1.Value2()) - (w2.Value1() + w2.Value2())) <= delta);
 }
 #include "src/util/namespace-end.h"
-
 #endif

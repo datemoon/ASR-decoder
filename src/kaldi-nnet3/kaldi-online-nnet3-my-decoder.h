@@ -12,6 +12,9 @@
 #include "src/decoder/online-decoder-base.h"
 #include "src/decoder/online-decoder-mempool-base.h"
 #include "src/decoder/online-clg-decoder-mempool-base.h"
+#include "src/decoder/online-decoder-mempool-base-biglm.h"
+
+#include "src/newlm/compose-arpalm.h"
 
 #include "src/decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
 #include "src/decoder/wordid-to-wordstr.h"
@@ -25,9 +28,22 @@ public:
 	//std::string _wordlist;
 	std::string _phonedict;
 	std::string _prondict;
+	// you must be set fst type
+	std::string _graph_type;
+	// if you want use clg graph , you must be set _hmmfst_filen
+	std::string _hmmfst_file;
+	// if you want use biglm you must be set lm1_file and lm2_file
+	std::string _lm1_file;
+	std::string _lm2_file;
+	datemoon::BaseFloat _lm1_scale;
+	datemoon::BaseFloat _lm2_scale;
+
 	OnlineDecoderConf():
 		_config_decoder(""),
-		_phonedict(""),_prondict("") { }
+		_phonedict(""),_prondict(""),
+		_graph_type("mem-hclg"),_hmmfst_file(""),
+		_lm1_file(""),_lm2_file(""),
+		_lm1_scale(-1.0), _lm2_scale(1.0) { }
 		//_wordlist(""),
 	void Register(kaldi::OptionsItf *conf)
 	{
@@ -41,6 +57,18 @@ public:
 				"phonedict file (default NULL)");
 		conf->Register("prondict", &_prondict,
 				"prondict file (default NULL)");
+		conf->Register("graph-type", &_graph_type,
+				"graph type mem-hclg,hclg,biglm-hclg or clg (default mem-hclg)");
+		conf->Register("hmmfst-file", &_hmmfst_file,
+				"if graph type is clg, hmmfst-file isn't NULL (default NULL)");
+		conf->Register("lm1-file", &_lm1_file,
+				"if lm1-file and lm2-file isn't NULL, it will use biglm decoder (default NULL)");
+		conf->Register("lm2-file", &_lm2_file,
+				"if lm1-file and lm2-file isn't NULL, it will use biglm decoder (default NULL)");
+		conf->Register("lm1-scale", &_lm1_scale,
+				"lm1-file scale (default -1.0)");
+		conf->Register("lm2-scale", &_lm2_scale,
+				"lm2-file scale (default 1.0)");
 	}
 };
 
@@ -57,25 +85,40 @@ public:
 	
 	kaldi::nnet3::AmNnetSimple _am_nnet;
     kaldi::TransitionModel _trans_model;
-#ifdef USE_CLG	
-	datemoon::ClgFst _graphfst;
-#else
-	datemoon::Fst _graphfst;
-#endif
+	// beacuse _graphfst can be clg or hclg, so ther _graphfst use void * 
+	// and consturt decoder convert true type.
+	void *_graphfst;
+	datemoon::ArpaLm _lm1;
+	datemoon::ArpaLm _lm2;
+
 	const std::string &_nnet3_filename;
 	const std::string &_fst_in_filename;
-	const std::string &_hmm_in_filename;
 	const std::string &_wordlist;
+	~OnlineDecoderInfo() 
+	{ 
+		if(_online_conf._graph_type == "clg")
+		{
+			datemoon::ClgFst *tmpfst = static_cast<datemoon::ClgFst *>(_graphfst);
+			delete tmpfst;
+		}
+		else if(_online_conf._graph_type == "hclg" || 
+				_online_conf._graph_type == "mem-hclg" ||
+				_online_conf._graph_type == "biglm-hclg")
+		{
+			datemoon::Fst *tmpfst = static_cast<datemoon::Fst *>(_graphfst);
+			delete tmpfst;
+		}
+		_graphfst = NULL;
+	}
+
 	OnlineDecoderInfo(const OnlineDecoderConf &online_conf,
 			const std::string &nnet3_filename,
 			const std::string &fst_in_filename,
-			const std::string &hmm_in_filename,
 			const std::string &wordlist):
 		_online_conf(online_conf),
 		_feature_info(online_conf._feature_opts),
 		_nnet3_filename(nnet3_filename),
 		_fst_in_filename(fst_in_filename),
-		_hmm_in_filename(hmm_in_filename),
 		_wordlist(wordlist)
 	{
 		// read decoder config
@@ -103,16 +146,27 @@ public:
 			kaldi::nnet3::CollapseModel(kaldi::nnet3::CollapseModelConfig(),
 					&(_am_nnet.GetNnet()));
 		} // load am ok
-#ifdef USE_CLG
-		if(_graphfst.Init(_fst_in_filename.c_str(), _hmm_in_filename.c_str())!= true)
-#else
-		if(_graphfst.ReadFst(_fst_in_filename.c_str())!= true)
-#endif
-		{ // init clg fst
-			LOG_ERR << "load clg fst: " << fst_in_filename 
-				<< " and " <<  hmm_in_filename << " error.";
+		if(_online_conf._graph_type == "clg")
+		{
+			datemoon::ClgFst *tmpfst = new datemoon::ClgFst();
+			LOG_ASSERT(tmpfst->Init(_fst_in_filename.c_str(), _online_conf._hmmfst_file.c_str()));
+			_graphfst = static_cast<void *>(tmpfst);
 		}
-
+		else if(_online_conf._graph_type == "hclg" || 
+				_online_conf._graph_type == "mem-hclg" ||
+				_online_conf._graph_type == "biglm-hclg")
+		{
+			datemoon::Fst *tmpfst = new datemoon::Fst();
+			LOG_ASSERT(tmpfst->ReadFst(_fst_in_filename.c_str()));
+			_graphfst = static_cast<void *>(tmpfst);
+		}
+		if(_online_conf._lm1_file != "" && _online_conf._lm2_file != "")
+		{
+			LOG_ASSERT(_lm1.Read(_online_conf._lm1_file.c_str()));
+			_lm1.Rescale(_online_conf._lm1_scale);
+			LOG_ASSERT(_lm2.Read(_online_conf._lm2_file.c_str()));
+			_lm2.Rescale(_online_conf._lm2_scale);
+		}
 	} // construct ok
 
 };
@@ -125,9 +179,49 @@ public:
 	OnlineClgLatticeFastDecoder(OnlineDecoderInfo &online_info):
 		_online_info(online_info),
 		_decodable_info(online_info._online_conf._decodable_opts, &online_info._am_nnet),
-	   	_decoder(&online_info._graphfst, _online_info._decoder_opts), 
 		_decodable(NULL),_feature_pipeline(NULL) 
 	{
+	//datemoon::MemOptimizeClgLatticeFasterOnlineDecoder _decoder;
+	//datemoon::OnlineClgLatticeDecoderMempool _decoder;
+	//datemoon::LatticeFasterDecoder _decoder;
+	//datemoon::MemOptimizeHclgLatticeFasterOnlineDecoder _decoder;
+	//datemoon::OnlineLatticeDecoder _decoder;
+	//datemoon::OnlineLatticeDecoderMempool _decoder;
+	//datemoon::OnlineLatticeDecoderMempoolBiglm _decoder;
+		if(online_info._online_conf._graph_type == "clg")
+		{
+			datemoon::OnlineClgLatticeDecoderMempool *tmpdecoder = 
+				new datemoon::OnlineClgLatticeDecoderMempool(
+						static_cast<datemoon::ClgFst*>(online_info._graphfst),
+					   _online_info._decoder_opts);
+			_decoder = static_cast<datemoon::DecoderItf *>(tmpdecoder);
+		}
+		else if(online_info._online_conf._graph_type == "hclg")
+		{
+			datemoon::OnlineLatticeDecoder *tmpdecoder =
+				new datemoon::OnlineLatticeDecoder(
+						static_cast<datemoon::Fst*>(online_info._graphfst),
+						_online_info._decoder_opts);
+			_decoder = static_cast<datemoon::DecoderItf *>(tmpdecoder);
+		}
+		else if(online_info._online_conf._graph_type == "mem-hclg")
+		{
+			datemoon::OnlineLatticeDecoderMempool *tmpdecoder = 
+				new datemoon::OnlineLatticeDecoderMempool(
+						static_cast<datemoon::Fst*>(online_info._graphfst),
+						_online_info._decoder_opts);
+			_decoder = static_cast<datemoon::DecoderItf *>(tmpdecoder);
+		}
+		else if(online_info._online_conf._graph_type == "biglm-hclg")
+		{
+			datemoon::OnlineLatticeDecoderMempoolBiglm *tmpdecoder =
+				new datemoon::OnlineLatticeDecoderMempoolBiglm(
+						static_cast<datemoon::Fst*>(online_info._graphfst),
+						_online_info._decoder_opts,
+						&online_info._lm1,
+						&online_info._lm2);
+			_decoder = static_cast<datemoon::DecoderItf *>(tmpdecoder);
+		}
 	   InitDecoding(0, true);	
 	}
 
@@ -139,6 +233,9 @@ public:
 		if(_decodable != NULL)
 			delete _decodable;
 		_decodable = NULL;
+		if(_decoder != NULL)
+			delete _decoder;
+		_decoder = NULL;
 	}
 
 	// send_end if send end will init _decodable and _feature_pipeline
@@ -160,7 +257,7 @@ public:
 					_feature_pipeline->IvectorFeature());
 			_decodable->SetFrameOffset(frame_offset);
 		}
-		_decoder.InitDecoding();
+		_decoder->InitDecoding();
 	}
 	
 	// input data to decoder
@@ -182,7 +279,7 @@ public:
 	/// the graph then it will include those as final-probs, else it will treat
 	/// all final-probs as one.
 	void GetBestPath(datemoon::Lattice *best_path,
-			bool end_of_utterance) const;
+			bool end_of_utterance);
 
 	void GetBestPathTxt(std::string &best_result, bool end_of_utterance);
 
@@ -195,7 +292,7 @@ public:
 	
 	inline int NumFramesDecoded()
 	{
-		return _decoder.NumFramesDecoded();
+		return _decoder->NumFramesDecoded();
 	}
 	/// This function calls EndpointDetected from online-endpoint.h,
 	/// with the required arguments.
@@ -208,7 +305,7 @@ private:
 	kaldi::nnet3::DecodableNnetSimpleLoopedInfo _decodable_info;
 	
 	// decoder
-#ifdef USE_CLG
+/*#ifdef USE_CLG
 	//datemoon::MemOptimizeClgLatticeFasterOnlineDecoder _decoder;
 	datemoon::OnlineClgLatticeDecoderMempool _decoder;
 #else
@@ -216,7 +313,10 @@ private:
 	//datemoon::MemOptimizeHclgLatticeFasterOnlineDecoder _decoder;
 	//datemoon::OnlineLatticeDecoder _decoder;
 	datemoon::OnlineLatticeDecoderMempool _decoder;
+	//datemoon::OnlineLatticeDecoderMempoolBiglm _decoder;
 #endif
+*/
+	datemoon::DecoderItf *_decoder;
 	// nnet forward
 	kaldi::nnet3::DecodableAmNnetLoopedOnline *_decodable;
 	// feature pipe

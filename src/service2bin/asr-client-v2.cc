@@ -27,7 +27,7 @@ void *RecvThreadFunc(void *connect_fd)
 	{
 		if(true != s2c_cli.S2CRead(sockfd))
 		{
-			std::cerr << "S2CRead failed." << std::endl;
+			LOG_WARN << "S2CRead failed!!!";
 			return NULL;
 		}
 		if(true == s2c_cli.IsAllEnd())
@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 
 	if(argc != 3)
 	{
-		std::cerr << argv[0] << " port wavfile" << std::endl;
+		LOG_WARN << argv[0] << " port wavfile";
 		return -1;
 	}
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -64,13 +64,13 @@ int main(int argc, char *argv[])
 	int res = connect(sockfd, (struct sockaddr *) &ser, sizeof(ser));
 	if(res < 0)
 	{
-		std::cerr << "connect error!!!" << std::endl;
+		LOG_WARN << "connect error!!!";
 		return -1;
 	}
 	pthread_t thread_id;
 	if(pthread_create(&thread_id ,NULL ,&RecvThreadFunc ,(void*)&sockfd) != 0)
 	{
-		std::cerr << "pthread_create failed!!!"<< std::endl;
+		LOG_WARN << "pthread_create failed!!!";
 		return -1;
 	}
 
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 			c2s_cli.SetNbest(1);
 			if(true != c2s_cli.C2SWrite(sockfd, sentbuf, sent_len, 0))
 			{
-				 std::cout << "C2SWrite failed." << std::endl;
+				 LOG_WARN << "C2SWrite failed!!!";
 				 return -1;
 			}
 			c2s_cli.Print("c2s_cli");
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 			c2s_cli.SetNbest(5);
 			if(true != c2s_cli.C2SWrite(sockfd, sentbuf, sent_len, 1))
 			{
-				 std::cout << "C2SWrite end failed." << std::endl;
+				 LOG_WARN << "C2SWrite end failed!!!";
 				 return -1;
 			}
 			c2s_cli.Print("c2s_cli");

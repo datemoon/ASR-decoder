@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 	
 	const char *usage = "This is a test kaldi-online-nnet3-my-decoder code.\n"
 		"Usage: kaldi-online-nnet3-my-decoder-test [options] <nnet3-in> "
-		"<fst-in> <hmm-fst-in> <word-symbol-table> <wavfile>\n";
+		"<fst-in> <word-symbol-table> <wavfile>\n";
 	kaldi::ParseOptions po(usage);
 
 	// init online featuer and nnet config
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 	online_conf.Register(&po);
 
 	po.Read(argc, argv);
-	if (po.NumArgs() != 5)
+	if (po.NumArgs() != 4)
 	{
 		po.PrintUsage();
 		return 1;
@@ -41,13 +41,12 @@ int main(int argc, char *argv[])
 
 	std::string nnet3_rxfilename = po.GetArg(1),
 		fst_in_filename = po.GetArg(2),
-		hmm_in_filename = po.GetArg(3),
-		word_syms_filename = po.GetArg(4),
-		wavfilelist = po.GetArg(5);
+		word_syms_filename = po.GetArg(3),
+		wavfilelist = po.GetArg(4);
 
 	// online decoder info
 	OnlineDecoderInfo online_info(online_conf, nnet3_rxfilename,
-			fst_in_filename, hmm_in_filename,word_syms_filename);
+			fst_in_filename, word_syms_filename);
 
 	// online decoder
 	OnlineClgLatticeFastDecoder online_clg_decoder(online_info);

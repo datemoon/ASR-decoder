@@ -24,8 +24,9 @@ OnlineLatticeDecoderBase<FST, Token>::OnlineLatticeDecoderBase(FST *graph,
 	_graph(graph), _delete_fst(false), _config(config),
 	_num_toks(0), _num_links(0), _num_frames_decoded(0)
 {
-	_toks.SetSize(1024);
+	_toks.SetSize(_config._max_active * _config._hash_ratio);
 	_config.Check();
+ 	LOG_COM << "--- Construct OnlineLatticeDecoderBase class ---";
 }
 
 template <typename FST, typename Token>
@@ -326,7 +327,7 @@ BaseFloat OnlineLatticeDecoderBase<FST, Token>::ProcessEmitting(AmInterface *dec
 					BaseFloat graph_cost = arc->_w;
 					BaseFloat cur_cost = tok->_tot_cost;
 					BaseFloat tot_cost = cur_cost + ac_cost + graph_cost;
-					if(tot_cost > next_cutoff)
+					if(tot_cost >= next_cutoff)
 						continue;
 					else if(tot_cost + adaptive_beam < next_cutoff)
 						next_cutoff = tot_cost + adaptive_beam; // prune by best current token
@@ -670,7 +671,7 @@ template <typename FST, typename Token>
 void OnlineLatticeDecoderBase<FST, Token>::ComputeFinalCosts(
 		unordered_map<Token*, BaseFloat> *final_costs,
 		BaseFloat *final_relative_cost,
-		BaseFloat *final_best_cost) const
+		BaseFloat *final_best_cost) 
 {
 	assert(!_decoding_finalized);
 	if (final_costs != NULL)
@@ -866,7 +867,7 @@ bool OnlineLatticeDecoderBase<FST, Token>::GetLattice(Lattice *ofst,
 // tracebacks.
 template <typename FST, typename Token>
 bool OnlineLatticeDecoderBase<FST, Token>::GetRawLattice(Lattice *ofst,
-		bool use_final_probs) const
+		bool use_final_probs) 
 {
 	typedef LatticeArc Arc;
 	//typedef Arc::StateId StateId;
@@ -929,6 +930,26 @@ bool OnlineLatticeDecoderBase<FST, Token>::GetRawLattice(Lattice *ofst,
 		for (Token *tok = _active_toks[f]._toks; tok != NULL; tok = tok->_next)
 		{
 			StateId cur_state = tok_map[tok];
+			// first get final cost
+			BaseFloat final_cost = 0.0;
+			if(f == num_frames)
+			{
+				if(use_final_probs && !final_costs.empty())
+				{
+					typename unordered_map<Token*, BaseFloat>::const_iterator 
+						iter = final_costs.find(tok);
+					if (iter != final_costs.end())
+					{
+						ofst->SetFinal(cur_state);
+						final_cost = iter->second;
+					}
+				}
+				else
+				{
+					ofst->SetFinal(cur_state);
+				}
+			}
+
 			for (ForwardLinkT *l = tok->_links; l != NULL; l = l->_next)
 			{
 				typename unordered_map<Token*, StateId>::const_iterator iter =
@@ -943,27 +964,13 @@ bool OnlineLatticeDecoderBase<FST, Token>::GetRawLattice(Lattice *ofst,
 					cost_offset = _cost_offsets[f];
 				}
 				*/
+				// add final_cost to _graph_cost
 				Arc arc(l->_ilabel, l->_olabel, nextstate, 
-						Weight(l->_graph_cost, l->_acoustic_cost - cost_offset));
+						Weight(l->_graph_cost+final_cost, l->_acoustic_cost - cost_offset));
 				ofst->AddArc(cur_state, arc);
 			}
-
-			if(f == num_frames)
-			{
-				if(use_final_probs && !final_costs.empty())
-				{
-					typename unordered_map<Token*, BaseFloat>::const_iterator 
-						iter = final_costs.find(tok);
-					if (iter != final_costs.end())
-						ofst->SetFinal(cur_state);
-				}
-				else
-				{
-					ofst->SetFinal(cur_state);
-				}
-			}
-		}
-	}
+		} // frame i all token
+	} // all frames
 	return (ofst->NumStates() > 0);
 }
 
@@ -1063,7 +1070,7 @@ void OnlineLatticeDecoderBase<FST, Token>::TopSortTokens(Token *tok_list,
 
 template <typename FST, typename Token>
 bool OnlineLatticeDecoderBase<FST, Token>::GetBestPath(Lattice *ofst, 
-		bool use_final_probs) const
+		bool use_final_probs) 
 {
 	ofst->DeleteStates();
 	BaseFloat final_graph_cost;
@@ -1088,7 +1095,7 @@ bool OnlineLatticeDecoderBase<FST, Token>::GetBestPath(Lattice *ofst,
 
 template <typename FST, typename Token>
 typename OnlineLatticeDecoderBase<FST, Token>::BestPathIterator OnlineLatticeDecoderBase<FST, Token>::BestPathEnd(
-		bool use_final_probs, BaseFloat *final_cost_out) const
+		bool use_final_probs, BaseFloat *final_cost_out) 
 {
 	if (_decoding_finalized && !use_final_probs)
 		LOG_ERR << "You cannot call FinalizeDecoding() and then call "

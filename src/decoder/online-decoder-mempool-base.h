@@ -17,9 +17,15 @@ public:
 
 	OnlineLatticeDecoderMempoolBase(FST *fst,
 			const LatticeFasterDecoderConfig &config):
-		OnlineLatticeDecoderBase<FST, Token>(fst, config) { }
+		OnlineLatticeDecoderBase<FST, Token>(fst, config) 
+	{
+	   LOG_COM << "--- Construct OnlineLatticeDecoderMempoolBase clss ---";
+	}
 
-	~OnlineLatticeDecoderMempoolBase(){ }
+	virtual ~OnlineLatticeDecoderMempoolBase()
+	{
+		this->ClearActiveTokens();
+	}
 protected:
 	// add memory pool save token and forwardlink.
 	MemPool<Token> _token_pools;

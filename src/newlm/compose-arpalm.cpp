@@ -124,13 +124,13 @@ bool ArpaLmScore::ComputerText(char *text)
 		if(s_ngram > e_ngram) 
 			s_ngram = e_ngram;
 		VLOG_COM(2) << logprob << " " << _map_syms[ids[i]] << " " 
-			<< backoff << " " <<  logprob+backoff << " " << s_ngram ;
+			<< backoff << " " <<  logprob+backoff/M_LN10 << " " << s_ngram ;
 		std::cout << logprob << " " << _map_syms[ids[i]] << " " 
-			<< backoff << " " <<  (logprob+backoff)/2.3025 << " " << s_ngram << std::endl;
+			<< backoff << " " <<  (logprob+backoff)/M_LN10 << " " << s_ngram << std::endl;
 		tot_score += logprob+backoff;
 	}
 	VLOG_COM(2) << tot_score;
-	std::cout << tot_score/2.3025 << std::endl;
+	std::cout << tot_score/M_LN10 << std::endl;
 	return true;
 }
 

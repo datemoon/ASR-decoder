@@ -327,7 +327,7 @@ FsaStateId Arpa2Fsa::AnasyArpa()
 			{
 				int tmp1 = 0;
 			   	FsaStateId tmp2 = 0;
-				if ( sscanf( line , "%*s %d=%lld" , &tmp1 , &tmp2 ) != 2 )
+				if ( sscanf( line , "%*s %d=%d" , &tmp1 , &tmp2 ) != 2 )
 				//if ( sscanf( line , "%*s %d=%u" , &tmp1 , &tmp2 ) != 2 )
 				{
 					std::cerr << "arpa file format error when reading ngram n=count" 
@@ -461,6 +461,8 @@ bool Arpa2Fsa::AnalyLine(char *line, ArpaLine *arpaline,int gram)
 	arpaline->backoff_logprob *= M_LN10;
 	if(arpaline->logprob/M_LN10 < -98.0)
 	{
+		if(gram == 1 && arpaline->words[0] == BosSymbol())
+			return true;
 		std::cerr << "logprob is " << arpaline->logprob << std::endl;
 		return false;
 	}
@@ -658,7 +660,7 @@ bool Arpa2Fsa::ConvertArpa2Fsa()
 
 	_bos_symbol = _symbols["<s>"];
 	_eos_symbol = _symbols["</s>"];
-	_unk_symbol = _symbols["<UNK>"];
+	_unk_symbol = _symbols["<unk>"];
 
 	std::vector<pthread_t> thread;
 	thread.resize(_nthread, 0);

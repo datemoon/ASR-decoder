@@ -31,18 +31,18 @@ int OnlineClgLatticeFastDecoder::ProcessData(char *data, int data_len, int eos, 
 	}
 	if(eos == 0)
 	{ // send data
-		_decoder.AdvanceDecoding(_decodable);
+		_decoder->AdvanceDecoding(_decodable);
 	}
 	else if(eos == 1)
 	{ // end point check end and continue send data.
-		_decoder.AdvanceDecoding(_decodable);
-		_decoder.FinalizeDecoding();
+		_decoder->AdvanceDecoding(_decodable);
+		_decoder->FinalizeDecoding();
 	}
 	else if(eos == 2)
 	{ // send data end 
 		_feature_pipeline->InputFinished();
-		_decoder.AdvanceDecoding(_decodable);
-		_decoder.FinalizeDecoding();
+		_decoder->AdvanceDecoding(_decodable);
+		_decoder->FinalizeDecoding();
 	}
 	return 0;
 }
@@ -50,19 +50,19 @@ int OnlineClgLatticeFastDecoder::ProcessData(char *data, int data_len, int eos, 
 void OnlineClgLatticeFastDecoder::GetLattice(datemoon::Lattice *olat, 
 		bool end_of_utterance)
 {
-	_decoder.GetRawLattice(olat, end_of_utterance);
+	_decoder->GetRawLattice(olat, end_of_utterance);
 }
 
 void OnlineClgLatticeFastDecoder::GetBestPath(datemoon::Lattice *best_path,
-		bool end_of_utterance) const
+		bool end_of_utterance)
 {
-	_decoder.GetBestPath(best_path, end_of_utterance);
+	_decoder->GetBestPath(best_path, end_of_utterance);
 }
 
 void OnlineClgLatticeFastDecoder::GetNbest(std::vector<datemoon::Lattice> &nbest_paths, int n, bool end_of_utterance)
 {
 	datemoon::Lattice olat;
-	_decoder.GetRawLattice(&olat, end_of_utterance);
+	_decoder->GetRawLattice(&olat, end_of_utterance);
 
 	datemoon::Lattice detfst;
 	datemoon::DeterminizeLatticeOptions opts;
@@ -94,7 +94,7 @@ void OnlineClgLatticeFastDecoder::GetBestPathTxt(std::string &best_result, bool 
 {
 	best_result = "";
 	datemoon::Lattice best_path;
-	_decoder.GetBestPath(&best_path, end_of_utterance);
+	_decoder->GetBestPath(&best_path, end_of_utterance);
 
 	OnebestLatticeToString(best_path, best_result);
 }

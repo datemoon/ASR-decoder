@@ -7,13 +7,16 @@ OBJ=arpa2fsa.o compose-arpalm.o
 
 LIB=liblm.a  ../newfst/liblatfst.a ../util/libutil.a
 
-BIN= arpa2fsa-bin lmscore compose-text lmrescale
+BIN= arpa2fsa-bin lmscore compose-text lmrescale compose-diff-text
 all:liblm.a 
 
 test:$(BIN)
 
 liblm.a:$(OBJ)
 	$(AR) -rc $@ $^
+
+compose-diff-text:compose-diff-text.o
+	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB)
 
 lmscore:lmscore.o
 	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB)

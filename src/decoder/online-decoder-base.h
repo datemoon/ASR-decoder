@@ -7,7 +7,7 @@
 #include <limits>
 #include <algorithm>
 #include "src/itf/decodable-itf.h"
-
+#include "src/decoder/decoder-itf.h"
 #include "src/util/util-common.h"
 #include "src/newfst/optimize-fst.h"
 #include "src/newfst/lattice-fst.h"
@@ -85,7 +85,7 @@ struct StdToken
 
 // because FST have some type, I will use HCLG and CLG fst ,so FST is template.
 template<typename FST, typename Token = StdToken>
-class OnlineLatticeDecoderBase
+class OnlineLatticeDecoderBase:public DecoderItf
 {
 public:
 	typedef typename HashList<StateId, Token*>::Elem Elem;
@@ -93,7 +93,7 @@ public:
 	//using Elem = typename HashList<StateId, Token*>::Elem;
 public:
 	OnlineLatticeDecoderBase(FST *fst, const LatticeFasterDecoderConfig &config);
-	~OnlineLatticeDecoderBase();
+	virtual ~OnlineLatticeDecoderBase();
 
 	struct BestPathIterator
 	{
@@ -112,7 +112,7 @@ public:
 	// intend to call AdvanceDecoding().  If you call Decode(), you don't need to
 	// call this.  You can also call InitDecoding if you have already decoded an
 	// utterance and want to start with a new utterance.
-	void InitDecoding();
+	virtual void InitDecoding();
 
 	// This will decode until there are no more frames ready in the decodable
 	// object.  You can keep calling it each time more frames become available.
@@ -161,7 +161,7 @@ public:
 	// Returns true if result is nonempty (using the return status is deprecated,
 	// it will become void).  If "use_final_probs" is true AND we reached the
 	// final-state of the graph then it will include those as final-probs, else
-	bool GetBestPath(Lattice *ofst, bool use_final_probs = true) const;
+	bool GetBestPath(Lattice *ofst, bool use_final_probs = true);
 
 	// Outputs an FST corresponding to the raw, state-level
 	// tracebacks.  Returns true if result is nonempty.
@@ -170,7 +170,7 @@ public:
 	// it will treat all final-probs as one.
 	// The raw lattice will be topologically sorted.
 	bool GetRawLattice(Lattice *ofst,
-			bool use_final_probs = true) const;
+			bool use_final_probs = true);
 
 	// [Deprecated, users should now use GetRawLattice and determinize it
 	// themselves, e.g. using DeterminizeLatticePhonePrunedWrapper].
@@ -183,7 +183,7 @@ public:
 			bool use_final_probs = true) const;
 protected:
 	// before ProcessEmitting, call GetCutoff, get this frame cutoff.
-	BaseFloat GetCutoff(Elem *list_head, size_t *tok_count,
+	virtual BaseFloat GetCutoff(Elem *list_head, size_t *tok_count,
 			BaseFloat *adaptive_beam, Elem **best_elem);
 
 	// Go backwards through still-alive tokens, pruning them, starting not from
@@ -203,7 +203,7 @@ protected:
 	// PruneForwardLinksFinal is a version of PruneForwardLinks that we call
 	// on the final frame.  If there are final tokens active, it uses
 	// the final-probs for pruning, otherwise it treats all tokens as final.
-	void PruneForwardLinksFinal();
+	virtual void PruneForwardLinksFinal();
 
 	// Prune away any tokens on this frame that have no forward links.
 	// [we don't do this in PruneForwardLinks because it would give us
@@ -230,8 +230,8 @@ protected:
 	// forward-cost[t] if there were no final-probs active on the final frame.
 	// You cannot call this after FinalizeDecoding() has been called; in that
 	// case you should get the answer from class-member variables.
-	void ComputeFinalCosts( unordered_map<Token*, BaseFloat> *final_costs,
-			BaseFloat *final_relative_cost, BaseFloat *final_best_cost) const ;
+	virtual void ComputeFinalCosts( unordered_map<Token*, BaseFloat> *final_costs,
+			BaseFloat *final_relative_cost, BaseFloat *final_best_cost);
 
 	// This function takes a singly linked list of tokens for a single frame, and
 	// outputs a list of them in topological order (it will crash if no such order
@@ -243,7 +243,7 @@ protected:
 			std::vector<Token*> *topsorted_list);
 
 	// FindOrAddToken either locates a token in hash of _cur_toks,
-	Elem *FindOrAddToken(StateId stateid, int32 frame_plus_one, BaseFloat tot_cost,
+	virtual Elem *FindOrAddToken(StateId stateid, int32 frame_plus_one, BaseFloat tot_cost,
 			Token *backpointer, bool *changed);
 
 
@@ -317,7 +317,7 @@ protected: // best path function
 	// *final_cost (if non-NULL).
 	// Requires that NumFramesDecoded() > 0.
 	BestPathIterator BestPathEnd(bool use_final_probs,
-			BaseFloat *final_cost = NULL) const;
+			BaseFloat *final_cost = NULL);
 
 	// This function can be used in conjunction with BestPathEnd() to trace back
 	// the best path one link at a time (e.g. this can be useful in endpoint

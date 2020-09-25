@@ -7,6 +7,7 @@ LIBS=../v2-asr/libv2asr.a ../v1-asr/libv1asr.a \
 	 ../kaldi-nnet3/libonlinedecode.a \
 	 ../service2/libservice2.a \
 	 ../decoder/liboptimizedecode.a \
+	 ../newlm/liblm.a \
 	 ../newfst/liblatfst.a \
 	 ../util/libutil.a
 

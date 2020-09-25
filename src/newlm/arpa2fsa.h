@@ -17,9 +17,9 @@
 #define M_LN10 2.302585092994045684017991454684
 #endif
 struct FsaState;
-typedef unsigned long long int FsaStateId;
+//typedef unsigned long long int FsaStateId;
 //typedef unsigned int FsaStateId;
-//typedef int FsaStateId;
+typedef int FsaStateId;
 struct FsaArc
 {
 	int wordid;      // word id
@@ -484,7 +484,7 @@ public:
 	Arpa2Fsa(int nthread=1, std::string arpafile="", std::string wordlist=""):
 		_nthread(nthread), _arpafile(arpafile), _wordlist(wordlist)
 		{
-		   LOG_ASSERT(nthread == 1);	
+		   //LOG_ASSERT(nthread == 1);	
 		}
 
 	// anasy Arpa file for thread
@@ -555,7 +555,7 @@ private:
 	struct Offset
 	{
 		FsaStateId line;//read how many line, it's end;
-		FsaStateId offset;//file offset,it's start
+		long long int offset;//file offset,it's start
 		Offset():line(0), offset(0) { }
 	};
 

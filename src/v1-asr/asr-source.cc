@@ -20,6 +20,7 @@ std::string LatticeToString(const Lattice &lat, const fst::SymbolTable &word_sym
 		} else
 			msg << s << " ";
 	}
+	KALDI_LOG << "Cost for utterance " <<  weight.Value1() << " + " << weight.Value2();
 	return msg.str();
 }
 std::string GetTimeString(int32 t_beg, int32 t_end, BaseFloat time_unit) 

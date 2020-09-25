@@ -155,10 +155,8 @@ float LatticeFasterDecoder::GetCutoff(Elem *list_head, size_t *tok_count,
 		float min_active_cutoff = FLOAT_INF;
 		float max_active_cutoff = FLOAT_INF;
 
-#ifdef DEBUG
-		std::cerr << "Number of tokens active on frame " << NumFramesDecoded() 
-			<< "is" << _tmp_array.size() << std::endl;
-#endif
+		VLOG_COM(2) << "Number of tokens active on frame " << NumFramesDecoded() 
+			<< "is" << _tmp_array.size();
 		if(_tmp_array.size() > static_cast<size_t>(_config._max_active))
 		{
 			std::nth_element(_tmp_array.begin(),
@@ -244,11 +242,9 @@ float LatticeFasterDecoder::ProcessEmitting(AmInterface *decodable)
 	// will use this cut off.
 
 	float cur_cutoff = GetCutoff(final_toks, &tok_cnt, &adaptive_beam, &best_elem);
-#ifdef DEBUG
-	std::cerr << "Adaptive beam on frame " << NumFramesDecoded() 
+	VLOG_COM(2) << "Adaptive beam on frame " << NumFramesDecoded() 
 		<< "nnet frame " << nnetframe 
-		<< " is " << adaptive_beam << std::endl;
-#endif
+		<< " is " << adaptive_beam;
 
 	PossiblyResizeHash(tok_cnt);  // This makes sure the hash is always big enough.
 
@@ -288,18 +284,11 @@ float LatticeFasterDecoder::ProcessEmitting(AmInterface *decodable)
 			next_cutoff = tok->_tot_cost + adaptive_beam;
 		}
 	}
-	else
-	{
-		std::cerr << "it's serious error." << std::endl;
-		exit(1);
-	}
 
 	VLOG_COM(2) << "frame is : " << frame << " -> current cutoff " << cur_cutoff << " next cutoff " << next_cutoff ;
     VLOG_COM(2) << "tokens is " << _num_toks  << " links is " << _num_links ;
 
-#ifdef DEBUG
-	std::cerr << "current cutoff " << cur_cutoff << " next cutoff " << next_cutoff << std::endl;
-#endif
+	VLOG_COM(2) << "current cutoff " << cur_cutoff << " next cutoff " << next_cutoff;
 	// the tokens are now owned here, in _prev_toks.
 	for(Elem *e = final_toks, *e_tail = NULL; e != NULL; e = e_tail)
 	{
@@ -382,12 +371,12 @@ void LatticeFasterDecoder::ProcessNonemitting(float cutoff)
 	}
 	if (_queue.empty()) 
 	{
-		std::cerr<< "Error, no surviving tokens: frame is " 
-			<< frame << std::endl;
+		LOG_WARN << "Error, no surviving tokens: frame is " 
+			<< frame;
 	}
 	if (_toks.GetList() == NULL) 
 	{
-		std::cerr << "Error, no surviving tokens: frame is " << frame << std::endl;
+		LOG_WARN << "Error, no surviving tokens: frame is " << frame;
 	}
 
 	while (!_queue.empty())
@@ -445,9 +434,7 @@ void LatticeFasterDecoder::ProcessNonemitting(float cutoff)
 void LatticeFasterDecoder::PruneActiveTokens(float delta)
 {
 	int cur_frame_plus_one = NumFramesDecoded();
-#ifdef DEBUG
 	int num_toks_begin = _num_toks;
-#endif
 	// The index "f" below represents a "frame plus one", i.e. you'd have to subtract
 	// one to get the corresponding index for the decodable object.
 	for (int f = cur_frame_plus_one - 1; f >= 0; f--) 
@@ -483,10 +470,8 @@ void LatticeFasterDecoder::PruneActiveTokens(float delta)
 			_active_toks[f+1]._must_prune_tokens = false;
 		}
 	}
-#ifdef DEBUG
-	std::cerr << "pruned tokens from " << num_toks_begin
-   		<< " to " << _num_toks << std::endl;
-#endif
+	VLOG_COM(2) << "pruned tokens from " << num_toks_begin
+   		<< " to " << _num_toks;
 }
 
 void LatticeFasterDecoder::PruneForwardLinks(int frame_plus_one,
@@ -509,7 +494,7 @@ void LatticeFasterDecoder::PruneForwardLinks(int frame_plus_one,
 	if(_active_toks[frame_plus_one]._toks == NULL)
 	{
 		//empty list; should not happen.
-		std::cerr << "No tokens alive [doing pruning].. warning first time only for each utterance" << std::endl;
+		LOG_WARN << "No tokens alive [doing pruning].. warning first time only for each utterance!!!";
 		exit(1);
 	}
 
@@ -552,8 +537,8 @@ void LatticeFasterDecoder::PruneForwardLinks(int frame_plus_one,
 					if (link_extra_cost < 0.0) 
 					{  // this is just a precaution.
 						if (link_extra_cost < -0.01)
-							std::cerr << "Negative extra_cost: " 
-								<< link_extra_cost << std::endl;
+							LOG_WARN << "Negative extra_cost: " 
+								<< link_extra_cost;
 						link_extra_cost = 0.0;
 					}
 					if(link_extra_cost < tok_extra_cost)
@@ -588,7 +573,7 @@ void LatticeFasterDecoder::PruneTokensForFrame(int frame_plus_one)
 	Token *&toks = _active_toks[frame_plus_one]._toks;
 
 	if(toks == NULL)
-		std::cerr << "No tokens alive [doing pruning]" << std::endl;
+		LOG_WARN << "No tokens alive [doing pruning]!!!";
 
 	Token *tok, *next_tok, *prev_tok = NULL;
 	for (tok = toks; tok != NULL; tok = next_tok)
@@ -659,10 +644,8 @@ void LatticeFasterDecoder::AdvanceDecoding(AmInterface *decodable,
 			_num_frames_decoded++;
 			continue;
 		}*/
-#ifdef DEBUG
-		std::cerr << "frame:" << _num_frames_decoded << "@number links " << _num_links << " number tokens "
-			<< _num_toks << std::endl;
-#endif
+		VLOG_COM(2) << "frame:" << _num_frames_decoded << "@number links " << _num_links << " number tokens "
+			<< _num_toks;
 		// prune active tokens.
 		if (NumFramesDecoded() % _config._prune_interval == 0)
 			PruneActiveTokens(_config._lattice_beam * _config._prune_scale);
@@ -803,7 +786,7 @@ void LatticeFasterDecoder::PruneForwardLinksFinal()
 					{ // this is just a precaution.
 						if (link_extra_cost < -0.01)
 						{
-							std::cerr << "Negative extra_cost: " << link_extra_cost << std::endl;
+							LOG_WARN << "Negative extra_cost: " << link_extra_cost;
 						}
 						link_extra_cost = 0.0;
 					}
@@ -834,9 +817,7 @@ void LatticeFasterDecoder::PruneForwardLinksFinal()
 void LatticeFasterDecoder::FinalizeDecoding() 
 {
 	int final_frame_plus_one = NumFramesDecoded();
-#ifdef DEBUG
 	int num_toks_begin = _num_toks;
-#endif
 	// PruneForwardLinksFinal() prunes final frame (with final-probs), and
 	// sets _decoding_finalized.
 	PruneForwardLinksFinal();
@@ -848,10 +829,8 @@ void LatticeFasterDecoder::FinalizeDecoding()
 	    PruneTokensForFrame(f + 1);
 	}
 	PruneTokensForFrame(0);
-#ifdef DEBUG
-	std::cerr << "pruned tokens from " << num_toks_begin
-		<< " to " << _num_toks << std::endl;
-#endif
+	VLOG_COM(2) << "pruned tokens from " << num_toks_begin
+		<< " to " << _num_toks;
 }
 
 
@@ -868,8 +847,11 @@ bool LatticeFasterDecoder::GetRawLattice(Lattice *ofst,
 	// get the lattice with use_final_probs = false.  You'd have to do
 	// InitDecoding() and then AdvanceDecoding().
 	if(_decoding_finalized && !use_final_probs)
-		std::cerr << "You cannot call FinalizeDecoding() and then call "
-			<< "GetRawLattice() with use_final_probs == false";
+	{
+		LOG_WARN << "You cannot call FinalizeDecoding() and then call "
+			<< "GetRawLattice() with use_final_probs == false!!!";
+		return false;
+	}
 
 	unordered_map<Token*, float> final_costs_local;
 
@@ -893,8 +875,8 @@ bool LatticeFasterDecoder::GetRawLattice(Lattice *ofst,
 	{
 		if(_active_toks[f]._toks == NULL)
 		{
-			std::cerr << "GetRawLattice: no tokens active on frame " << f
-				<< ": not producing lattice.\n";
+			LOG_WARN << "GetRawLattice: no tokens active on frame " << f
+				<< ": not producing lattice!!!";
 			return false;
 		}
 		TopSortTokens(_active_toks[f]._toks, &token_list);
@@ -908,11 +890,9 @@ bool LatticeFasterDecoder::GetRawLattice(Lattice *ofst,
 	// topologically sorted the tokens, state zero must be the start-state.
 	ofst->SetStart(0);
 
-#ifdef DEBUG
-	std::cerr << "init:" << _num_toks/2 + 3 << " buckets:"
+	VLOG_COM(2) << "init:" << _num_toks/2 + 3 << " buckets:"
 		<< tok_map.bucket_count() << " load:" << tok_map.load_factor()
-		<< " max:" << tok_map.max_load_factor() << std::endl;
-#endif
+		<< " max:" << tok_map.max_load_factor();
 
 	// Now create all arcs.
 	for (int f = 0; f <= num_frames; ++f)

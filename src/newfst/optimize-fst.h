@@ -135,6 +135,11 @@ public:
 		return _total_arcs;
 	}
 
+	// This function in order to compatible clg fst.
+	bool Init(const char *file, const char *)
+	{
+		return ReadFst(file);
+	}
 	bool ReadFst(const char *file)
 	{
 		FILE *fp = fopen(file,"rb");
@@ -223,4 +228,6 @@ public:
 typedef Arc StdArc;
 typedef State StdState;
 #include "src/util/namespace-end.h"
+#include "src/newfst/arc-iter.h"
+
 #endif

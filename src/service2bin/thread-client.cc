@@ -75,7 +75,7 @@ int main(int argc,char *argv[])
 		LOG_ERR << "Open wav: " << wavlist <<" failed!!!";
 		return -1;
 	}
-#define FILE_LEN 128
+#define FILE_LEN 256
 	char wavfile[FILE_LEN];
 	memset(wavfile,0x00,sizeof(wavfile));
 	while(fgets(wavfile, FILE_LEN, fp) != NULL)

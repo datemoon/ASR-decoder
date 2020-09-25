@@ -2,13 +2,20 @@
 include ../hubo.mk
 
 LIBS=../kaldi-nnet3/libonlinedecode.a \
-	 ../decoder/liboptimizedecode.a ../newfst/liblatfst.a ../util/libutil.a
+	 ../decoder/liboptimizedecode.a \
+	 ../newlm/liblm.a \
+	 ../newfst/liblatfst.a \
+	 ../util/libutil.a 
 
 OBJ=kaldi-online-nnet3-my-decoder-bin.o
 
-BIN=kaldi-online-nnet3-my-decoder-bin kaldi-my-decoder kaldi-hclg-my-decoder
+BIN=kaldi-online-nnet3-my-decoder-bin kaldi-my-decoder kaldi-hclg-my-decoder \
+	kaldi-hclg-my-decoder-biglm
 
 all:$(BIN)
+
+kaldi-hclg-my-decoder-biglm:kaldi-hclg-my-decoder-biglm.o
+	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB) $(LIBS) $(KALDI_LIBS) $(CBLAS_LIB)
 
 kaldi-online-nnet3-my-decoder-bin:kaldi-online-nnet3-my-decoder-bin.o
 	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB) $(LIBS) $(KALDI_LIBS) $(CBLAS_LIB)

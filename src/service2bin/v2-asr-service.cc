@@ -32,9 +32,9 @@ int main(int argc, char *argv[])
 	// Block SIGPIPE before starting any other threads; other threads
 	// created by main() will inherit a copy of the signal mask.
 	ThreadSigPipeIng();
-	const char *usage = "This is a test v2 asr service test code.\n"
+	const char *usage = "This is a v2 asr service.\n"
 		"Usage: v2-asr-service [options] <nnet3-in> "
-		"<fst-in> <hmm-fst-in> <word-symbol-table>\n";
+		"<fst-in> <word-symbol-table>\n";
 
 	kaldi::ParseOptions po(usage);
 	std::string config_socket="";
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 	online_conf.Register(&po);
 
 	po.Read(argc, argv);
-	if (po.NumArgs() != 4)
+	if (po.NumArgs() != 3)
    	{
 		po.PrintUsage();
 		return 1;
@@ -54,12 +54,11 @@ int main(int argc, char *argv[])
 
 	std::string nnet3_rxfilename = po.GetArg(1),
 		fst_in_filename = po.GetArg(2),
-		hmm_in_filename = po.GetArg(3),
-		word_syms_filename = po.GetArg(4);
+		word_syms_filename = po.GetArg(3);
 
 	// online decoder info
 	OnlineDecoderInfo online_info(online_conf, nnet3_rxfilename,
-			fst_in_filename, hmm_in_filename,word_syms_filename);
+			fst_in_filename, word_syms_filename);
 
 	LOG_COM << "OnlineDecoderInfo init ok.";
 	//signal(SIGPIPE, SIG_IGN); // ignore SIGPIPE to avoid crashing when socket forcefully disconnected
@@ -113,18 +112,18 @@ int main(int argc, char *argv[])
 		{
 			if(connectfd == -2)
 			{
-				printf(".");
+				std::cout << ".";
 				fflush(stdout);
 				pool.Info();
 				//printf("no cli connect requst %d %d %d %d.\n", connectfd,errno,EINPROGRESS,EAGAIN);
 			}
 			else
-				printf("cli connect error.\n");
+				LOG_WARN << "cli connect error!!!";
 
 		}
 		else
 		{
-			printf("connect %d.\n",connectfd);
+			VLOG_COM(2) << "connect " << connectfd;
 			V2ASRServiceTask *ta = new V2ASRServiceTask(connectfd);
 			pool.AddTask(ta);
 		}

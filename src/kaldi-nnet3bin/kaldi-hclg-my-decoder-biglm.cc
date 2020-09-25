@@ -12,8 +12,7 @@
 
 //datemoon
 #include "src/decoder/lattice-faster-decoder.h"
-#include "src/decoder/mem-optimize-hclg-lattice-faster-online-decoder.h"
-#include "src/decoder/online-decoder-mempool-base.h"
+#include "src/decoder/online-decoder-mempool-base-biglm.h"
 #include "src/decoder/wordid-to-wordstr.h"
 #include "src/newfst/lattice-functions.h"
 #include "src/newfst/lattice-to-nbest.h"
@@ -30,7 +29,7 @@ int main(int argc, char *argv[])
 	
 	const char *usage = "This is a test kaldi-online-nnet3-my-decoder code.\n"
 		"Usage: kaldi-online-nnet3-my-decoder-test [options] <nnet3-in> "
-		"<fst-in> <word-symbol-table> <feat-in>\n";
+		"<fst-in> <word-symbol-table> <lm1> <lm2> <feat-in>\n";
 	kaldi::ParseOptions po(usage);
 
 	BaseFloat acoustic_scale = 0.1;
@@ -39,7 +38,7 @@ int main(int argc, char *argv[])
 	po.Register("config-decoder", &config_decoder, "decoder config file (default NULL)");
 
 	po.Read(argc, argv);
-	if (po.NumArgs() != 4)
+	if (po.NumArgs() != 6)
 	{
 		po.PrintUsage();
 		return 1;
@@ -48,7 +47,17 @@ int main(int argc, char *argv[])
 	std::string nnet3_rxfilename = po.GetArg(1),
 		fst_in_filename = po.GetArg(2),
 		word_syms_filename = po.GetArg(3),
-		feature_rspecifier = po.GetArg(4);
+		lm1_filename = po.GetArg(4),
+		lm2_filename = po.GetArg(5),
+		feature_rspecifier = po.GetArg(6);
+
+	// lm read and rescale
+	ArpaLm lm1,lm2;
+	{
+		lm1.Read(lm1_filename.c_str());
+		lm2.Read(lm2_filename.c_str());
+		lm1.Rescale(-1.0);
+	}
 
 	WordSymbol wordsymbol;
 	if(wordsymbol.ReadText(word_syms_filename.c_str()) != 0)
@@ -68,10 +77,8 @@ int main(int argc, char *argv[])
 	if(config_decoder != "")
 		ReadConfigFromFile(config_decoder, &decodeopt);
 
-	//LatticeFasterDecoder decode(&fst, decodeopt);
-	OnlineLatticeDecoderMempool decode(&fst, decodeopt);
+	OnlineLatticeDecoderMempoolBiglm decode(&fst, decodeopt, &lm1, &lm2);
 
-	//MemOptimizeHclgLatticeFasterOnlineDecoder decode(&fst, decodeopt);
 	kaldi::Timer timer;
 	timer.Reset();
 

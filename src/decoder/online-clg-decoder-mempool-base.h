@@ -1,5 +1,5 @@
-#ifndef __ONLINE_CLG_DECODER_MEMPOOL_H__
-#define __ONLINE_CLG_DECODER_MEMPOOL_H__
+#ifndef __ONLINE_CLG_DECODER_MEMPOOL_BASE_H__
+#define __ONLINE_CLG_DECODER_MEMPOOL_BASE_H__
 
 #include "src/decoder/online-decoder-mempool-base.h"
 
@@ -17,7 +17,10 @@ public:
 
 	OnlineClgLatticeDecoderMempoolBase(FST *fst,
 			const LatticeFasterDecoderConfig &config):
-		OnlineLatticeDecoderMempoolBase<FST, Token>(fst, config) { }
+		OnlineLatticeDecoderMempoolBase<FST, Token>(fst, config) 
+	{
+	   LOG_COM << "--- Construct OnlineClgLatticeDecoderMempoolBase class ---";
+	}
 
 	~OnlineClgLatticeDecoderMempoolBase(){ }
 	virtual BaseFloat ProcessEmitting(AmInterface *decodable);
@@ -47,11 +50,9 @@ BaseFloat OnlineClgLatticeDecoderMempoolBase<FST, Token>::ProcessEmitting(AmInte
 	// will use this cut off.
 
 	float cur_cutoff = this->GetCutoff(final_toks, &tok_cnt, &adaptive_beam, &best_elem);
-#ifdef DEBUG
-	VLOG(2) << "Adaptive beam on frame " << NumFramesDecoded() 
+	VLOG_COM(2) << "Adaptive beam on frame " << this->NumFramesDecoded() 
 		<< "nnet frame " << nnetframe 
 		<< " is " << adaptive_beam ;
-#endif
 	this->PossiblyResizeHash(tok_cnt);  // This makes sure the hash is always big enough.
 
 	float next_cutoff = FLOAT_INF;//std::numeric_limits<float>::infinity();
@@ -110,23 +111,11 @@ BaseFloat OnlineClgLatticeDecoderMempoolBase<FST, Token>::ProcessEmitting(AmInte
 				}
 			}
 		}
-		if(next_cutoff == FLOAT_INF)
-		{
-			next_cutoff = tok->_tot_cost + adaptive_beam;
-			LOG_WARN << "it shouldn't happen!!!";
-			LOG_WARN << "frame is : " << frame << " -> current cutoff " << cur_cutoff << " next cutoff " << next_cutoff ;
-		}
-	}
-	else
-	{
-		LOG_ERR << "it's serious error." ;
 	}
 
 	VLOG_COM(2) << "frame is : " << frame << " -> current cutoff " << cur_cutoff << " next cutoff " << next_cutoff ;
 	VLOG_COM(2) << "tokens is " << this->_num_toks  << " links is " << this->_num_links ;
-#ifdef DEBUG
-	VLOG(2) << "current cutoff " << cur_cutoff << " next cutoff " << next_cutoff ;
-#endif
+	VLOG_COM(2) << "current cutoff " << cur_cutoff << " next cutoff " << next_cutoff ;
 	// the tokens are now owned here, in _prev_toks.
 	//for(auto it = _prev_toks.begin(); it != _prev_toks.end(); ++it)
 	for(Elem *e = final_toks, *e_tail = NULL; e != NULL; e = e_tail)
