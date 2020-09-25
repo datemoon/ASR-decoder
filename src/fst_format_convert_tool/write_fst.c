@@ -25,6 +25,14 @@ int write_fst(const char *filename,struct Fst *fst)
 		{
 			return -1;
 		}
+		if(1 != fwrite(&state->niepsilons, sizeof(int), 1, fp))
+		{
+			return -1;
+		}
+		if(1 != fwrite(&state->noepsilons, sizeof(int), 1, fp))
+		{
+			return -1;
+		}
 		arc_offset += state->num_arc;
 		int j = 0;
 		if(state->num_arc > 0)

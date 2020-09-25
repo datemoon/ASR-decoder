@@ -1,18 +1,29 @@
 
+CFLAGS= -msse -msse2 -Wall -I.. -pthread \
+		 -O2 -DNDEBUG  #-std=c++0x #-gdwarf-2 #-gstabs+ #-DDEBUGTOKEN -g #-pg #-DDEBUG #-DDEBUGGRAPH
 
+CFLAGS += -fPIC
 
-include ../hubo.mk
+LDFLAGS = -rdynamic
 
-#GCC=gcc
+LDLIBS = -lm -lpthread -ldl
 
-#CFLAGS=-g
+GCC=gcc
+CC = g++
+CXX = $(CC)
+GXX = $(CC)
+AR = ar
+AS = as
+RANLIB = ranlib
 
-all:main readhmm
+BIN=convert_fst convert_hmm
 
-main: read_fst.o main.o write_fst.o
+all:$(BIN)
+
+convert_fst:read_fst.o convert_fst.o write_fst.o
 	$(GCC) $(CFLAGS) -o $@ $^
 
-readhmm:readhmm.o read_fst.o write_fst.o
+convert_hmm:convert_hmm.o read_fst.o write_fst.o
 	$(GCC) $(CFLAGS) -o $@ $^
 
 %.o:%.c
@@ -21,4 +32,4 @@ readhmm:readhmm.o read_fst.o write_fst.o
 .PHONY:clean
 
 clean:
-	rm -f *.o main readhmm
+	rm -f *.o $(BIN)
