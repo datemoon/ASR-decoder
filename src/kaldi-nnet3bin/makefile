@@ -5,7 +5,7 @@ LIBS=../kaldi-nnet3/libonlinedecode.a \
 	 ../decoder/liboptimizedecode.a \
 	 ../newlm/liblm.a \
 	 ../newfst/liblatfst.a \
-	 ../util/libutil.a 
+	 ../util/libutil.a  $(LDLIBS)
 
 OBJ=kaldi-online-nnet3-my-decoder-bin.o
 
@@ -15,16 +15,16 @@ BIN=kaldi-online-nnet3-my-decoder-bin kaldi-my-decoder kaldi-hclg-my-decoder \
 all:$(BIN)
 
 kaldi-hclg-my-decoder-biglm:kaldi-hclg-my-decoder-biglm.o
-	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB) $(LIBS) $(KALDI_LIBS) $(CBLAS_LIB)
+	$(GXX)  -o $@ $^ $(LIB) $(LIBS) $(KALDI_LIBS) $(CBLAS_LIB)
 
 kaldi-online-nnet3-my-decoder-bin:kaldi-online-nnet3-my-decoder-bin.o
-	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB) $(LIBS) $(KALDI_LIBS) $(CBLAS_LIB)
+	$(GXX)  -o $@ $^ $(LIB) $(LIBS) $(KALDI_LIBS) $(CBLAS_LIB)
 
 kaldi-my-decoder:kaldi-my-decoder.o
-	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB) $(LIBS)  $(KALDI_LIBS) $(CBLAS_LIB)
+	$(GXX) -o $@ $^ $(LIB) $(LIBS)  $(KALDI_LIBS) $(CBLAS_LIB)
 
 kaldi-hclg-my-decoder:kaldi-hclg-my-decoder.o
-	$(GXX) $(CXXFLAGS) -o $@ $^ $(LIB) $(LIBS)  $(KALDI_LIBS) $(CBLAS_LIB)
+	$(GXX)  -o $@ $^ $(LIB) $(LIBS)  $(KALDI_LIBS) $(CBLAS_LIB)
 
 %.o:%.cc
 	$(GXX) $(CXXFLAGS) -c -o $@ $< 

@@ -65,6 +65,8 @@ int main(int argc, char *argv[])
 	while(fgets(wavfile, FILE_LEN, flfp) != NULL)
 	{
 		// delete \n
+		if(wavfile[0] == '#')
+			continue;
 		wavfile[strlen(wavfile)-1] = '\0';
 		FILE *fp = fopen(wavfile , "r");
 		if(fp == NULL)
@@ -85,37 +87,35 @@ int main(int argc, char *argv[])
 			memset(wavdata,0x00,sizeof(wavdata));
 			size_t data_len = fread((void*)wavdata, 1, LEN, fp);
 			int data_type = 2;
-			std::cout << npackage << " package -> read wavdata length: " << data_len << std::endl;
+			VLOG_COM(2) << npackage << " package -> read wavdata length: " << data_len;
 			if(data_len > 0)
 			{
 				online_clg_decoder.ProcessData(wavdata, data_len, 0, data_type);
 			}
 			else
 			{
-				std::cout << "data ok." << std::endl;
 				online_clg_decoder.ProcessData(wavdata, data_len, 2, data_type);
-				std::cout << "FinalizeDecoding." << std::endl;
+				VLOG_COM(2) << "FinalizeDecoding. OK" ;
 				if (online_clg_decoder.NumFramesDecoded() > 0)
 				{
 					Lattice olat;
 					online_clg_decoder.GetLattice(&olat, true);
 
-					std::cout << "GetRawLattice." << std::endl;
+					VLOG_COM(2) << "GetLattice. OK";
 					vector<Lattice> nbest_paths;
 					Lattice best_path;
 
 					LatticeShortestPath(&olat, &best_path);
-					std::cout << "LatticeShortestPath." << std::endl;
+					VLOG_COM(2) << "LatticeShortestPath. OK" ;
 	
 					{// nbest result
 						Lattice detfst;
 						bool debug_ptr = false;
 						DeterminizeLatticeOptions opts;
-						std::cout << "DeterminizeLatticeWrapper start." << std::endl;
 						assert(LatticeCheckFormat(&olat) && "ofst format it's error");
 						DeterminizeLatticeWrapper(&olat,&detfst,opts,&debug_ptr);
 						assert(LatticeCheckFormat(&detfst) && "detfst format it's error");
-						std::cout << "DeterminizeLatticeWrapper end." << std::endl;
+						VLOG_COM(2) << "DeterminizeLatticeWrapper. OK" ;
 						Lattice nbest_lat;
 						NShortestPath(detfst, &nbest_lat, 10);
 						ConvertNbestToVector(nbest_lat, &nbest_paths);

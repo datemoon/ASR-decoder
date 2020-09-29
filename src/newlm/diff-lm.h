@@ -5,19 +5,9 @@
 #include <vector>
 #include <unordered_map>
 #include "src/newlm/compose-arpalm.h"
+#include "src/util/stl-util.h"
 
 #include "src/util/namespace-start.h"
-
-template<typename Int1, typename Int2 = Int1>
-struct PairHasher
-{  // hashing function for pair<int>
-	size_t operator()(const std::pair<Int1, Int2> &x) const noexcept 
-	{ // 7853 was chosen at random from a list of primes.
-		return x.first + x.second * 7853;
-	}
-	PairHasher() { }
-};
-
 // 这是一个计算2个语言模型分差的方法，在构造这个方法之前，需要将语言模型缩放
 // 比如一个模型是-1.0 另外一个是 1.0.
 class DiffArpaLm:public LatticeComposeItf<FsaStateId>

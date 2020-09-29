@@ -328,7 +328,7 @@ public:
 	bool Write(FILE *fp);
 	bool Write(std::string &file)
 	{
-		FILE *fp = fopen(file.c_str(), "wb");
+		FILE *fp = fopen(file.c_str(), "ab");
 		if(NULL == fp)
 		{
 			std::cerr << "Write " << file << " failed." << std::endl;

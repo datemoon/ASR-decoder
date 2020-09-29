@@ -50,7 +50,42 @@ int OnlineClgLatticeFastDecoder::ProcessData(char *data, int data_len, int eos, 
 void OnlineClgLatticeFastDecoder::GetLattice(datemoon::Lattice *olat, 
 		bool end_of_utterance)
 {
-	_decoder->GetRawLattice(olat, end_of_utterance);
+	if(_online_info._online_conf._use_second == true)
+	{
+		datemoon::ComposeArpaLm *lm1 = new datemoon::ComposeArpaLm(&(_online_info._lm1));
+		datemoon::ComposeArpaLm *lm2 = new datemoon::ComposeArpaLm(&(_online_info._lm2));
+		datemoon::Lattice lat, detfst, lat1;
+		_decoder->GetRawLattice(&lat, end_of_utterance);
+		datemoon::DeterminizeLatticeOptions opts;
+		bool debug_ptr = false;
+		LOG_ASSERT(datemoon::LatticeCheckFormat(&lat) && "ofst format it's error");
+		datemoon::DeterminizeLatticeWrapper(&lat,&detfst,opts,&debug_ptr);
+		LOG_ASSERT(datemoon::LatticeCheckFormat(&detfst) && "detfst format it's error");
+		
+		//detfst.Print();
+		datemoon::ComposeLattice<datemoon::FsaStateId>( &detfst,
+				static_cast<datemoon::LatticeComposeItf<datemoon::FsaStateId>* >(lm1),
+				&lat1);
+		//lat1.Print();
+		datemoon::ComposeLattice<datemoon::FsaStateId>( &lat1,
+				static_cast<datemoon::LatticeComposeItf<datemoon::FsaStateId>* >(lm2),
+				olat);
+		//olat->Print();
+		VLOG_COM(2) << "ComposeLattice ok";
+		delete lm1;
+		delete lm2;
+	}
+	else
+	{
+		datemoon::Lattice lat;
+		_decoder->GetRawLattice(&lat, end_of_utterance);
+		datemoon::DeterminizeLatticeOptions opts;
+		bool debug_ptr = false;
+		LOG_ASSERT(datemoon::LatticeCheckFormat(&lat) && "ofst format it's error");
+		datemoon::DeterminizeLatticeWrapper(&lat,olat,opts,&debug_ptr);
+		LOG_ASSERT(datemoon::LatticeCheckFormat(olat) && "detfst format it's error");
+		VLOG_COM(2) << "don't use second ok";
+	}
 }
 
 void OnlineClgLatticeFastDecoder::GetBestPath(datemoon::Lattice *best_path,
@@ -62,16 +97,10 @@ void OnlineClgLatticeFastDecoder::GetBestPath(datemoon::Lattice *best_path,
 void OnlineClgLatticeFastDecoder::GetNbest(std::vector<datemoon::Lattice> &nbest_paths, int n, bool end_of_utterance)
 {
 	datemoon::Lattice olat;
-	_decoder->GetRawLattice(&olat, end_of_utterance);
+	GetLattice(&olat, end_of_utterance);
 
-	datemoon::Lattice detfst;
-	datemoon::DeterminizeLatticeOptions opts;
-	bool debug_ptr = false;
-	assert(datemoon::LatticeCheckFormat(&olat) && "ofst format it's error");
-	datemoon::DeterminizeLatticeWrapper(&olat,&detfst,opts,&debug_ptr);
-	assert(datemoon::LatticeCheckFormat(&detfst) && "detfst format it's error");
 	datemoon::Lattice nbest_lat;
-	datemoon::NShortestPath(detfst, &nbest_lat, n);
+	datemoon::NShortestPath(olat, &nbest_lat, n);
 	datemoon::ConvertNbestToVector(nbest_lat, &nbest_paths);
 }
 

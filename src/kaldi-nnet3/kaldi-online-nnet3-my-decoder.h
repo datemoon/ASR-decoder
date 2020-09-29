@@ -38,12 +38,13 @@ public:
 	datemoon::BaseFloat _lm1_scale;
 	datemoon::BaseFloat _lm2_scale;
 
+	bool _use_second;
 	OnlineDecoderConf():
 		_config_decoder(""),
 		_phonedict(""),_prondict(""),
 		_graph_type("mem-hclg"),_hmmfst_file(""),
 		_lm1_file(""),_lm2_file(""),
-		_lm1_scale(-1.0), _lm2_scale(1.0) { }
+		_lm1_scale(-1.0), _lm2_scale(1.0), _use_second(false) { }
 		//_wordlist(""),
 	void Register(kaldi::OptionsItf *conf)
 	{
@@ -69,6 +70,8 @@ public:
 				"lm1-file scale (default -1.0)");
 		conf->Register("lm2-scale", &_lm2_scale,
 				"lm2-file scale (default 1.0)");
+		conf->Register("use-second", &_use_second,
+				"use second biglm decoder. (default false)");
 	}
 };
 
@@ -160,12 +163,20 @@ public:
 			LOG_ASSERT(tmpfst->ReadFst(_fst_in_filename.c_str()));
 			_graphfst = static_cast<void *>(tmpfst);
 		}
-		if(_online_conf._lm1_file != "" && _online_conf._lm2_file != "")
+		if(_online_conf._use_second == true ||(_online_conf._lm1_file != "" && _online_conf._lm2_file != ""))
 		{
-			LOG_ASSERT(_lm1.Read(_online_conf._lm1_file.c_str()));
+			if(_lm1.Read(_online_conf._lm1_file.c_str()) != true)
+			{
+				LOG_ERR << "load arpalm1 " << _online_conf._lm1_file << " failed!!!";
+			}
 			_lm1.Rescale(_online_conf._lm1_scale);
-			LOG_ASSERT(_lm2.Read(_online_conf._lm2_file.c_str()));
+			if(_lm2.Read(_online_conf._lm2_file.c_str()) != true)
+			{
+				LOG_ERR << "load arpalm2 " << _online_conf._lm2_file << " failed!!!";
+			}
 			_lm2.Rescale(_online_conf._lm2_scale);
+			LOG_COM << "Use second decoder and load " << _online_conf._lm1_file << " and " <<
+				_online_conf._lm2_file << " ok";
 		}
 	} // construct ok
 
@@ -179,7 +190,7 @@ public:
 	OnlineClgLatticeFastDecoder(OnlineDecoderInfo &online_info):
 		_online_info(online_info),
 		_decodable_info(online_info._online_conf._decodable_opts, &online_info._am_nnet),
-		_decodable(NULL),_feature_pipeline(NULL) 
+		_decodable(NULL),_feature_pipeline(NULL)
 	{
 	//datemoon::MemOptimizeClgLatticeFasterOnlineDecoder _decoder;
 	//datemoon::OnlineClgLatticeDecoderMempool _decoder;
@@ -222,7 +233,7 @@ public:
 						&online_info._lm2);
 			_decoder = static_cast<datemoon::DecoderItf *>(tmpdecoder);
 		}
-	   InitDecoding(0, true);	
+	   InitDecoding(0, true);
 	}
 
 	~OnlineClgLatticeFastDecoder()
@@ -258,6 +269,10 @@ public:
 			_decodable->SetFrameOffset(frame_offset);
 		}
 		_decoder->InitDecoding();
+		if(_online_info._online_conf._use_second == true)
+		{
+			//_diff_lm.Reset();
+		}
 	}
 	
 	// input data to decoder
@@ -317,9 +332,11 @@ private:
 #endif
 */
 	datemoon::DecoderItf *_decoder;
+
 	// nnet forward
 	kaldi::nnet3::DecodableAmNnetLoopedOnline *_decodable;
 	// feature pipe
 	kaldi::OnlineNnet2FeaturePipeline *_feature_pipeline;
+	//datemoon::DiffArpaLm _diff_lm;
 };
 

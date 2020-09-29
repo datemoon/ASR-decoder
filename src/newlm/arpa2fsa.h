@@ -237,6 +237,12 @@ public:
 	   states = new FsaState[states_max_len];	
 	}
 	
+	void Info(int n=0)
+	{
+		VLOG_COM(n) << "Fsa info : start -> " << start 
+			<< " arcs_num -> " << arcs_num
+			<< " states_num -> " << states_num;
+	}
 	~Fsa()
 	{
 		if(arcs != NULL)
@@ -342,7 +348,7 @@ protected:
 	int _bos_symbol; // begin symbol
 	int _eos_symbol; // end symbol
 	int _unk_symbol; // <unk>
-	std::vector<size_t> _num_gram; // record ngram line number.
+	std::vector<int> _num_gram; // record ngram line number.
 	Fsa _fsa;
 	//typedef std::unordered_map<std::string, int, StringKey, StringEqual> WordHash;
 	typedef std::unordered_map<std::string, int> WordHash;
@@ -360,6 +366,11 @@ public:
 	{
 		if(arc_pool != NULL)
 			delete arc_pool;
+	}
+
+	void Info(int n)
+	{
+		_fsa.Info(0);
 	}
 	// Read  word list.
 	int ReadSymbols(const char* file);

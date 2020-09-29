@@ -20,7 +20,10 @@ public:
 };
 
 // fst w.Value2() * scale
-template <typename I>
-void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat, float scale = 1.0);
+//template <typename I>
+//void ComposeLattice(Lattice *clat, LatticeComposeItf<I> *fst, Lattice *olat, float scale = 1.0);
 #include "src/util/namespace-end.h"
+
+#include "src/newfst/compose-lat-inl.h"
+
 #endif

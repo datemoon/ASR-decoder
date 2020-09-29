@@ -122,19 +122,22 @@ int32 V2ASRServiceTask::Run(void *data)
 				nbest = 1;
 			}
 			// get decoder result
-			if(nbest == 1)
+			if (online_clg_decoder.NumFramesDecoded() > 0)
 			{
-				std::string best_result;
-				online_clg_decoder.GetBestPathTxt(best_result, eos);
-				ser_s2c.SetNbest(best_result);
-			}
-			else
-			{
-				std::vector<std::string> nbest_result;
-				online_clg_decoder.GetNbestTxt(nbest_result, nbest, eos);
-				for(size_t i =0 ; i < nbest_result.size(); ++i)
+				if(nbest == 1)
 				{
-					ser_s2c.SetNbest(nbest_result[i]);
+					std::string best_result;
+					online_clg_decoder.GetBestPathTxt(best_result, eos);
+					ser_s2c.SetNbest(best_result);
+				}
+				else
+				{
+					std::vector<std::string> nbest_result;
+					online_clg_decoder.GetNbestTxt(nbest_result, nbest, eos);
+					for(size_t i =0 ; i < nbest_result.size(); ++i)
+					{
+						ser_s2c.SetNbest(nbest_result[i]);
+					}
 				}
 			}
 			// send result from service to client.
