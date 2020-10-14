@@ -119,7 +119,7 @@ int read_fst(const char *filename , struct FstHead *fsthead , struct Fst *fst)
 		fst_read[state].arc_arr = (struct Arc *)malloc(sizeof(struct Arc) * fst_read[state].num_arc);
 		if(fst_read[state].arc_arr == NULL)
 		{
-			fprintf(stderr,"%s %d line  malloc fail %d!\n",__FILE__,__LINE__,sizeof(struct Arc) *fst_read[state].num_arc);
+			fprintf(stderr,"%s %u line  malloc fail %lu!\n",__FILE__,__LINE__,sizeof(struct Arc) *fst_read[state].num_arc);
 			return -1;
 		}
 		memset(fst_read[state].arc_arr,0x00,sizeof(struct Arc) * fst_read[state].num_arc);

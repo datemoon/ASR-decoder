@@ -152,6 +152,12 @@ public:
 		fclose(fp);
 		return true;
 	}
+	struct StateInfo
+	{
+		unsigned int num_arcs;
+		unsigned int niepsilons; // number of input epsilons.
+		unsigned int noepsilons; // Number of output epsilons.
+	};
 	bool ReadFst(FILE *fp)
 	{
 		if(1 != fread(&(_start_stateid),sizeof(int),1,fp))
@@ -172,21 +178,22 @@ public:
 		_arc_arr = new Arc[_total_arcs];
 		int i = 0;
 		int arc_offset = 0;
+		// read state
+		StateInfo *states_info = new StateInfo[_total_states];
+
+		if(_total_states != fread((void*)states_info, sizeof(StateInfo), _total_states, fp))
+		{
+			std::cerr << "read state_info failed!!!" << std::endl;
+			return false;
+		}
 		for(i = 0 ; i < _total_states ; ++i)
 		{
-			unsigned int num_arc = 0;
-			// read num_arc,_niepsilons,_noepsilons
-			if(1 != fread(&num_arc,sizeof(int),1,fp))
-				return false;
-
-			_state_arr[i]._num_arcs = num_arc;
+			// assignment num_arc,_niepsilons,_noepsilons
+			_state_arr[i]._num_arcs = states_info[i].num_arcs;
+			_state_arr[i]._niepsilons = states_info[i].niepsilons;
+			_state_arr[i]._noepsilons = states_info[i].noepsilons;
 			_state_arr[i]._arcs = &_arc_arr[arc_offset];
-			if(1 != fread(&_state_arr[i]._niepsilons,sizeof(int),1,fp))
-				return false;
-			if(1 != fread(&_state_arr[i]._noepsilons,sizeof(int),1,fp))
-				return false;
-
-			if(num_arc > 0)
+/*			if(_state_arr[i]._num_arcs > 0)
 			{
 				if(num_arc != fread(_state_arr[i]._arcs,sizeof(Arc),num_arc,fp))
 				{
@@ -194,9 +201,16 @@ public:
 					return false;
 				}
 			}
-			arc_offset += num_arc;
+*/			arc_offset += _state_arr[i]._num_arcs;
 		}
+		delete []states_info;
 		assert(arc_offset == _total_arcs && "arc read is error.\n");
+		// read arc
+		if(_total_arcs != fread((void*)_arc_arr, sizeof(Arc), _total_arcs, fp))
+		{
+			std::cerr << "read arc failed!!!" << std::endl;
+			return false;
+		}
 		return true;
 	}
 
