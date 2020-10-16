@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# make tmp file
+Makefile
+Makefile.in
+.libs
+.deps

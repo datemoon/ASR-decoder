@@ -28,7 +28,7 @@
 #define __func__ __FUNCTION__
 #endif
 
-#define VERSION "2018-10-25"
+//#define VERSION "2018-10-25"
 /***** VERBOSITY LEVEL *****/
 
 /// This is set by util/parse-options.{h, cc} if you set --verbose=? option.
@@ -170,7 +170,7 @@ void AssertFailure_(const char *func, const char *file,
 	::MessageLogger(::LogMessageEnvelope::kInfo, \
 			__func__, __FILE__, __LINE__).stream()
 #define VLOG_COM(v) if ((v) <= ::g_verbose_level)     \
-	:MessageLogger((::LogMessageEnvelope::Severity)(v), \
+	::MessageLogger((::LogMessageEnvelope::Severity)(v), \
 					 __func__, __FILE__, __LINE__).stream()
 
 #ifndef NDEBUG

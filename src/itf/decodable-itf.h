@@ -102,6 +102,7 @@ public:
 	virtual ~DecodableInterface() { }
 
 };
+typedef typename DecodableInterface AmInterface;
 #include "src/util/namespace-end.h"
 #endif
 
