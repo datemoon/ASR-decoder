@@ -16,7 +16,8 @@ LDADD = ../kaldi-nnet3/libonlinedecode.la \
 
 LDADD += $(KALDI_LIBS) \
 		 $(MATRIX_LIBS) \
-		 $(CUDA_LIBS) 
+		 $(CUDA_LIBS)  \
+		 $(DL_LIBS)
 
 
 bin_PROGRAMS = kaldi-online-nnet3-my-decoder-bin \

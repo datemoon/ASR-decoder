@@ -5,6 +5,8 @@
 #include <ostream>
 #include <fstream>
 #include <vector>
+#include <type_traits>
+#include "src/util/util-type.h"
 
 #include "src/util/namespace-start.h"
 
@@ -46,5 +48,55 @@ ssize_t ReadN(int fd, void *vptr, ssize_t n);
 
 ssize_t WriteN(int fd,const void *vptr, ssize_t n);
 
+// read
+// string
+inline std::istream &ReadType(std::istream &strm, std::string *s)
+{
+	s->clear();
+	int32 ns = 0;
+	strm.read(reinterpret_cast<char *>(&ns), sizeof(ns));
+	for (int32 i = 0; i < ns; ++i) 
+	{
+		char c;
+		strm.read(&c, 1);
+		*s += c;
+	}
+	return strm;
+}
+
+template <class T, typename std::enable_if<std::is_class<T>::value, T>::type* = nullptr>
+inline std::istream &ReadType(std::istream &strm, T *t)
+{
+	return t->Read(strm);
+}
+
+template <class T, typename std::enable_if<std::is_arithmetic<T>::value, T>::type* = nullptr>
+inline std::istream &ReadType(std::istream &strm, T *t) 
+{
+	return strm.read(reinterpret_cast<char *>(t), sizeof(T)); 
+}
+
+// Generic case.
+template <class T, typename std::enable_if<std::is_class<T>::value, T>::type* = nullptr>
+inline std::ostream &WriteType(std::ostream &strm, const T t) 
+{
+	t.Write(strm);
+	return strm;
+}
+
+// Numeric (boolean, integral, floating-point) case.
+template <class T, typename std::enable_if<std::is_arithmetic<T>::value, T>::type* = nullptr>
+inline std::ostream &WriteType(std::ostream &strm, const T t) 
+{
+	return strm.write(reinterpret_cast<const char *>(&t), sizeof(T));
+}
+
+// String case.
+inline std::ostream &WriteType(std::ostream &strm, const std::string &s) 
+{  // NOLINT
+	int32 ns = s.size();
+	strm.write(reinterpret_cast<const char *>(&ns), sizeof(ns));
+	return strm.write(s.data(), ns);
+}
 #include "src/util/namespace-end.h"
 #endif

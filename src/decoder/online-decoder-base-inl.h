@@ -292,7 +292,7 @@ BaseFloat OnlineLatticeDecoderBase<FST, Token>::ProcessEmitting(AmInterface *dec
 			const StdArc *arc = &iter.Value();
 			if (arc->_input != 0)
 			{ // propagate
-				BaseFloat tot_score =  tok->_tot_cost + arc->_w - decodable->LogLikelihood(nnetframe, arc->_input);
+				BaseFloat tot_score =  tok->_tot_cost + arc->_w.Value() - decodable->LogLikelihood(nnetframe, arc->_input);
 				if(tot_score + adaptive_beam < next_cutoff)
 					next_cutoff = tot_score + adaptive_beam;
 			}
@@ -324,7 +324,7 @@ BaseFloat OnlineLatticeDecoderBase<FST, Token>::ProcessEmitting(AmInterface *dec
 				if(arc->_input != 0)
 				{ // propagate
 					BaseFloat ac_cost = - decodable->LogLikelihood(nnetframe, arc->_input);
-					BaseFloat graph_cost = arc->_w;
+					BaseFloat graph_cost = arc->_w.Value();
 					BaseFloat cur_cost = tok->_tot_cost;
 					BaseFloat tot_cost = cur_cost + ac_cost + graph_cost;
 					if(tot_cost >= next_cutoff)
@@ -410,7 +410,7 @@ void OnlineLatticeDecoderBase<FST, Token>::ProcessNonemitting(BaseFloat cutoff)
 			const StdArc *arc = &iter.Value();
 			if(arc->_input == 0)
 			{ // propagate eps edge
-				BaseFloat graph_cost = arc->_w;
+				BaseFloat graph_cost = arc->_w.Value();
 				BaseFloat tot_cost = cur_cost + graph_cost;
 				if(tot_cost < cutoff)
 				{

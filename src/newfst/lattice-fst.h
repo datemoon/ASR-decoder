@@ -175,8 +175,6 @@ public:
 	vector<LatticeArc> _arc;
 };
 
-const int  kNoStateId = -1;
-
 class Lattice
 {
 public:

@@ -11,6 +11,7 @@ class ArcIterator
 {
 public:
 	//using StateId = typename Arc::StateId;
+	using Arc = typename FST::Arc;
 
 	ArcIterator(FST *fst, StateId s):
 		_arcs(fst->GetState(s)->Arcs()),

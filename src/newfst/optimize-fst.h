@@ -4,26 +4,29 @@
 #include <assert.h>
 #include <iostream>
 #include <cmath>
+#include <vector>
 #include "src/newfst/arc.h"
+#include "src/newfst/const-fst.h"
 
 #include "src/util/namespace-start.h"
-typedef ArcTpl<float> Arc;
 
-class State
+template <class T = StdArc>
+class StateTpl
 {
 public:
+	using Arc = T;
 	Arc *_arcs;
 	unsigned int _num_arcs;
 	unsigned int _niepsilons; // number of input epsilons.
 	unsigned int _noepsilons; // Number of output epsilons.
 public:
-	State():_arcs(NULL),_num_arcs(0), _niepsilons(0), _noepsilons(0){}
-	State(const State &A):
+	StateTpl():_arcs(NULL),_num_arcs(0), _niepsilons(0), _noepsilons(0){}
+	StateTpl(const StateTpl &A):
 		_arcs(A._arcs),_num_arcs(A._num_arcs),
 		_niepsilons(A._niepsilons), _noepsilons(A._noepsilons) {}
-	~State(){}
+	~StateTpl(){}
 
-	State& operator=(const State &A)
+	StateTpl& operator=(const StateTpl &A)
 	{
 		_arcs = A._arcs;
 		_num_arcs = A._num_arcs;
@@ -45,9 +48,15 @@ public:
 };
 
 
+typedef StateTpl<StdArc> StdState;
+
 class Fst
 {
+public:
+	using State = StdState;
+	using Arc = StdState::Arc;
 private:
+
 	State *_state_arr;
 	Arc *_arc_arr;
 	StateId _start_stateid; // start state
@@ -68,6 +77,62 @@ public:
 		_total_niepsilons = 0;
 		_total_noepsilons = 0;
 	}
+
+	// convert openfst constfst to Fst
+	Fst(const ConstFst<StdState::Arc, int> &constfst)
+	{
+		if(sizeof(StateId) != sizeof(ConstFst<StdState::Arc, int>::StateId))
+		{
+			LOG_ERR << "StateId type is different!!!";
+		}
+		std::vector<StateId> final_states;
+		for(StateId n=0; n<constfst.header_.NumStates(); ++n)
+		{
+			if(constfst.states_[n].weight != ConstFst<StdState::Arc, int>::Weight::Zero())
+			{
+				final_states.push_back(n);
+			}
+		}
+		_start_stateid = constfst.header_.Start();
+		_total_states = constfst.header_.NumStates() + 1;
+		_final_stateid = _total_states - 1;
+		_total_arcs = constfst.header_.NumArcs() + final_states.size();
+		_state_arr = new State[_total_states];
+		_arc_arr = new Arc[_total_arcs];
+		// convert
+		size_t final_offset = 0;
+		for(StateId n=0; n<constfst.header_.NumStates(); ++n)
+		{
+			_state_arr[n]._arcs = _arc_arr + constfst.states_[n].pos + final_offset;
+			if(final_offset < final_states.size() && n == final_states[final_offset])
+			{
+				// add arc to super final
+				_state_arr[n]._num_arcs = constfst.states_[n].narcs + 1;
+				_state_arr[n]._niepsilons = constfst.states_[n].niepsilons + 1;
+				_state_arr[n]._noepsilons = constfst.states_[n].noepsilons + 1;
+				_state_arr[n]._arcs[0]._input = 0;
+				_state_arr[n]._arcs[0]._output = 0;
+				_state_arr[n]._arcs[0]._w = constfst.states_[n].weight;
+				_state_arr[n]._arcs[0]._to = _final_stateid;
+				memcpy((void*)(_state_arr[n]._arcs+1), constfst.Arcs(n), sizeof(Arc)*constfst.states_[n].narcs);
+				final_offset++;
+			}
+			else
+			{
+				_state_arr[n]._num_arcs = constfst.states_[n].narcs;
+				_state_arr[n]._niepsilons = constfst.states_[n].niepsilons;
+				_state_arr[n]._noepsilons = constfst.states_[n].noepsilons;
+				memcpy((void*)(_state_arr[n]._arcs), constfst.Arcs(n), sizeof(Arc)*constfst.states_[n].narcs);
+			}
+			_total_niepsilons += _state_arr[n]._niepsilons;
+			_total_noepsilons += _state_arr[n]._noepsilons;
+		}
+		_state_arr[_final_stateid]._num_arcs = 0;
+		_state_arr[_final_stateid]._niepsilons = 0;
+		_state_arr[_final_stateid]._noepsilons = 0;
+		_state_arr[_final_stateid]._arcs = NULL;
+	}
+
 	~Fst()
 	{
 		delete []_state_arr; _state_arr = NULL;
@@ -221,7 +286,8 @@ public:
 			Arc* arc = _state_arr[i]._arcs;
 			for(int j = 0; j < _state_arr[i]._num_arcs ; ++j)
 			{
-				printf("%d\t%d\t%d\t%d\t%f\n", i, arc[j]._to, arc[j]._input, arc[j]._output, arc[j]._w);
+				std::cout << i << "\t" << arc[j]._to << "\t" << arc[j]._input 
+					<< "\t" << arc[j]._output << "\t" << arc[j]._w << "\n";
 			}
 		}
 	}
@@ -239,8 +305,6 @@ public:
 	}
 
 };
-typedef Arc StdArc;
-typedef State StdState;
 #include "src/util/namespace-end.h"
 #include "src/newfst/arc-iter.h"
 

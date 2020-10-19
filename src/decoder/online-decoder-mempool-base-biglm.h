@@ -349,7 +349,7 @@ BaseFloat OnlineLatticeDecoderMempoolBaseBiglm<FST, Token>::ProcessEmitting(AmIn
 			{ // propagate
 				BaseFloat lm_score;
 				this->NextLmState(lm_stateid, arc->_output, &lm_score);
-				BaseFloat tot_score = lm_score + tok->_tot_cost + arc->_w \
+				BaseFloat tot_score = lm_score + tok->_tot_cost + arc->_w.Value() \
 									  - decodable->LogLikelihood(nnetframe, arc->_input);
 				if(tot_score + adaptive_beam < next_cutoff)
 					next_cutoff = tot_score + adaptive_beam;
@@ -377,7 +377,7 @@ BaseFloat OnlineLatticeDecoderMempoolBaseBiglm<FST, Token>::ProcessEmitting(AmIn
 					BaseFloat lm_score;
 					StateId next_lm_state = this->NextLmState(lm_stateid, arc->_output, &lm_score);
 					BaseFloat ac_cost = - decodable->LogLikelihood(nnetframe, arc->_input);
-					BaseFloat graph_cost = arc->_w + lm_score;
+					BaseFloat graph_cost = arc->_w.Value() + lm_score;
 					BaseFloat cur_cost = tok->_tot_cost;
 					BaseFloat tot_cost = cur_cost + ac_cost + graph_cost;
 					if(tot_cost >= next_cutoff)
@@ -447,7 +447,7 @@ void OnlineLatticeDecoderMempoolBaseBiglm<FST, Token>::ProcessNonemitting(float 
 			{
 				BaseFloat lm_score;
 				StateId next_lm_state = this->NextLmState(lm_state, arc->_output, &lm_score);
-				BaseFloat graph_cost = arc->_w + lm_score;
+				BaseFloat graph_cost = arc->_w.Value() + lm_score;
 				BaseFloat tot_cost = cur_cost + graph_cost;
 				if(tot_cost < cutoff)
 				{

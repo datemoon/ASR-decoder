@@ -264,7 +264,9 @@ float MemOptimizeClgLatticeFasterOnlineDecoder::ProcessEmitting(DecodableInterfa
 						StdArc *arc = hmmstate->GetArc((unsigned)j);
 						if (arc->_input != 0)
 						{ // propagate
-							float tot_score =  tok->_tot_cost + clgarc->_w + arc->_w - decodable->LogLikelihood(nnetframe, arc->_input);
+							float tot_score =  tok->_tot_cost + 
+								clgarc->_w.Value() + 
+								arc->_w.Value() - decodable->LogLikelihood(nnetframe, arc->_input);
 							if(tot_score + adaptive_beam < next_cutoff)
 								next_cutoff = tot_score + adaptive_beam;
 						}
@@ -279,7 +281,8 @@ float MemOptimizeClgLatticeFasterOnlineDecoder::ProcessEmitting(DecodableInterfa
 				StdArc *arc = state->GetArc((unsigned)i);
 				if (arc->_input != 0)
 				{ // propagate
-					float tot_score =  tok->_tot_cost + arc->_w - decodable->LogLikelihood(nnetframe, arc->_input);
+					float tot_score =  tok->_tot_cost + arc->_w.Value()
+						- decodable->LogLikelihood(nnetframe, arc->_input);
 					if(tot_score + adaptive_beam < next_cutoff)
 						next_cutoff = tot_score + adaptive_beam;
 				}
@@ -327,7 +330,7 @@ float MemOptimizeClgLatticeFasterOnlineDecoder::ProcessEmitting(DecodableInterfa
 							if (arc->_input != 0)
 							{
 								float ac_cost = - decodable->LogLikelihood(nnetframe, arc->_input);
-								float graph_cost = arc->_w + clgarc->_w;
+								float graph_cost = arc->_w.Value() + clgarc->_w.Value();
 								float cur_cost = tok->_tot_cost;
 								float tot_cost = cur_cost + ac_cost + graph_cost;
 								if(tot_cost > next_cutoff)
@@ -356,7 +359,7 @@ float MemOptimizeClgLatticeFasterOnlineDecoder::ProcessEmitting(DecodableInterfa
 					if(arc->_input != 0) // can't be black state
 					{ // propagate
 						float ac_cost = - decodable->LogLikelihood(nnetframe, arc->_input);
-						float graph_cost = arc->_w;
+						float graph_cost = arc->_w.Value();
 						float cur_cost = tok->_tot_cost;
 						float tot_cost = cur_cost + ac_cost + graph_cost;
 						if(tot_cost > next_cutoff)
@@ -435,7 +438,7 @@ void MemOptimizeClgLatticeFasterOnlineDecoder::ProcessNonemitting(float cutoff)
 			const StdArc *arc = state->GetArc((unsigned)i);
 			if(arc->_input == 0)
 			{ // propagate eps edge
-				float graph_cost = arc->_w;
+				float graph_cost = arc->_w.Value();
 				float tot_cost = cur_cost + graph_cost;
 				if(tot_cost < cutoff)
 				{

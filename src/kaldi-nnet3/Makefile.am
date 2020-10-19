@@ -14,7 +14,8 @@ LDADD = libonlinedecode.la \
 		../newfst/liblatfst.la \
 	   	../util/libutil.la \
 		$(KALDI_LIBS) \
-		$(MATRIX_LIBS) $(CUDA_LIBS)
+		$(MATRIX_LIBS) $(CUDA_LIBS) \
+		$(DL_LIBS)
 
 bin_PROGRAMS = kaldi-online-nnet3-my-decoder-test
 kaldi_online_nnet3_my_decoder_test_SOURCES = kaldi-online-nnet3-my-decoder-test.cc

@@ -39,12 +39,13 @@ public:
 	datemoon::BaseFloat _lm2_scale;
 
 	bool _use_second;
+	bool _constfst;
 	OnlineDecoderConf():
 		_config_decoder(""),
 		_phonedict(""),_prondict(""),
 		_graph_type("mem-hclg"),_hmmfst_file(""),
 		_lm1_file(""),_lm2_file(""),
-		_lm1_scale(-1.0), _lm2_scale(1.0), _use_second(false) { }
+		_lm1_scale(-1.0), _lm2_scale(1.0), _use_second(false), _constfst(true) { }
 		//_wordlist(""),
 	void Register(kaldi::OptionsItf *conf)
 	{
@@ -72,6 +73,8 @@ public:
 				"lm2-file scale (default 1.0)");
 		conf->Register("use-second", &_use_second,
 				"use second biglm decoder. (default false)");
+		conf->Register("constfst", &_constfst,
+				"use openfst constfst decoder. (default true)");
 	}
 };
 
@@ -159,9 +162,23 @@ public:
 				_online_conf._graph_type == "mem-hclg" ||
 				_online_conf._graph_type == "biglm-hclg")
 		{
-			datemoon::Fst *tmpfst = new datemoon::Fst();
-			LOG_ASSERT(tmpfst->ReadFst(_fst_in_filename.c_str()));
-			_graphfst = static_cast<void *>(tmpfst);
+			if(_online_conf._constfst == true)
+			{
+				datemoon::ConstFst<datemoon::StdArc, int> *constfst = new datemoon::ConstFst<datemoon::StdArc, int>;
+				if( true != constfst->Read(_fst_in_filename))
+				{
+					LOG_ERR << "Read const fst failed!!!" << _fst_in_filename;
+				}
+				datemoon::Fst *tmpfst = new datemoon::Fst(*constfst);
+				_graphfst = static_cast<void *>(tmpfst);
+				delete constfst;
+			}
+			else
+			{
+				datemoon::Fst *tmpfst = new datemoon::Fst();
+				LOG_ASSERT(tmpfst->ReadFst(_fst_in_filename.c_str()));
+				_graphfst = static_cast<void *>(tmpfst);
+			}
 		}
 		if(_online_conf._use_second == true ||(_online_conf._lm1_file != "" && _online_conf._lm2_file != ""))
 		{

@@ -9,6 +9,7 @@ typedef int ClgTokenStateId;
 class ClgFst
 {
 public:
+	using Arc = StdArc;
 	ClgFst() { }
 	
 	~ClgFst() { Desotry(); }
@@ -126,10 +127,10 @@ public:
 			{// it's hmm end state
 				int arcid = curstate % _offset;
 				Arc *clg_arc = _clg_fst->GetArc(arcid);
-				return arc->_w + clg_arc->_w;
+				return arc->_w.Value() + clg_arc->_w.Value();
 			}
 		}
-		return arc->_w;
+		return arc->_w.Value();
 	}
 	// return arrive state id
 	ClgTokenStateId MapClgTokenStateId(ClgTokenStateId curstate, const Arc *arc)
