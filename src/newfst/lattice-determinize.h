@@ -304,6 +304,77 @@ public:
 	// between our states and the states in ofst.  If destroy == true, release memory as we go
 	// (but we cannot output again).
 	
+	void OutputNoolabel(Lattice *ofst, bool destory = true)
+	{
+		OutputStateId nStates = static_cast<OutputStateId>(_output_arcs.size());
+		ofst->DeleteStates();
+		ofst->SetStart(kNoStateId);
+		if(nStates == 0)
+		{
+			return;
+		}
+		if(destory)
+			FreeMostMemory();
+
+		// Add basic states-- but we will add extra ones to account for strings on output
+		for(OutputStateId s = 0; s<nStates; ++s)
+		{
+			OutputStateId news = ofst->AddState();
+			LOG_ASSERT(news == s);
+		}
+		ofst->SetStart(0);
+		for(OutputStateId this_state_id = 0; this_state_id < nStates; ++this_state_id)
+		{
+			vector<TempArc> &this_vec(_output_arcs[this_state_id]);
+			typename vector<TempArc>::const_iterator iter = this_vec.begin(),end = this_vec.end();
+			for(;iter != end; ++iter)
+			{
+				const TempArc &temp_arc(*iter);
+				vector<Label> seq;
+				_repository.ConvertToVector(temp_arc._string, &seq);
+				if (temp_arc._nextstate == kNoStateId)
+				{
+					OutputStateId cur_state = this_state_id;
+					{
+						OutputStateId next_state = ofst->AddState();
+						LatticeArc arc;
+						arc._to = next_state;
+						arc._w = temp_arc._weight;
+						arc._input = 0;  // eps
+						arc._output = 0;
+						ofst->AddArc(cur_state, arc);
+						cur_state = next_state;
+					}
+					ofst->SetFinal(cur_state);
+				}
+				else
+				{ // Really an arc.
+					OutputStateId cur_state = this_state_id;
+					{
+						LatticeArc arc;
+						arc._to = temp_arc._nextstate;
+						arc._w = temp_arc._weight;
+						arc._input = temp_arc._ilabel;
+						arc._output = 0;
+						ofst->AddArc(cur_state,arc);
+					}
+				}
+			}
+			// Free up memory. Do this inside the loop as ofst is also allocating memory
+			if(destory)
+			{
+				vector<TempArc> temp;
+				temp.swap(this_vec);
+			}
+		}
+		if(destory)
+		{
+			vector<vector<TempArc> > temp;
+			temp.swap(_output_arcs);
+			_repository.Destory();
+		}
+
+	}
 
 	// Output to standard FST with Weight as its weight type.  We will create extra
 	// states to handle sequences of symbols on the output.  If destroy == true,

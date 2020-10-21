@@ -14,7 +14,7 @@ bool DeterminizeLatticeWrapper(Lattice *ifst, Lattice *ofst,
 
 	if(!det.Determinize(debug_ptr))
 		return false;
-	det.Output(ofst);
+	det.OutputNoolabel(ofst);
 	// end invert ofst
 	Invert(*ofst);
 	return true;
