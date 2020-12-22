@@ -58,11 +58,14 @@ public:
 			pthread_mutex_unlock(pthread_pool_mutex);
 		}
 	}
-	virtual void SetTime(double data_time, double work_time)
+	virtual void SetTime(double data_time, double work_time, double effect_data_time = -1)
 	{
 		_data_time += data_time;
 		_work_time += work_time;
-		_thread_pool->SetTime(data_time, work_time);
+		if(effect_data_time < 0)
+			effect_data_time = data_time;
+		_effect_data_time += effect_data_time;
+		_thread_pool->SetTime(data_time, work_time, effect_data_time);
 	}
 
 	virtual void TimeInfo() { WorkEfficiencyInfo(); }
@@ -71,6 +74,8 @@ private:
 	{
 		LOG_COM << "ThreadIndex = " << GetThreadIndex()
 			<< " -> wav data time is : " << _data_time;
+		LOG_COM << "ThreadIndex = " << GetThreadIndex()
+			<< " -> effect data time is : " << _effect_data_time;
 		LOG_COM << "ThreadIndex = " << GetThreadIndex()
 			<< " -> work time is : " << _work_time;
 		LOG_COM << "ThreadIndex = " << GetThreadIndex()

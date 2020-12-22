@@ -6,4 +6,5 @@ liboptimizedecode_la_SOURCES = mem-optimize-clg-lattice-faster-online-decoder.cc
 							   lattice-faster-decoder.cc \
 							   mem-optimize-hclg-lattice-faster-online-decoder.cc
 
+liboptimizedecode_la_LDFLAGS = -rpath '$(libdir)'
 

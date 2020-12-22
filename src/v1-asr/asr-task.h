@@ -46,6 +46,11 @@ int32 ASRServiceTask::Run(void *data)
 	C2SPackageAnalysis &ser_c2s = asr_work_thread->_ser_c2s_package_analysys;
 	S2CPackageAnalysis &ser_s2c = asr_work_thread->_ser_s2c_package_analysys;
 	kaldi::ASRWorker *asr_work = asr_work_thread->_asr_work;
+	
+	EnergyVad<short> &energy_vad = asr_work_thread->_energy_vad;
+    energy_vad.Reset();
+	bool use_energy_vad = asr_work->GetOpt()->_use_energy_vad;
+
 	size_t chunk=0;
 	ser_c2s.Reset(true);
 	ser_s2c.Reset();
@@ -56,6 +61,7 @@ int32 ASRServiceTask::Run(void *data)
 	int total_wav_len = 0;
 	double total_decoder_time = 0.0;
 	uint dtype_len=0;
+	std::vector<std::string> asr_result;
 	while(1)
 	{
 
@@ -80,26 +86,94 @@ int32 ASRServiceTask::Run(void *data)
 		n=0;
 		uint data_len;
 		char *data = ser_c2s.GetData(&data_len);
-		VLOG_COM(0) << "from |" << _connfd << "| receive \"" << data_len << "\"";
+		total_wav_len += data_len;
+		VLOG_COM(1) << "from |" << _connfd << "| receive \"" << data_len << "\"";
 		// 8k ,16bit
-		bool eos=false;
-		if(ser_c2s.IsEnd())
+		bool eos= ser_c2s.IsEnd();
+		if(eos == false && data_len == 0)
 		{
+			LOG_WARN << "Recv data length is Zero and eos is false!!!"
+				<< " It's not allow and eos will be change true.";
 			eos = true;
 		}
+
+		// get audio data type len
 		dtype_len = ser_c2s.GetDtypeLen();
+		// get result
+		uint nbest = ser_c2s.GetNbest();
+
 		std::string msg;
-		// time statistics
-		total_wav_len += data_len;
 		keep_time.Esapsed();
-		
-		int32 ret = asr_work->ProcessData(data, data_len, msg, eos, 2);
-		
+		if(use_energy_vad == true)
+		{
+			std::vector<short> tmp_data(reinterpret_cast<short*>(data), reinterpret_cast<short*>(data)+data_len/2);
+			energy_vad.JudgeFramesRes(tmp_data, eos);
+			int32 ret = 0 ;
+			std::vector<std::string> nbest_result;
+			while(1)
+			{
+				nbest_result.clear();
+				int getdata_audio_flag = -1;
+				std::vector<short> out_data;
+				int vad_ret = energy_vad.GetData(out_data, getdata_audio_flag);
+				if(out_data.size() > 0)
+				{
+					bool vad_end = false;
+					if(getdata_audio_flag == 0) // sil
+					{// 切语音了，是一整段语音，需要获取结果
+						vad_end = true;
+						ret = asr_work->ProcessData((char*)out_data.data(), (int)out_data.size()*2, msg, vad_end, 2);
+						asr_work->Init(&chunk);
+					}
+					else if(getdata_audio_flag == 1) // audio
+					{
+						if(vad_ret == 0 && eos == true) // energy_vad.GetData 只>有在处理每次音频最后的时候才可能是语音段，所以vad_ret一定等于0
+						{
+							vad_end = true;
+							ret = asr_work->ProcessData((char*)out_data.data(), (int)out_data.size()*2, msg, vad_end, 2);
+						}
+						else
+						{
+							vad_end = false;
+							ret = asr_work->ProcessData((char*)out_data.data(), (int)out_data.size()*2, msg, vad_end, 2);
+						}
+					}
+
+					if(vad_end == true || eos == true)
+					{
+						if(msg.size() > 0)
+							asr_result.push_back(msg);
+						msg.clear();
+					}
+				}
+				if(vad_ret == 0)
+					break;
+			}
+		} // (use_energy_vad == true)
+		else
+		{
+			// time statistics
+			int32 ret = asr_work->ProcessData(data, data_len, msg, eos, 2);
+			if(eos == true)
+			{
+				asr_result.push_back(msg);
+				msg.clear();
+			}
+		}
 		total_decoder_time += keep_time.Esapsed();
 
-		ser_s2c.SetNbest(msg);
-		if(eos == true || ret == 1)
+		// 返回识别结果
+		if(nbest > 0 || eos == true)
 		{
+			std::string best_result;
+			for(size_t i=0;i<asr_result.size();++i)
+				best_result = best_result + asr_result[i];
+			if(msg.size() > 0)
+				best_result += msg;
+			ser_s2c.SetNbest(best_result);
+		}
+
+		{ // send result from service to client.
 			if(eos == true)
 			{
 				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CEND))
@@ -108,22 +182,13 @@ int32 ASRServiceTask::Run(void *data)
 					break;
 				}
 			}
-			else
+			else if(nbest > 0)
 			{
-				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CMIDDLEEND))
+				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CNOEND))
 				{
-					LOG_COM << "S2CWrite middle end error.";
+					LOG_COM << "S2CWrite error.";
 					break;
 				}
-			}
-			asr_work->Reset(eos);
-		}
-		else
-		{
-			if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CNOEND))
-			{
-				LOG_COM << "S2CWrite error.";
-				break;
 			}
 		}
 		ser_s2c.Print("ser_s2c");
@@ -140,17 +205,23 @@ int32 ASRServiceTask::Run(void *data)
 			else
 				break;
 			double wav_time = total_wav_len*1.0/(smaple_rate*dtype_len);
+			int sil_frames=0,nosil_frames=0;
+            energy_vad.GetSilAndNosil(sil_frames, nosil_frames);
+			float nosil_time = nosil_frames/100.0;
+
 			LOG_COM << "wav time(s)\t:" << wav_time;
+			LOG_COM << "nosil time(s)\t:" << nosil_time;
 			LOG_COM << "run time(s)\t:" << total_decoder_time;
 			LOG_COM << "decoder rt\t: " << total_decoder_time/wav_time;
 			// send time to work thread.
-			asr_work_thread->SetTime(wav_time, total_decoder_time);
+			asr_work_thread->SetTime(wav_time, total_decoder_time,
+				   	static_cast<double>(nosil_time));
 			break; // end
 		}
 	} // while(1) end one audio
 	asr_work->Destory();
 	close(_connfd);
-	printf("close |%d| ok.\n",_connfd);
+	VLOG(2) << "close " << _connfd << " ok.";
 	return 0;
 }
 

@@ -134,11 +134,14 @@ public:
 		pthread_mutex_unlock(&_time_mutex);
 		return t;
 	}
-	virtual void SetTime(double data_time, double work_time)
+	virtual void SetTime(double data_time, double work_time, double nosil_time = -1)
 	{
 		pthread_mutex_lock(&_time_mutex);
 		_data_time += data_time;
 		_work_time += work_time;
+		if(nosil_time < 0)
+			nosil_time = data_time;
+		_effect_data_time += nosil_time;
 		pthread_mutex_unlock(&_time_mutex);
 	}
 	
@@ -146,6 +149,7 @@ public:
 	{
 		pthread_mutex_lock(&_time_mutex);
 		LOG_COM << "Total data time is : " << _data_time;
+		LOG_COM << "Total nosil time is : " << _effect_data_time;
 		LOG_COM << "Total work time is : " << _work_time;
 		LOG_COM << "Work rt is : " << _work_time/_data_time;
 		pthread_mutex_unlock(&_time_mutex);

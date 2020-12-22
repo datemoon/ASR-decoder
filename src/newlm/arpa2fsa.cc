@@ -91,24 +91,39 @@ bool Fsa::Read(FILE *fp)
 	// read state info
 #define READALLSTATE
 #ifdef READALLSTATE
-	StateInfo * state_info = new StateInfo[states_num];
+	const size_t read_states_num = 10 * 1000 * 1000;
+	StateInfo * state_info = new StateInfo[read_states_num];
 	if(state_info == NULL)
 	{
 		std::cerr << "New state_info failed." << std::endl;
 		return false;
 	}
-	if(fread((void*)state_info, sizeof(StateInfo), states_num, fp) != states_num)
+	size_t rest_states_nums = states_num;
+	size_t offset = 0;
+	while(rest_states_nums > 0)
 	{
-		std::cerr << "Read StateInfo failed." << std::endl;
-		return false;
-	}
+		size_t read_len = read_states_num < rest_states_nums ? read_states_num : rest_states_nums;
 
-	// assignment state info
-	for(FsaStateId i=0; i<states_num; ++i)
-	{
-		states[i].arc_num = state_info[i].arc_num;
-		states[i].backoff_prob = state_info[i].backoff_prob;
-		states[i].backoff_id = state_info[i].backoff_id;
+		if(fread((void*)state_info, sizeof(StateInfo), read_len, fp) != read_len)
+		{
+			std::cerr << "Read StateInfo failed." << std::endl;
+			return false;
+		}
+
+		// assignment state info
+		for(FsaStateId i=0; i<read_len; ++i)
+		{
+			states[offset].arc_num = state_info[i].arc_num;
+			states[offset].backoff_prob = state_info[i].backoff_prob;
+			states[offset].backoff_id = state_info[i].backoff_id;
+			tot_arcs_num += static_cast<FsaStateId>(states[offset].arc_num);
+			offset++;
+		}
+		rest_states_nums -= read_len;
+		std::cout << "rest states number is " << rest_states_nums << std::endl;
+	}
+	delete [] state_info;
+	state_info = NULL;
 #else
 	StateInfo state_info;
 	for(FsaStateId i=0; i<states_num; ++i)
@@ -122,28 +137,8 @@ bool Fsa::Read(FILE *fp)
 		states[i].backoff_prob = state_info.backoff_prob;
 		states[i].backoff_id = state_info.backoff_id;
 
-#endif
-		/*if(fread((void*)&states[i].arc_num, sizeof(int),1 ,fp) != 1)
-		{
-			std::cerr << "Read arc number failed." << std::endl;
-			return false;
-		}
-		if(fread((void*)&states[i].backoff_prob, sizeof(float),1 ,fp) != 1)
-		{
-			std::cerr << "Read backoff_prob failed." << std::endl;
-			return false;
-		}
-		if(fread((void*)&states[i].backoff_id, sizeof(FsaStateId),1 ,fp) != 1)
-		{
-			std::cerr << "Read backoff_id failed." << std::endl;
-			return false;
-		}
-		*/
 		tot_arcs_num += static_cast<FsaStateId>(states[i].arc_num);
 	}
-#ifdef READALLSTATE
-	delete [] state_info;
-	state_info = NULL;
 #endif
 	// read tot arcs
 	if(fread((void*)&read_arcs_num, sizeof(FsaStateId), 1, fp) != 1)
@@ -155,10 +150,15 @@ bool Fsa::Read(FILE *fp)
 	// read all arc info
 	arcs = new FsaArc[tot_arcs_num];
 	arcs_num = tot_arcs_num;
+	std::cout << "Total arc number " << tot_arcs_num << std::endl ;
 	if(arcs == NULL)
 	{
 		std::cerr << "New arcs failed." << std::endl;
 		return false;
+	}
+	else
+	{
+		std::cout << "New arc ok." << std::endl;
 	}
 	if(fread((void*)arcs, sizeof(FsaArc), tot_arcs_num, fp) != static_cast<size_t>(tot_arcs_num))
 	{
@@ -263,6 +263,17 @@ bool Fsa::GetArc(FsaStateId id, int wordid, float *weight, FsaStateId *tostateid
 
 void Fsa::Rescale(float scale)
 {
+	if(scale == 1)
+		return;
+	for(FsaStateId i = 0; i < arcs_num; ++i)
+	{
+		arcs[i].weight *= scale;
+	}
+	for(FsaStateId i = 0; i < states_num; ++i)
+	{
+		states[i].backoff_prob *= scale;
+	}
+	return ;
 	std::unordered_set<FsaStateId> state_set;
 	std::queue<FsaStateId> state_queue;
 	FsaStateId start = Start();

@@ -122,10 +122,18 @@ void OnlineClgLatticeFastDecoder::OnebestLatticeToString(datemoon::Lattice &oneb
 void OnlineClgLatticeFastDecoder::GetBestPathTxt(std::string &best_result, bool end_of_utterance)
 {
 	best_result = "";
-	datemoon::Lattice best_path;
-	_decoder->GetBestPath(&best_path, end_of_utterance);
-
-	OnebestLatticeToString(best_path, best_result);
+	if(_online_info._online_conf._use_second == true)
+	{
+		std::vector<std::string> nbest_result;
+		GetNbestTxt(nbest_result, 1, end_of_utterance);
+		best_result = nbest_result[0];
+	}
+	else
+	{
+		datemoon::Lattice best_path;
+		_decoder->GetBestPath(&best_path, end_of_utterance);
+		OnebestLatticeToString(best_path, best_result);
+	}
 }
 
 void OnlineClgLatticeFastDecoder::GetNbestTxt(std::vector<std::string> &nbest_result, int n, bool end_of_utterance)

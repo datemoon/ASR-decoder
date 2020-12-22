@@ -1,0 +1,4 @@
+
+将所需资源准备好，然后配置参数，运行v1-asr-service.sh脚本即可
+必须资源:final.mdl,HCLG.fst,words.txt
+如果使用模型vad，需要模型vad的final.mdl

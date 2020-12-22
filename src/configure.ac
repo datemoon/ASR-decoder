@@ -7,8 +7,9 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 #AC_CONFIG_HEADERS([config.h])
 AM_PROG_AR
 
+ROOTDIR="$PWD/../"
 CXXFLAGS="-Wall -Wno-sign-compare -Wno-unused-local-typedefs -Wno-deprecated-declarations -Winit-self -msse -msse2 -pthread"
-CXXFLAGS="$CXXFLAGS -std=c++11 -O2 -I../.."
+CXXFLAGS="$CXXFLAGS -std=c++11 -O2 -I$ROOTDIR"
 
 # Checks for programs.
 AC_PROG_CXX
@@ -39,7 +40,10 @@ AC_CONFIG_FILES([Makefile
 				 kaldi-nnet3bin/Makefile
 				 v1-asr/Makefile
 				 v2-asr/Makefile
-				 service2bin/Makefile])
+				 service2bin/Makefile
+				 vad/Makefile
+				 client/Makefile
+				 v1-asrbin/Makefile])
 
 AC_CONFIG_MACRO_DIR([m4])
 

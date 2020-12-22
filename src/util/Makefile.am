@@ -10,10 +10,11 @@ libutil_la_SOURCES = config-parse-options.cc \
 					 read-vector.cc \
 					 log-message.cc
 
-if HAVE_TEST
+libutil_la_LDFLAGS = -rpath '$(libdir)'
+
 LDADD = ../util/libutil.la
 
-bin_PROGRAMS = test-config-parse-options \
+check_PROGRAMS = test-config-parse-options \
 			   test-text-util \
 			   hash-list-test \
 			   log-message-test \
@@ -24,4 +25,3 @@ test_text_util_SOURCES = test-text-util.cc
 hash_list_test_SOURCES = hash-list-test.cc
 log_message_test_SOURCES = log-message-test.cc
 hash_key_test_SOURCES = hash-key-test.cc
-endif

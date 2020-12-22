@@ -34,6 +34,14 @@ public:
 	}
 
 private:
+	template<typename T>
+	void SendDataAndGetResult(std::vector<T> &data,
+			OnlineClgLatticeFastDecoder &online_clg_decoder, 
+			bool end_flag,
+			uint dtype_len,
+			std::vector<std::string> &nbest_result,
+			int nbest);
+
 	int32 _connfd; // connect fd
 	void SetConnFd(int32 connfd); // set socket id
 };
@@ -45,7 +53,11 @@ int32 V2ASRServiceTask::Run(void *data)
 	C2SPackageAnalysis &ser_c2s = asr_work_thread->_ser_c2s_package_analysys;
 	S2CPackageAnalysis &ser_s2c = asr_work_thread->_ser_s2c_package_analysys;
 	OnlineClgLatticeFastDecoder &online_clg_decoder = asr_work_thread->_online_clg_decoder;
-	//size_t chunk=0;
+
+	EnergyVad<short> &energy_vad = asr_work_thread->_energy_vad;
+	energy_vad.Reset();
+	bool use_energy_vad = online_clg_decoder.UseEnergyVad();
+	//size_t chung=0;
 	// V2ASRWorkThread reset
 	ser_c2s.Reset(true);
 	ser_s2c.Reset();
@@ -56,6 +68,7 @@ int32 V2ASRServiceTask::Run(void *data)
 	int total_wav_len = 0;
 	float total_decoder_time = 0.0;
 	uint dtype_len = 0;
+	std::vector<std::string> asr_result;
 	while(1)
 	{
 		if(true != ser_c2s.C2SRead(_connfd))
@@ -93,53 +106,99 @@ int32 V2ASRServiceTask::Run(void *data)
 			   << "	It's not allow and eos will be change true.";
 			eos = true;
 		}
+		std::cout << "eos is " << eos << std::endl;
 		// get audio data type len
 		dtype_len = ser_c2s.GetDtypeLen();
-
-		int32 ret = 0;
-		keep_time.Esapsed();
-		if(eos == true)
-		{
-			ret = online_clg_decoder.ProcessData(data, data_len, 2, dtype_len);
-		}
-		else
-		{
-			ret = online_clg_decoder.ProcessData(data, data_len, 0, dtype_len);
-		}
-		total_decoder_time += keep_time.Esapsed();
-		//LOG_COM << "decoder_time = " << total_decoder_time;
-		// according to ser_c2s request , return package.
+		// get result
 		uint nbest = ser_c2s.GetNbest();
-		
-		if(nbest != 0 || eos == true)
-		{// return recognition result
-			if(nbest == 0)
-				LOG_WARN << "Send last package and nbest request is 0,it's error.";
-			nbest = nbest>1?nbest:1;
-			if(eos != true && nbest != 1)
+
+		std::vector<std::string> nbest_result;
+		int32 ret = 0;
+		// vad
+		if(use_energy_vad == true)
+		{
+			std::vector<short> tmp_data(reinterpret_cast<short*>(data), reinterpret_cast<short*>(data)+data_len/2);
+			energy_vad.JudgeFramesRes(tmp_data, eos);
+			while(1)
 			{
-				LOG_WARN << "Middle result is nbest: " << nbest ;
-				nbest = 1;
-			}
-			// get decoder result
-			if (online_clg_decoder.NumFramesDecoded() > 0)
-			{
-				if(nbest == 1)
+				nbest_result.clear();
+
+				int getdata_audio_flag = -1;
+				std::vector<short> out_data;
+				int vad_ret = energy_vad.GetData(out_data, getdata_audio_flag);
+				if(out_data.size() > 0)
 				{
-					std::string best_result;
-					online_clg_decoder.GetBestPathTxt(best_result, eos);
-					ser_s2c.SetNbest(best_result);
-				}
-				else
-				{
-					std::vector<std::string> nbest_result;
-					online_clg_decoder.GetNbestTxt(nbest_result, nbest, eos);
-					for(size_t i =0 ; i < nbest_result.size(); ++i)
+					bool vad_end = false;
+					if(getdata_audio_flag == 0) // sil
+					{// 切语音了，是一整段语音，需要获取结果
+						vad_end = true;
+						SendDataAndGetResult(out_data, online_clg_decoder,
+								true, dtype_len,
+								nbest_result, nbest);
+					}
+					else if(getdata_audio_flag == 1) // audio
 					{
-						ser_s2c.SetNbest(nbest_result[i]);
+						if(vad_ret == 0 && eos == true) // energy_vad.GetData 只有在处理每次音频最后的时候才可能是语音段，所以vad_ret一定等于0
+						{
+							vad_end = true;
+							SendDataAndGetResult(out_data, online_clg_decoder,
+									true, dtype_len,
+									nbest_result, nbest);
+							// get result
+						}
+						else
+						{
+							vad_end = false;
+							SendDataAndGetResult(out_data, online_clg_decoder,
+									false, dtype_len,
+									nbest_result, nbest);
+						}
+					}
+
+					if(vad_end == true || eos == true)
+					{
+						if(nbest_result.size() > 0)
+						{
+							asr_result.push_back(nbest_result[0]);
+						}
+						nbest_result.clear();
 					}
 				}
+
+				if(vad_ret == 0)
+					break;
+			} // while(1)
+		} // use_energy_vad
+		else
+		{
+			std::vector<short> out_data(reinterpret_cast<short*>(data), 
+					reinterpret_cast<short*>(data)+data_len/2);
+			SendDataAndGetResult(out_data, online_clg_decoder,
+					eos, dtype_len,
+					nbest_result, nbest); 
+			if(eos == true)
+			{
+				if(nbest_result.size() > 0)
+				{
+					asr_result.push_back(nbest_result[0]);
+				}
+				nbest_result.clear();
 			}
+		}
+		// 返回识别结果
+		if(nbest > 0 || eos == true)
+		{
+			std::string best_result; 
+			for(size_t i=0;i<asr_result.size();++i)
+				best_result = best_result + asr_result[i];
+			if(nbest_result.size() > 0)
+				best_result += nbest_result[0];
+			ser_s2c.SetNbest(best_result);
+		}
+
+		total_decoder_time += keep_time.Esapsed();
+
+		{
 			// send result from service to client.
 			if(eos == true)
 			{
@@ -158,7 +217,6 @@ int32 V2ASRServiceTask::Run(void *data)
 					LOG_WARN << "S2CWrite middle end error.";
 					break;
 				}
-				online_clg_decoder.InitDecoding(0, false);
 			}
 			else
 			{
@@ -184,19 +242,71 @@ int32 V2ASRServiceTask::Run(void *data)
 				smaple_rate=32000;
 			else
 				break;
+			int sil_frames=0,nosil_frames=0;
+		   	energy_vad.GetSilAndNosil(sil_frames, nosil_frames);
+			std::cout << "****************" << sil_frames << "," << nosil_frames << std::endl;
+			float nosil_time = nosil_frames/100.0;
 			float wav_time = total_wav_len*1.0/(smaple_rate*dtype_len);
 			VLOG_COM(1) << "wav time(s)\t:" << wav_time;
+			VLOG_COM(1) << "nosil time(s)\t:" << nosil_time;
 			VLOG_COM(1) << "run time(s)\t:" << total_decoder_time;
 			VLOG_COM(1) << "decoder rt\t: " << total_decoder_time/wav_time ;
 			// send time to work thread.
 			asr_work_thread->SetTime(static_cast<double>(wav_time),
-				   static_cast<double>(total_decoder_time));
+				   static_cast<double>(total_decoder_time),
+				   static_cast<double>(nosil_time));
 			break; // end
 		}
 	}
 	close(_connfd);
 	VLOG_COM(2) << "close " << _connfd << " ok.";
 	return 0;
+}
+template<typename T>
+void V2ASRServiceTask::SendDataAndGetResult(std::vector<T> &data,
+		OnlineClgLatticeFastDecoder &online_clg_decoder, 
+		bool end_flag,
+		uint dtype_len,
+		std::vector<std::string> &nbest_result,
+		int nbest)
+{
+	nbest_result.clear();
+
+	std::string best_result;
+	int ret = -1;
+	if(end_flag == true)
+	{// 当前数据结束
+	   	ret = online_clg_decoder.ProcessData(reinterpret_cast<char*>(data.data()), data.size()*sizeof(short), 2, dtype_len);
+		// 获取识别结果
+		if (online_clg_decoder.NumFramesDecoded() > 0)
+		{
+			if(nbest <= 1)
+			{
+				online_clg_decoder.GetBestPathTxt(best_result, true);
+				nbest_result.push_back(best_result);
+			}
+			else
+				online_clg_decoder.GetNbestTxt(nbest_result, nbest, true);
+		}
+		online_clg_decoder.InitDecoding(0, true);
+	}
+	else
+	{
+		ret = online_clg_decoder.ProcessData(reinterpret_cast<char*>(data.data()), data.size()*sizeof(short), 0, dtype_len);
+		// 获取识别结果
+		if (online_clg_decoder.NumFramesDecoded() > 0)
+		{
+			if(nbest == 1)
+			{
+				online_clg_decoder.GetBestPathTxt(best_result, false);
+				nbest_result.push_back(best_result);
+			}
+			else if(nbest > 1)
+			{
+				online_clg_decoder.GetNbestTxt(nbest_result, nbest, false);
+			}
+		}
+	}
 }
 
 #include "src/util/namespace-end.h"

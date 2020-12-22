@@ -4,8 +4,8 @@ AM_CPPFLAGS = -I$(KALDI_INC) -I$(OPENFST_INC) -I$(CUDA_INC) -I$(MATRIX_INC)
 lib_LTLIBRARIES = libonlinedecode.la
 
 libonlinedecode_la_SOURCES = kaldi-online-nnet3-my-decoder.cc
+libonlinedecode_la_LDFLAGS = -rpath '$(libdir)'
 
-if HAVE_TEST
 AM_LDFLAGS = $(MATRIX_DEPLDFLAGS) $(KALDI_DEPLDFLAGS) $(CUDA_DEPLDFLAGS)
 
 LDADD = libonlinedecode.la \
@@ -17,7 +17,6 @@ LDADD = libonlinedecode.la \
 		$(MATRIX_LIBS) $(CUDA_LIBS) \
 		$(DL_LIBS)
 
-bin_PROGRAMS = kaldi-online-nnet3-my-decoder-test
+check_PROGRAMS = kaldi-online-nnet3-my-decoder-test
 kaldi_online_nnet3_my_decoder_test_SOURCES = kaldi-online-nnet3-my-decoder-test.cc
 
-endif

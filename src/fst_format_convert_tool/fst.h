@@ -8,8 +8,8 @@ struct Arc
 {
 	int ilabel;
 	int olabel;
-	int nextstate;
 	float weight;
+	int nextstate;
 };
 
 struct State

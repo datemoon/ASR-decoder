@@ -87,8 +87,8 @@ int main(int argc, char *argv[])
 
 	MemOptimizeClgLatticeFasterOnlineDecoder online_decoder(&clgfst, decoder_opts);
 
-	BaseFloat frame_shift = feature_info.FrameShiftInSeconds();
-	int32 frame_subsampling = decodable_opts.frame_subsampling_factor;
+	//BaseFloat frame_shift = feature_info.FrameShiftInSeconds();
+	//int32 frame_subsampling = decodable_opts.frame_subsampling_factor;
 
 	// am load
 	kaldi::nnet3::AmNnetSimple am_nnet;

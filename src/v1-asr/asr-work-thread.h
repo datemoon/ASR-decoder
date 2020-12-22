@@ -3,6 +3,7 @@
 #include "src/v1-asr/asr-source.h"
 #include "src/service2/net-data-package.h"
 #include "src/service2/thread-pool-work-thread.h"
+#include "src/vad/energy-vad.h"
 
 #include "src/util/namespace-start.h"
 
@@ -16,7 +17,8 @@ public:
 			kaldi::ASROpts *asr_opts, kaldi::ASRSource *asr_source):
 		ThreadPoolWorkThread(tp),
 		_decodable_info(NULL),_feature_info(NULL),
-		_asr_work(NULL)
+		_asr_work(NULL),
+		_energy_vad(16000, 0.025, 0.01, -1, EnergyVad<short>::SIL, 0.3, 0.8, 50, 50, 32768*0.005, 32768*0.05, "sum_square_root")
 	{ 
 		InitASRSource(asr_opts, asr_source);
 	}
@@ -47,6 +49,7 @@ private:
 	// nnet
 	// fst
 	kaldi::ASRWorker *_asr_work;
+	EnergyVad<short> _energy_vad;
 };
 
 #include "src/util/namespace-end.h"

@@ -1,11 +1,22 @@
 # ASR-decoder
 it's ASR decoder and make graph project
 
+# you must be install kaldi and set KALDIROOT it's right.
 # Install
 # need you install automake 
 # you must configure depend.mk and later
+# if you don't use build.sh , you must be set (ROOTDIR) in configure.ac.
 autoreconf --install
-./configure
-make
-# if you want compiler arm , you can use command "ARM=true make".
-# linux command is "make"
+mkdir build
+cd build
+mkdir -p $PWD/install
+# if you kaldi use cuda and mkl , you must be
+../configure --prefix=$PWD/install --disable-usecblasnotmkl --enable-usecuda
+
+make -j 10
+make install
+# if you want get tar
+# make dist
+
+# you can run build.sh
+

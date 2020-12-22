@@ -23,12 +23,16 @@ LDADD += $(KALDI_LIBS) \
 		 -lm -lpthread $(DL_LIBS)
 
 bin_PROGRAMS = asr-service \
-			   asr-client \
-			   asr-client-v1 \
-			   asr-client-v2 \
 			   v2-asr-service \
 			   thread-client
 
+noinst_PROGRAMS = asr-client \
+				  asr-client-v1 \
+				  asr-client-v2 
+
+#thread_client_LDADD = ../service2/libservice2.la ../v2-asr/libv2asr.la ../util/libutil.la
+
+#thread_client_PROGRAMS = thread-client
 
 asr_service_SOURCES = asr-service.cc
 asr_client_SOURCES = asr-client.cc

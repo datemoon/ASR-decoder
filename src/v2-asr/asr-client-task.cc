@@ -56,7 +56,10 @@ void *ASRClientTask::RecvThreadFunc(void *data)
 			std::vector<std::string> nbest;
 			s2c_cli.GetData(&nbest);
 			// save result in all_result
-			all_result.push_back(nbest[0]);
+			if(nbest.size() == 0)
+				all_result.push_back("");
+			else
+				all_result.push_back(nbest[0]);
 			if(true == s2c_cli.IsAllEnd())
 			{ // true send end and receive the last result.
 				FILE *fp = stdout;
@@ -77,7 +80,7 @@ void *ASRClientTask::RecvThreadFunc(void *data)
 	}// while(1) receive result
 }
 
-#define LEN (16000*2)
+#define LEN (16000*10)
 
 ASRClientTask::int32 ASRClientTask::Run(void *data)
 {
@@ -155,7 +158,7 @@ ASRClientTask::int32 ASRClientTask::Run(void *data)
 		}
 		else
 		{
-			cli_c2s.SetNbest(1);
+			cli_c2s.SetNbest(0);
 			if(true != cli_c2s.C2SWrite(_sockfd, sentbuf, sent_len, 1))
 			{
 				LOG_WARN << "C2SWrite end failed.";

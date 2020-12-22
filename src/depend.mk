@@ -1,3 +1,4 @@
+#KALDI_ROOT=/home/hu.bo/git/kaldi/src
 KALDI_ROOT=/home/hubo/git/github-online/github/kaldi/src
 
 # use cblas or mkl
@@ -7,10 +8,24 @@ MATRIX_INC = $(KALDI_ROOT)/../tools/ATLAS_headers/include
 MATRIX_LIBS = /usr/lib64/atlas/libsatlas.so.3 \
 			  /usr/lib64/atlas/libtatlas.so.3 
 else
-MATRIX_DEPLDFLAGS = -Wl,-rpath=/opt/intel/mkl/lib/intel64
 MATRIX_INC = /opt/intel/mkl/include
-MATRIX_LIBS = -L/opt/intel/mkl/lib/intel64 \
-			  -lmkl_intel_lp64  -lmkl_core  -lmkl_sequential  
+MATRIX_DEPLDFLAGS = -Wl,-rpath=/opt/intel/mkl/lib/intel64 
+
+#MATRIX_LIBS =  -Wl,--start-group /opt/intel/mkl/lib/intel64/libmkl_intel_lp64.a /opt/intel/mkl/lib/intel64/libmkl_core.a /opt/intel/mkl/lib/intel64/libmkl_sequential.a -Wl,--end-group    -ldl -lpthread -lm
+AM_LIBTOOLFLAGS = --preserve-dup-deps 
+MATRIX_LIBS = /opt/intel/mkl/lib/intel64/libmkl_intel_lp64.a \
+			  /opt/intel/mkl/lib/intel64/libmkl_core.a \
+			  /opt/intel/mkl/lib/intel64/libmkl_sequential.a \
+			  /opt/intel/mkl/lib/intel64/libmkl_intel_lp64.a \
+			  /opt/intel/mkl/lib/intel64/libmkl_core.a \
+			  /opt/intel/mkl/lib/intel64/libmkl_sequential.a \
+			  /opt/intel/mkl/lib/intel64/libmkl_intel_lp64.a \
+			  /opt/intel/mkl/lib/intel64/libmkl_core.a \
+			  /opt/intel/mkl/lib/intel64/libmkl_sequential.a \
+			  -ldl -lpthread -lm
+
+#MATRIX_LIBS = -L/opt/intel/mkl/lib/intel64 \
+#			  -lmkl_intel_lp64  -lmkl_core  -lmkl_sequential  
 
 endif
 

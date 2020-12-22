@@ -40,12 +40,14 @@ public:
 
 	bool _use_second;
 	bool _constfst;
+	bool _use_energy_vad;
 	OnlineDecoderConf():
 		_config_decoder(""),
 		_phonedict(""),_prondict(""),
 		_graph_type("mem-hclg"),_hmmfst_file(""),
 		_lm1_file(""),_lm2_file(""),
-		_lm1_scale(-1.0), _lm2_scale(1.0), _use_second(false), _constfst(true) { }
+		_lm1_scale(-1.0), _lm2_scale(1.0), _use_second(false), 
+		_constfst(true),_use_energy_vad(false) { }
 		//_wordlist(""),
 	void Register(kaldi::OptionsItf *conf)
 	{
@@ -75,6 +77,8 @@ public:
 				"use second biglm decoder. (default false)");
 		conf->Register("constfst", &_constfst,
 				"use openfst constfst decoder. (default true)");
+		conf->Register("use-energy-vad", &_use_energy_vad,
+				"use energy vad. (default false)");
 	}
 };
 
@@ -84,6 +88,27 @@ public:
 	const OnlineDecoderConf &_online_conf;
 	// feature config read 
 	kaldi::OnlineNnet2FeaturePipelineInfo _feature_info;
+
+	datemoon::BaseFloat FrameLengthInSeconds()
+	{
+		if(_feature_info.feature_type == "mfcc")
+		{
+			return _feature_info.mfcc_opts.frame_opts.frame_length_ms / 1000.0f;
+		}
+		else if(_feature_info.feature_type == "fbank")
+		{
+			return _feature_info.fbank_opts.frame_opts.frame_length_ms / 1000.0f;
+		}
+		else if(_feature_info.feature_type == "plp")
+		{
+			return _feature_info.plp_opts.frame_opts.frame_length_ms / 1000.0f;
+		}
+		else
+		{
+			LOG_WARN << "Unknown feature type " << _feature_info.feature_type;
+			return 0.0;
+		}
+	}
 	// decoder config read
 	datemoon::LatticeFasterDecoderConfig _decoder_opts;
 	// words list read
@@ -133,6 +158,26 @@ public:
 			ReadConfigFromFile(online_conf._config_decoder, &_decoder_opts);
 		}
 		_decoder_opts.Print();
+		if(_online_conf._use_second == true ||(_online_conf._lm1_file != "" && _online_conf._lm2_file != ""))
+		{
+			if(_lm2.Read(_online_conf._lm2_file.c_str()) != true)
+			{
+				LOG_ERR << "load arpalm2 " << _online_conf._lm2_file << " failed!!!";
+			}
+			LOG_COM << "Load " << _online_conf._lm2_file << " OK";
+			if(_online_conf._lm2_scale != 1.0)
+				_lm2.Rescale(_online_conf._lm2_scale);
+			LOG_COM << "Rescale " << _online_conf._lm2_file << " OK";
+			if(_lm1.Read(_online_conf._lm1_file.c_str()) != true)
+			{
+				LOG_ERR << "load arpalm1 " << _online_conf._lm1_file << " failed!!!";
+			}
+			LOG_COM << "Load " << _online_conf._lm1_file << " OK";
+			if(_online_conf._lm1_scale != 1.0)
+				_lm1.Rescale(_online_conf._lm1_scale);
+			LOG_COM << "Use second decoder and load " << _online_conf._lm1_file << " and " <<
+				_online_conf._lm2_file << " ok";
+		}
 		// word list read
 		if(_wordlist != "")
 		{
@@ -179,21 +224,7 @@ public:
 				LOG_ASSERT(tmpfst->ReadFst(_fst_in_filename.c_str()));
 				_graphfst = static_cast<void *>(tmpfst);
 			}
-		}
-		if(_online_conf._use_second == true ||(_online_conf._lm1_file != "" && _online_conf._lm2_file != ""))
-		{
-			if(_lm1.Read(_online_conf._lm1_file.c_str()) != true)
-			{
-				LOG_ERR << "load arpalm1 " << _online_conf._lm1_file << " failed!!!";
-			}
-			_lm1.Rescale(_online_conf._lm1_scale);
-			if(_lm2.Read(_online_conf._lm2_file.c_str()) != true)
-			{
-				LOG_ERR << "load arpalm2 " << _online_conf._lm2_file << " failed!!!";
-			}
-			_lm2.Rescale(_online_conf._lm2_scale);
-			LOG_COM << "Use second decoder and load " << _online_conf._lm1_file << " and " <<
-				_online_conf._lm2_file << " ok";
+			LOG_COM << "Load " << _fst_in_filename << " OK";
 		}
 	} // construct ok
 
@@ -330,6 +361,10 @@ public:
 	/// with the required arguments.
 	bool EndpointDetected(const kaldi::OnlineEndpointConfig &config);
 
+	bool UseEnergyVad()
+	{
+		return _online_info._online_conf._use_energy_vad;
+	}
 private:
 	// configure information
 	OnlineDecoderInfo &_online_info;

@@ -9,24 +9,19 @@ liblatfst_la_SOURCES = lattice-determinize-api.cc \
   					   dfs-visit-fst.cc lattice-functions.cc \
   					   rmepsilon.cc topsort.cc \
   					   invert.cc 
+liblatfst_la_LDFLAGS = -rpath '$(libdir)'
 
 
-if HAVE_TEST
-
-bin_PROGRAMS = test-connect-fst \
+check_PROGRAMS = test-connect-fst \
 			   lattice-test \
 			   test-code \
 			   test-heap \
 			   const-fst-read
 
-test_connect_fst_SOURCES = test-connect-fst.cc
+AM_DEFAULT_SOURCE_EXT = .cc
 
-lattice_test_SOURCES = lattice-test.cc
-
-test_code_SOURCES = test-code.cc
-
-test_heap_SOURCES = test-heap.cc
-
-const_fst_read_SOURCES = const-fst-read.cc
-
-endif
+#test_connect_fst_SOURCES = test-connect-fst.cc
+#lattice_test_SOURCES = lattice-test.cc
+#test_code_SOURCES = test-code.cc
+#test_heap_SOURCES = test-heap.cc
+#const_fst_read_SOURCES = const-fst-read.cc

@@ -1,0 +1,11 @@
+
+# This is asr service and client programs.
+# v2-asr-service is call my decoder and kaldi nnet3 feat.
+# asr-service is kaldi nnet3 feat and decoder and my socket and threadpool.
+# You can use kaldi HCLG.fst and final.mdl test v2-asr-service and asr-service.
+# if you want use clg.fst, you must be reconsitution fst.
+# kaldi decoder
+./asr-service --config=conf/conf.txt final.mdl HCLG.fst words.txt
+
+# my decoder
+./v2-asr-service --config=conf/v2-conf.txt final.mdl HCLG.fst words.txt

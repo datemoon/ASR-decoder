@@ -20,7 +20,7 @@ LDADD += $(KALDI_LIBS) \
 		 $(DL_LIBS)
 
 
-bin_PROGRAMS = kaldi-online-nnet3-my-decoder-bin \
+noinst_PROGRAMS = kaldi-online-nnet3-my-decoder-bin \
 			   kaldi-my-decoder \
 			   kaldi-hclg-my-decoder \
  			   kaldi-hclg-my-decoder-biglm 
