@@ -1,8 +1,9 @@
 
-# project depend kaldi, so you must be download kaldi in commit is 376281caa2e42085f157889dca8484dfef42ebee -> ea2b433dfdd7eab4c7a665ef46f7e87a2e4a782e -> 90d44fe3a1bce06b60600e68078565e2c0fe393e
+# project depend kaldi, so you must be download kaldi 
 # and install. You can reference build.sh.
 
-# you need LibTorch https://download.pytorch.org/libtorch/cu111/libtorch-cxx11-abi-shared-with-deps-1.8.1%2Bcu111.zip
+# if you need LibTorch ,
+# you can download in https://download.pytorch.org/libtorch/cu111/libtorch-cxx11-abi-shared-with-deps-1.8.1%2Bcu111.zip
 # gcc version > 5
 
 # you must be set bashrc envionment variables and then
