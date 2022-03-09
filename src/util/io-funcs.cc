@@ -7,13 +7,43 @@
 #include <unistd.h>
 #include <string>
 #include <stdexcept>
+#include <unordered_map>
+
 #include "src/util/io-funcs.h"
 #include "src/util/log-message.h"
 #include "src/util/util-type.h"
+#include "src/util/text-util.h"
 
 #include "src/util/namespace-start.h"
 
-bool ReadWordList(std::string file, std::vector<std::string> &wordlist, bool binary)
+// load lexicon , format:
+//   word phone1 ... phonen
+//   ...
+bool ReadStringVector(std::string &lexiconfile, 
+		std::vector<std::vector<std::string> > &readvector,  bool binary)
+{
+	std::ifstream ifs;
+	ifs.open(lexiconfile.c_str(),
+			binary ? std::ios_base::in | std::ios_base::binary
+			: std::ios_base::in);
+	if(!ifs.is_open())
+	{
+		return false;
+	}
+	std::string line;
+	std::vector<std::string> token_list;
+	typedef std::unordered_map<std::string, int>::iterator IterType;
+	while(getline(ifs, line))
+	{
+		token_list.clear();
+		CutLineToStr(line, token_list);
+		readvector.push_back(std::move(token_list));
+	}
+	return true;
+}
+
+
+bool ReadWordList(std::string &file, std::vector<std::string> &wordlist, bool binary)
 {
 	std::ifstream ifs;
 //	binary = false;
@@ -43,6 +73,35 @@ bool ReadWordList(std::string file, std::vector<std::string> &wordlist, bool bin
 	ifs.close();
 	return true;
 }
+
+template<typename T=int>
+bool ReadWordMap(std::string &file, std::unordered_map<std::string, T> &word_map, bool binary)
+{
+	std::ifstream ifs;
+//	binary = false;
+	ifs.open(file.c_str(),
+			binary ? std::ios_base::in | std::ios_base::binary
+			: std::ios_base::in);
+	if(!ifs.is_open())
+	{
+		return false;
+	}
+
+	word_map.clear();
+	T wordid;
+	std::string word;
+	while(EOF != ifs.peek())
+	{
+		ifs >> word;
+		ifs >> wordid;
+		word_map.insert(std::make_pair(std::move(word), wordid));
+		ifs.get();
+	}
+	ifs.close();
+	return true;
+}
+
+template bool ReadWordMap<int>(std::string &file, std::unordered_map<std::string, int>&word_map, bool binary);
 
 void ExpectToken(std::istream &is, bool binary, const char *token)
 {

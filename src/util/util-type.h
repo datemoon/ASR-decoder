@@ -3,6 +3,8 @@
 
 #include "src/util/namespace-start.h"
 
+#define CONST_GLOBAL_SIZE (2<<10)
+
 typedef float BaseFloat;
 typedef float float32;
 typedef double double64;
