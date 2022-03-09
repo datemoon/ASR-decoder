@@ -9,7 +9,7 @@ AM_LDFLAGS = $(CUDA_DEPLDFLAGS) \
 			 $(MATRIX_DEPLDFLAGS)
 
 LDADD = ../kaldi-nnet3/libonlinedecode.la \
-		../decoder/liboptimizedecode.la \
+		../my-decoder/liboptimizedecode.la \
 		../newlm/liblm.la \
 		../newfst/liblatfst.la \
 		../util/libutil.la 

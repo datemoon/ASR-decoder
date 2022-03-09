@@ -15,7 +15,6 @@ libnnet_la_SOURCES = nnet-layer.cc \
 					 nnet-simple-recurrent.cc \
 				 	 tf-lstm-layer.cc
 
-if HAVE_TEST_NNET
 AM_LDFLAGS = $(MATRIX_DEPLDFLAGS) $(KALDI_DEPLDFLAGS) $(CUDA_DEPLDFLAGS)
 LDADD = libnnet.la \
 		../pitch/libpitch.la \
@@ -25,7 +24,7 @@ LDADD = libnnet.la \
 		-lm -lpthread -ldl
 
 
-bin_PROGRAMS = nnetread \
+check_PROGRAMS = nnetread \
 			   nnet-feature-api-test \
 			   forward-test \
 			   kaldi-forward-test \
@@ -44,4 +43,3 @@ stream_kaldi_forward_test_SOURCES = stream-kaldi-forward-test.cc
 kaldi_format_pitch_forward_test_SOURCES = kaldi-format-pitch-forward-test.cc
 
 
-endif

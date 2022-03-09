@@ -161,8 +161,7 @@ class V1SingleUtteranceNnet3DecoderTpl {
 };
 
 template class V1SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::StdArc> >;
-template class SingleUtteranceNnet3DecoderTpl<fst::ConstGrammarFst >;
-template class SingleUtteranceNnet3DecoderTpl<fst::VectorGrammarFst >;
+//template class V1SingleUtteranceNnet3DecoderTpl<fst::GrammarFst>;
 typedef V1SingleUtteranceNnet3DecoderTpl<fst::Fst<fst::StdArc> > V1SingleUtteranceNnet3Decoder;
 
 /// @} End of "addtogroup onlinedecoding"

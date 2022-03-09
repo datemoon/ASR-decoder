@@ -16,7 +16,7 @@
 #include "src/v1-asr/v1-online-nnet3-decoding.h"
 #include "src/v1-asr/online-nnet3-feature-pipeline-io.h"
 #include "src/vad/energy-vad.h"
-#include "src/v1-asr/online-vad.h"
+#include "src/online-vad/online-vad.h"
 
 namespace kaldi
 {
@@ -434,6 +434,7 @@ public:
 
 	// 带能量vad，模型vad，处理
 	std::string Process(const char *data, int32 data_len, int32 data_type,
+			std::vector<std::string> &nbest_result,
 			int32 nbest = 0, bool all_eos = false)
 	{
 		if(true == _v1_asr_opts._use_energy_vad)
@@ -474,7 +475,7 @@ public:
 	
 						// 送入数据， 获取解码结果
 						// 能量vad切断，表示结束这段解码，all_eos=true
-						std::string best_result = Process(cur_wav_data, nbest, true);
+						std::string best_result = Process(cur_wav_data, nbest_result, nbest, true);
 						// 重置解码器，如果启用模型vad，也重置模型vad，但不重置语音帧和静音帧
 						Init(false, true, 0);
 						// 记录之前的结果
@@ -499,12 +500,12 @@ public:
 						if(it+1 == vad_ali.end() && all_eos == true)
 						{ // 最后一段音频
 							_v1_energy_vad.GetData(cur_wav_data, start_frame, end_frame, true);
-							_cache_energy_best_result = Process(cur_wav_data, nbest, true);
+							_cache_energy_best_result = Process(cur_wav_data, nbest_result, nbest, true);
 						}
 						else
 						{
 							_v1_energy_vad.GetData(cur_wav_data, start_frame, end_frame, false);
-						   _cache_energy_best_result = Process(cur_wav_data, nbest, false);
+						   _cache_energy_best_result = Process(cur_wav_data, nbest_result, nbest, false);
 						}
 					}
 					_pre_energy_seg_flag = AUDIO;
@@ -523,21 +524,25 @@ public:
 		{
 			Vector<BaseFloat> wav_data;
 			ConvertData(data, data_len, data_type, wav_data);
-			return Process(wav_data, nbest, all_eos);
+			return Process(wav_data, nbest_result, nbest, all_eos);
 		}
 	}
 
 	// 模型vad处理，或者不带模型vad
-	std::string Process(const std::vector<BaseFloat> &wav_data, int32 nbest = 0,
+	std::string Process(const std::vector<BaseFloat> &wav_data, 
+			std::vector<std::string> &nbest_result,
+			int32 nbest = 0,
 			bool all_eos = false)
 	{
 		Vector<BaseFloat> use_wav_data;
 		use_wav_data.Resize(wav_data.size());
 		memcpy(use_wav_data.Data(), wav_data.data(), wav_data.size()*sizeof(BaseFloat));
-		return Process(use_wav_data, nbest, all_eos);
+		return Process(use_wav_data, nbest_result, nbest, all_eos);
 	}
 
-	std::string Process(const VectorBase<BaseFloat> &wav_data, int32 nbest = 0,
+	std::string Process(const VectorBase<BaseFloat> &wav_data, 
+			std::vector<std::string> &nbest_result,
+			int32 nbest = 0,
 			bool all_eos = false)
 	{
 		// 首先判断是否使用vad
@@ -578,7 +583,7 @@ public:
 					if(_pre_seg_flag == AUDIO)
 					{
 						// 获取解码结果
-						std::vector<std::string> nbest_result;
+						//std::vector<std::string> nbest_result;
 						bool use_final = _v1_asr_opts._decoder_use_final;
 						bool eos = true;
 						// 最后一段音频
@@ -643,7 +648,7 @@ public:
 					{
 						if(nbest > 0 || all_eos == true)
 						{
-							std::vector<std::string> nbest_result;
+							//std::vector<std::string> nbest_result;
 							bool use_final = false;
 							bool eos = false;
 							// 只有是真正的最后一段送入音频时候才终止解码，采用use_final
@@ -662,7 +667,7 @@ public:
 					}
 					else
 					{
-						std::vector<std::string> nbest_result;
+						//std::vector<std::string> nbest_result;
 						bool use_final = false;
 						bool eos = false;
 						Decoding(nbest_result, eos, nbest, use_final);
@@ -685,7 +690,7 @@ public:
 				use_final = _v1_asr_opts._decoder_use_final;
 				eos = true;
 			}
-			std::vector<std::string> nbest_result;
+			//std::vector<std::string> nbest_result;
 			Decoding(nbest_result, eos, nbest, use_final);
 			_tot_nosil_frames = _decoder->NumFramesDecoded() * _v1_asr_opts._decodable_opts.frame_subsampling_factor;;
 			if(nbest_result.size() > 0 )
@@ -716,7 +721,7 @@ public:
 				_feature_pipeline->InputFinished();
 			}
 			_decoder->AdvanceDecoding();
-			if(use_final == true)
+			;if(use_final == true)
 				_decoder->FinalizeDecoding();
 		}
 		else
@@ -766,6 +771,7 @@ public:
 			int32 *time_begin, int32 *time_end, 
 			int32 nbest = 0, bool use_final = false, bool eos = false)
 	{
+		nbest_result.clear();
 		//BaseFloat frame_shift = _v1_asr_source._feature_info.FrameShiftInSeconds();
 		int32 frame_subsampling = _v1_asr_opts._decodable_opts.frame_subsampling_factor;
 		*time_begin = _decoder_start_offset;
@@ -788,6 +794,7 @@ public:
 	void GetNbest(std::vector<std::string> &nbest_result, 
 			int32 n = 0,  bool use_final=false)
 	{
+		nbest_result.clear();
 		if(n > 1)
 		{
 			std::vector<CompactLattice> nbest_lats;

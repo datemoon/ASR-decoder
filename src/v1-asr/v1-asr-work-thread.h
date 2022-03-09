@@ -4,7 +4,7 @@
 #include "src/service2/net-data-package.h"
 #include "src/service2/thread-pool-work-thread.h"
 //#include "src/vad/energy-vad.h"
-#include "src/v1-asr/online-vad.h"
+#include "src/online-vad/online-vad.h"
 
 #include "src/util/namespace-start.h"
 

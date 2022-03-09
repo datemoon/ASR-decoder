@@ -2,21 +2,31 @@ SUBDIRS = fst_format_convert_tool \
 		  util align \
 		  newfst newlm \
 		  pitch hmm service nnet \
-		  decoder \
+		  my-decoder \
 		  service2 \
+		  service2bin \
 		  kaldi-nnet3 kaldi-nnet3bin \
 		  v1-asr v2-asr \
-		  service2bin \
-		  client \
-		  vad \
-		  v1-asrbin
+		  v1-asrbin v2-asrbin \
+		  client clientbin \
+		  vad online-vad \
+		  biglm \
+		  post-processing-service \
+		  kaldi-bin
 
 lib : util align newfst newlm decoder service2 kaldi-nnet3 v1-asr v2-asr vad client \
 	fst_format_convert_tool pitch hmm service nnet
 
 kaldi-nnet3bin service2bin v1-asrbin : lib
 
-include_HEADERS = client/asr-client-api.h
+online-vad : util
+
+service2 : util
+
+post-processing-service : service2
+biglm : service2
+
+include_HEADERS = client/py-client/asr-client-api.h
 confdir=$(prefix)/conf
 dist_conf_DATA = v1-asrbin/conf/conf.txt \
 				 v1-asrbin/conf/decoder.conf \

@@ -1,22 +1,43 @@
-# ASR-decoder
-it's ASR decoder and make graph project
 
-# you must be install kaldi and set KALDIROOT it's right.
+# project depend kaldi, so you must be download kaldi in commit is 376281caa2e42085f157889dca8484dfef42ebee -> ea2b433dfdd7eab4c7a665ef46f7e87a2e4a782e -> 90d44fe3a1bce06b60600e68078565e2c0fe393e
+# and install. You can reference build.sh.
+
+# you need LibTorch https://download.pytorch.org/libtorch/cu111/libtorch-cxx11-abi-shared-with-deps-1.8.1%2Bcu111.zip
+# gcc version > 5
+
+# you must be set bashrc envionment variables and then
+source ../bashrc
 # Install
-# need you install automake 
-# you must configure depend.mk and later
-# if you don't use build.sh , you must be set (ROOTDIR) in configure.ac.
+# need you install automake
 autoreconf --install
+
 mkdir build
 cd build
 mkdir -p $PWD/install
-# if you kaldi use cuda and mkl , you must be
-../configure --prefix=$PWD/install --disable-usecblasnotmkl --enable-usecuda
+
+# if you kaldi use cuda and mkl and ues torch nnet forward, you must be
+# KALDI_ROOT is kaldi/src dir
+../configure --prefix=$PWD/install --enable-usecuda=yes --with-cuda=/usr/local/cuda/ --with-mkl=/opt/intel/mkl --with-kaldi=$(KALDI_ROOT) 
+
+# if you don't use cuda 
+../configure --prefix=$PWD/install --enable-usecuda=no --with-mkl=/opt/intel/mkl --with-kaldi=$(KALDI_ROOT)
+
+# if you want use atlas
+../configure --prefix=$PWD/install --with-atlas=$(ATLAS_ROOT) --with-kaldi=$(KALDI_ROOT)
 
 make -j 10
+make check -j 10
 make install
+
 # if you want get tar
 # make dist
 
 # you can run build.sh
 
+# tag 
+# git tag -a vxxx -m "version vxxx" commit_id
+# git push origin vxxx | git push origin --tags
+# if you want delete service tag you can run 
+# git push origin --delete <tagname>
+# if you want checkout tag, you can
+# git checkout -b <branchname> <tagname>

@@ -6,5 +6,5 @@ AM_CPPFLAGS = -I$(CUDA_INC) \
 
 lib_LTLIBRARIES = libv2asr.la
 
-libv2asr_la_SOURCES = v2-asr-work-thread.cc asr-client-task.cc
+libv2asr_la_SOURCES = v2-asr-work-thread.cc 
 libv2asr_la_LDFLAGS = -rpath '$(libdir)'

@@ -1,4 +1,3 @@
 
-将所需资源准备好，然后配置参数，运行v1-asr-service.sh脚本即可
-必须资源:final.mdl,HCLG.fst,words.txt
-如果使用模型vad，需要模型vad的final.mdl
+这是一个基于kaldi decoder的语音识别服务，已经接入能量vad和模型vad，
+并且支持同时开启，详见v1-asrbin目录的可执行文件

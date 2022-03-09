@@ -1,0 +1,3 @@
+# config-decoder
+--max-active=5000
+--beam=10

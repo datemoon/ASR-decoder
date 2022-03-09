@@ -17,14 +17,23 @@ public:
 	V2ASRServiceTask(int32 connfd, std::string task_name = ""):
 		TaskBase(task_name), _connfd(connfd) {}
 
+	~V2ASRServiceTask()
+	{
+		Stop();
+	}
+
 	int32 Run(void *data);
 
 	int32 Stop()
 	{
-		const char *str = "no idle thread.";
-		send(_connfd, str, strlen(str), 0);
-		printf("send |%d| : %s ok\n",_connfd, str);
-		close(_connfd);
+		//const char *str = "no idle thread.";
+		//send(_connfd, str, strlen(str), 0);
+		//printf("send |%d| : %s ok\n",_connfd, str);
+		if(_connfd != -1)
+		{
+			close(_connfd);
+			_connfd = -1;
+		}
 		return 0;
 	}
 	void GetInfo()
@@ -202,7 +211,7 @@ int32 V2ASRServiceTask::Run(void *data)
 			// send result from service to client.
 			if(eos == true)
 			{
-				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CEND))
+				if(true != ser_s2c.S2CWrite(_connfd, S2CEND))
 				{
 					LOG_WARN << "S2CWrite all end error.";
 					break;
@@ -212,7 +221,7 @@ int32 V2ASRServiceTask::Run(void *data)
 			else if(ret == 1)
 			{
 				// end point judge cut audio.
-				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CMIDDLEEND))
+				if(true != ser_s2c.S2CWrite(_connfd, S2CMIDDLEEND))
 				{
 					LOG_WARN << "S2CWrite middle end error.";
 					break;
@@ -220,7 +229,7 @@ int32 V2ASRServiceTask::Run(void *data)
 			}
 			else
 			{
-				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CNOEND))
+				if(true != ser_s2c.S2CWrite(_connfd, S2CNOEND))
 				{
 					LOG_WARN << "S2CWrite error.";
 					break;
@@ -258,8 +267,8 @@ int32 V2ASRServiceTask::Run(void *data)
 			break; // end
 		}
 	}
-	close(_connfd);
 	VLOG_COM(2) << "close " << _connfd << " ok.";
+	Stop();
 	return 0;
 }
 template<typename T>
@@ -277,6 +286,10 @@ void V2ASRServiceTask::SendDataAndGetResult(std::vector<T> &data,
 	if(end_flag == true)
 	{// 当前数据结束
 	   	ret = online_clg_decoder.ProcessData(reinterpret_cast<char*>(data.data()), data.size()*sizeof(short), 2, dtype_len);
+		if(ret != 0)
+		{
+			LOG_COM << "ProcessData error!!!";
+		}
 		// 获取识别结果
 		if (online_clg_decoder.NumFramesDecoded() > 0)
 		{

@@ -7,17 +7,17 @@
 #include "feat/wave-reader.h"
 #include "nnet3/nnet-utils.h"
 
-#include "src/decoder/lattice-faster-decoder.h"
-#include "src/decoder/mem-optimize-hclg-lattice-faster-online-decoder.h"
-#include "src/decoder/online-decoder-base.h"
-#include "src/decoder/online-decoder-mempool-base.h"
-#include "src/decoder/online-clg-decoder-mempool-base.h"
-#include "src/decoder/online-decoder-mempool-base-biglm.h"
+#include "src/my-decoder/lattice-faster-decoder.h"
+#include "src/my-decoder/mem-optimize-hclg-lattice-faster-online-decoder.h"
+#include "src/my-decoder/online-decoder-base.h"
+#include "src/my-decoder/online-decoder-mempool-base.h"
+#include "src/my-decoder/online-clg-decoder-mempool-base.h"
+#include "src/my-decoder/online-decoder-mempool-base-biglm.h"
 
 #include "src/newlm/compose-arpalm.h"
 
-#include "src/decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
-#include "src/decoder/wordid-to-wordstr.h"
+#include "src/my-decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
+#include "src/my-decoder/wordid-to-wordstr.h"
 
 struct OnlineDecoderConf
 {

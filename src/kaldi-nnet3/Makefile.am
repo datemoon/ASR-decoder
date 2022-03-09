@@ -9,7 +9,7 @@ libonlinedecode_la_LDFLAGS = -rpath '$(libdir)'
 AM_LDFLAGS = $(MATRIX_DEPLDFLAGS) $(KALDI_DEPLDFLAGS) $(CUDA_DEPLDFLAGS)
 
 LDADD = libonlinedecode.la \
-	   	../decoder/liboptimizedecode.la \
+	   	../my-decoder/liboptimizedecode.la \
 		../newlm/liblm.la \
 		../newfst/liblatfst.la \
 	   	../util/libutil.la \

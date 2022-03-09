@@ -18,14 +18,22 @@ public:
 	ASRServiceTask(int32 connfd, std::string task_name = ""):
 		TaskBase(task_name), _connfd(connfd) {}
 
+	~ASRServiceTask()
+	{
+		Stop();
+	}
 	int32 Run(void *data);
 
 	int32 Stop()
 	{
-		const char *str = "no idle thread.";
-		send(_connfd, str, strlen(str), 0);
-		printf("send |%d| : %s ok\n",_connfd, str);
-		close(_connfd);
+		//const char *str = "no idle thread.";
+		//send(_connfd, str, strlen(str), 0);
+		//printf("send |%d| : %s ok\n",_connfd, str);
+		if(_connfd != -1)
+		{
+			close(_connfd);
+			_connfd = -1;
+		}
 		return 0;
 	}
 	void GetInfo()
@@ -123,6 +131,10 @@ int32 ASRServiceTask::Run(void *data)
 					{// 切语音了，是一整段语音，需要获取结果
 						vad_end = true;
 						ret = asr_work->ProcessData((char*)out_data.data(), (int)out_data.size()*2, msg, vad_end, 2);
+						if(ret != 0)
+						{
+							LOG_COM << "ProcessData error!!!";
+						}
 						asr_work->Init(&chunk);
 					}
 					else if(getdata_audio_flag == 1) // audio
@@ -131,11 +143,19 @@ int32 ASRServiceTask::Run(void *data)
 						{
 							vad_end = true;
 							ret = asr_work->ProcessData((char*)out_data.data(), (int)out_data.size()*2, msg, vad_end, 2);
+							if(ret != 0)
+							{
+								LOG_COM << "ProcessData error!!!";
+							}
 						}
 						else
 						{
 							vad_end = false;
 							ret = asr_work->ProcessData((char*)out_data.data(), (int)out_data.size()*2, msg, vad_end, 2);
+							if(ret != 0)
+							{
+								LOG_COM << "ProcessData error!!!";
+							}
 						}
 					}
 
@@ -154,6 +174,10 @@ int32 ASRServiceTask::Run(void *data)
 		{
 			// time statistics
 			int32 ret = asr_work->ProcessData(data, data_len, msg, eos, 2);
+			if(ret != 0)
+			{
+				LOG_COM << "ProcessData error!!!";
+			}
 			if(eos == true)
 			{
 				asr_result.push_back(msg);
@@ -176,7 +200,7 @@ int32 ASRServiceTask::Run(void *data)
 		{ // send result from service to client.
 			if(eos == true)
 			{
-				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CEND))
+				if(true != ser_s2c.S2CWrite(_connfd, S2CEND))
 				{
 					LOG_COM << "S2CWrite all end error.";
 					break;
@@ -184,7 +208,7 @@ int32 ASRServiceTask::Run(void *data)
 			}
 			else if(nbest > 0)
 			{
-				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CNOEND))
+				if(true != ser_s2c.S2CWrite(_connfd, S2CNOEND))
 				{
 					LOG_COM << "S2CWrite error.";
 					break;
@@ -220,7 +244,7 @@ int32 ASRServiceTask::Run(void *data)
 		}
 	} // while(1) end one audio
 	asr_work->Destory();
-	close(_connfd);
+	Stop();
 	VLOG(2) << "close " << _connfd << " ok.";
 	return 0;
 }

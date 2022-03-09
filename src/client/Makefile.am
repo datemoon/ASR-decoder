@@ -1,20 +1,13 @@
-AM_CPPFLAGS = 
+include ../depend.mk
 
-lib_LTLIBRARIES = libclient.la
+SUBDIRS = py-client
 
-libclient_la_SOURCES = asr-client-api.cc 
+#AM_CPPFLAGS = -I$(CUDA_INC) \
+#			  -I$(KALDI_INC) \
+#			  -I$(MATRIX_INC) \
+#			  -I$(OPENFST_INC)
 
-libclient_la_LIBADD = ../service2/libservice2.la \
-					 ../util/libutil.la
-libclient_la_LDFLAGS = -rpath '$(libdir)'
+lib_LTLIBRARIES = libclientv1.la
 
-
-check_PROGRAMS = asr-client-api-test
-
-#AM_DEFAULT_SOURCE_EXT = .cc
-asr_client_api_test_SOURCES = asr-client-api-test.cc
-
-asr_client_api_test_LDADD = libclient.la \
-		../service2/libservice2.la \
-		../util/libutil.la 
-
+libclientv1_la_SOURCES = asr-client-task.cc
+libclientv1_la_LDFLAGS = -rpath '$(libdir)'

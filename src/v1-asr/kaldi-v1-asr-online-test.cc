@@ -49,7 +49,8 @@ int main(int argc, char *argv[])
 			v1_asr_worker.Init(true, 0);
 			int32 nbest = 0;
 			bool eos = true;
-			std::string result = v1_asr_worker.Process(waveform, nbest, eos);
+			std::vector<std::string> nbest_result;
+			std::string result = v1_asr_worker.Process(waveform, nbest_result, nbest, eos);
 			KALDI_LOG << utt << " : " << result ;
 		}
 		return 0;

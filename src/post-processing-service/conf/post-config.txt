@@ -1,0 +1,12 @@
+--config-socket=conf/post-socket.conf
+--nthread=1
+--determinize=false
+
+--print-thread-pool-info=true
+--timeout-times=-1
+
+--new-const-arpa-lm=source/const-arpa-1e-9
+--newscale=1.0
+--old-const-arpa-lm=source/const-arpa-1e-9_5e-9
+--oldscale=-1.0
+--word-syms-filename=source/words.txt

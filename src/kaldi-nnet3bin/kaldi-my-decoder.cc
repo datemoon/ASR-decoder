@@ -11,8 +11,8 @@
 #include "base/timer.h"
 
 //datemoon
-#include "src/decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
-#include "src/decoder/wordid-to-wordstr.h"
+#include "src/my-decoder/mem-optimize-clg-lattice-faster-online-decoder.h"
+#include "src/my-decoder/wordid-to-wordstr.h"
 #include "src/newfst/lattice-functions.h"
 #include "src/newfst/lattice-to-nbest.h"
 #include "src/newfst/lattice-determinize.h"

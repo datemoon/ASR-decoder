@@ -8,7 +8,7 @@
 #include "src/newlm/compose-arpalm.h"
 #include "src/newfst/lattice-functions.h"
 #include "src/newfst/lattice-to-nbest.h"
-#include "src/decoder/wordid-to-wordstr.h"
+#include "src/my-decoder/wordid-to-wordstr.h"
 
 #ifdef NAMESPACE
 using namespace datemoon;

@@ -18,14 +18,23 @@ public:
 	V1ASRServiceTask(int32 connfd, std::string task_name = ""):
 		TaskBase(task_name), _connfd(connfd) {}
 
+	~V1ASRServiceTask()
+	{
+		Stop();
+	}
+
 	int32 Run(void *data);
 
 	int32 Stop()
 	{
-		const char *str = "no idle thread.";
-		send(_connfd, str, strlen(str), 0);
-		printf("send |%d| : %s ok\n",_connfd, str);
-		close(_connfd);
+		//const char *str = "no idle thread.";
+		//send(_connfd, str, strlen(str), 0);
+		//printf("send |%d| : %s ok\n",_connfd, str);
+		if(_connfd != -1)
+		{
+			close(_connfd);
+			_connfd = -1;
+		}
 		return 0;
 	}
 	void GetInfo()
@@ -108,13 +117,16 @@ int32 V1ASRServiceTask::Run(void *data)
 		keep_time.Esapsed();
 
 		std::string best_result;
+		std::vector<std::string> nbest_result;
 		// 送入解码器
 		if(false)//_use_energy_vad == true)
 		{
 		}
 		else
 		{
-			best_result = v1_asr_worker.Process(data, data_len, dtype_len, nbest, eos);
+			best_result = v1_asr_worker.Process(data, data_len, dtype_len, 
+					nbest_result,
+					nbest, eos);
 		}
 /*		if(use_energy_vad == true)
 		{
@@ -184,12 +196,16 @@ int32 V1ASRServiceTask::Run(void *data)
 //			if(msg.size() > 0)
 //				best_result += msg;
 			ser_s2c.SetNbest(best_result);
+			for(size_t i = 1; i < nbest_result.size(); ++i)
+			{
+				ser_s2c.SetNbest(nbest_result[i]);
+			}
 		}
 
 		{ // send result from service to client.
 			if(eos == true)
 			{
-				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CEND))
+				if(true != ser_s2c.S2CWrite(_connfd, S2CEND))
 				{
 					LOG_COM << "S2CWrite all end error.";
 					break;
@@ -197,7 +213,7 @@ int32 V1ASRServiceTask::Run(void *data)
 			}
 			else if(nbest > 0)
 			{
-				if(true != ser_s2c.S2CWrite(_connfd, S2CPackageAnalysis::S2CNOEND))
+				if(true != ser_s2c.S2CWrite(_connfd, S2CNOEND))
 				{
 					LOG_COM << "S2CWrite error.";
 					break;
@@ -235,8 +251,8 @@ int32 V1ASRServiceTask::Run(void *data)
 		}
 	} // while(1) end one audio
 	v1_asr_worker.Destory();
-	close(_connfd);
 	VLOG(2) << "close " << _connfd << " ok.";
+	Stop();
 	return 0;
 }
 
