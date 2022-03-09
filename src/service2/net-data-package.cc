@@ -68,16 +68,25 @@ bool C2SPackageAnalysis::C2SWrite(int sockfd,
 	// write package head
 	ssize_t ret = WriteN(sockfd, static_cast<void *>(&_c2s_package_head),
 			sizeof(C2SPackageHead));
-	if(ret != sizeof(C2SPackageHead))
+	if(ret < 0)
 	{
 		LOG_WARN << "write C2SPackageHead failed.";
+		return false;
+	}
+	else if (ret != sizeof(C2SPackageHead))
+	{
+		if(ret == 0)
+			LOG_WARN << "Service socket closed " << sockfd << "!!!";
+		else
+			LOG_WARN << "Write error " << sockfd << "!!!";
 		return false;
 	}
 	C2SPackageHeadPrint(_c2s_package_head, "c2s-write");
 	// write key
 	if(key_str.length() != 0)
 	{
-		if(_c2skey.Write(sockfd, key_str) != true)
+		_c2skey.SetData(key_str);
+		if(_c2skey.Write(sockfd) <= 0)
 		{
 			LOG_WARN << "write C2SKey error!!!";
 			return false;
@@ -87,9 +96,17 @@ bool C2SPackageAnalysis::C2SWrite(int sockfd,
 	if(data_size > 0)
 	{
 		ret = WriteN(sockfd, data, data_size);
-		if(ret != data_size)
+		if(ret < 0)
 		{
 			LOG_WARN << "write data failed.";
+			return false;
+		}
+		else if (ret != data_size)
+		{
+			if(ret == 0)
+				LOG_WARN << "Service socket closed " << sockfd << "!!!";
+			else
+				LOG_WARN << "Write error " << sockfd << "!!!";
 			return false;
 		}
 	}
@@ -102,9 +119,17 @@ bool C2SPackageAnalysis::C2SRead(int sockfd)
 	ssize_t ret = ReadN(sockfd, static_cast<void *>(&_c2s_package_head),
 		   	sizeof(C2SPackageHead));
 	C2SPackageHeadPrint(_c2s_package_head,"c2s-read");
-	if(ret != sizeof(C2SPackageHead))
+	if(ret < 0)
 	{
-		LOG_WARN << "read 2SPackageHead failed.";
+		LOG_WARN << "read C2SPackageHead failed.";
+		return false;
+	}
+	else if(ret != sizeof(C2SPackageHead))
+	{
+		if(ret == 0)
+			LOG_WARN << "Service have been closed socket " << sockfd << "!!!";
+		else
+			LOG_WARN << "Read C2SPackageHead error " << sockfd << "!!!";
 		return false;
 	}
 	if(prev_n + 1 != _c2s_package_head._n)
@@ -131,13 +156,14 @@ bool C2SPackageAnalysis::C2SRead(int sockfd)
 	// judge key_sting
 	if(IsHaveKey() == true)
 	{
-		if(_c2skey.Read(sockfd) != true)
+		if(_c2skey.Read(sockfd) <= 0)
 		{
 			LOG_COM << "package : " << _c2s_package_head._n << " C2SKey read error!!!";
 			return false;
 		}
-		_c2skey.Info();
+		//_c2skey.Info();
 	}
+	Print("C2SRead:");
 	if(_c2s_package_head._data_len > 0)
 	{
 		// have data and read data segment.
@@ -147,59 +173,107 @@ bool C2SPackageAnalysis::C2SRead(int sockfd)
 			LOG_WARN << "read data failed.";
 			return false;
 		}
-		if(ret != _c2s_package_head._data_len)
+		else if(ret != _c2s_package_head._data_len)
 		{
+			if(ret == 0)
+			{
+				LOG_WARN << "Service have been closed socket " << sockfd << "!!!";
+				return false;
+			}
 			LOG_WARN << "Error: Data loss. It shouldn't be happend.";
 		}
 	}
 	return true;
 }
 
-
 /////////////////
 bool S2CPackageAnalysis::S2CWrite(int sockfd, uint end_flag)
 {
-	_s2c_package_head._nbest = _nbest_res._nbest_len_len;
+	//_s2c_package_head._nbest = _nbest_res._nbest_len_len;
 	_s2c_package_head._end_flag = end_flag;
 	if(_s2c_package_head._end_flag != S2CNOEND)
 		_s2c_package_head._nres++;
-	if(_s2c_package_head._nbest == 0 && _s2c_package_head._end_flag != S2CEND)
+	if(_s2c_package_head._nbest == 0 && _s2c_package_head._end_flag == S2CNOEND)
 	{
 		VLOG_COM(1) << "No result and not end, so no send package to client.";
 		return true;
 	}
-	ssize_t ret = write(sockfd, static_cast<void *>(&_s2c_package_head), sizeof(S2CPackageHead));
+	// write package head
+	ssize_t ret = WriteN(sockfd, static_cast<void *>(&_s2c_package_head), sizeof(S2CPackageHead));
 	if(ret < 0)
 	{
 		LOG_WARN << "Write S2CPackageHead failed.";
 		return false;
 	}
-	ret = _nbest_res.Write(sockfd);
-	if(ret < 0)
+	else if (ret != sizeof(S2CPackageHead))
 	{
-		LOG_WARN <<"Write Nbest failed.";
+		if(ret == 0)
+			LOG_WARN << "Clinet socket closed " << sockfd << "!!!";
+		else
+			LOG_WARN << "S2CWrite error " << sockfd << "!!!";
 		return false;
 	}
+	// write nbest
+	if(_s2c_package_head.HaveNbest())
+	{
+		ret = _nbest_res.Write(sockfd);
+		if(ret <= 0)
+		{
+			LOG_WARN <<"Write Nbest failed.";
+			return false;
+		}
+	}
+	// write align
+	if(_s2c_package_head.HaveAlign())
+	{
+		ret = _align_time.Write(sockfd);
+		if(ret <= 0)
+		{
+			LOG_WARN <<"Write Align failed.";
+			return false;
+		}
+	}
+	Reset();
 	return true;
 }
 
 bool S2CPackageAnalysis::S2CRead(int sockfd)
 {
 	ssize_t ret = ReadN(sockfd, static_cast<void *>(&_s2c_package_head), sizeof(S2CPackageHead));
-	if(ret != sizeof(S2CPackageHead))
+	if(ret < 0)
 	{
-		LOG_WARN << "Read S2CPackageHead failed.";
+		LOG_WARN << "Read S2CPackageHead failed!!!";
 		return false;
 	}
-	if(_s2c_package_head._nbest > 0)
+	else if(ret != sizeof(S2CPackageHead))
 	{
-		ret = _nbest_res.Read(sockfd, _s2c_package_head._nbest);
-		if(ret != 0)
+		if(ret == 0)
+			LOG_WARN << "Service have been closed socket " << sockfd << "!!!";
+		else
+			LOG_WARN << "S2CRead error " << sockfd << "!!!";
+		return false;
+	}
+	// read nbest
+	if(_s2c_package_head.HaveNbest())
+	{
+		ret = _nbest_res.Read(sockfd);//, _s2c_package_head._nbest);
+		if(ret <= 0)
 		{
 			LOG_WARN << "Read Nbest failed.";
 			return false;
 		}
 	}
+	// read align
+	if(_s2c_package_head.HaveAlign())
+	{
+		ret = _align_time.Read(sockfd);
+		if(ret <= 0)
+		{
+			LOG_WARN <<"Read Align failed.";
+			return false;
+		}
+	}
+
 	return true;
 }
 

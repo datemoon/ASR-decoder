@@ -1,9 +1,15 @@
+// author: hubo
+// time  : 2020/08
 #ifndef __SOCKET_CLASS_H__
 #define __SOCKET_CLASS_H__
 
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <string>
+#include <unistd.h>
+#include <fcntl.h>
+
 #include "src/util/util-type.h"
 #include "src/util/config-parse-options.h"
 #include "src/util/log-message.h"
@@ -205,7 +211,11 @@ public:
 			}
 			else
 			{
-				LOG_WARN << "clinet connect error!!!";
+				LOG_WARN << "clinet connect error!!! " 
+					<< " error is : (" << strerror(errno)  << ")"
+					<< " failed accept_fd is " << connectfd 
+					<< " ip is " << inet_ntoa(client.sin_addr)
+					<< " port is " << ntohs(client.sin_port);
 				return ERROR;
 			}
 		}
@@ -216,7 +226,9 @@ public:
 		close(_sockfd);
 	}
 
-private:
+	int32 GetSockfd() { return _sockfd; }
+
+protected:
 	struct sockaddr_in _address;
 	std::string _ip;
 	int16 _port;
@@ -232,6 +244,129 @@ private:
 	int32 _sockfd;
 };
 
+class SocketEpoll 
+{
+public:
+	SocketEpoll(SocketConf *conf):
+	   	_socket_conf(*conf), _socket_io(conf),
+		_epoll_evs(NULL), _nwait_events(0) { }
+
+	int32 Init()
+	{
+		int32 ret = _socket_io.Init();
+		if(ret == SocketBase::ERROR)
+		{
+			LOG_WARN << "SocketBase Init error!!!";
+			return ret;
+		}
+		_epollfd = epoll_create(1);
+		if(_epollfd < 0)
+		{
+			LOG_WARN << "epoll_create error!!!";
+			return SocketBase::ERROR;
+		}
+		_epoll_evs = new struct epoll_event[_socket_conf._n_listen];
+		if(_epoll_evs == NULL)
+		{
+			LOG_WARN << "new epoll_event failed!!!";
+			return SocketBase::ERROR;
+		}
+		return SocketBase::OK;
+	}
+
+	int32 Bind()
+	{
+		int32 ret = _socket_io.Bind();
+		if(ret == SocketBase::ERROR)
+		{
+			LOG_WARN << "SocketBase Bind error!!!";
+			return ret;
+		}
+		return ret;
+	}
+
+	int32 Listen()
+	{
+		int32 ret = _socket_io.Listen();
+		if(ret == SocketBase::ERROR)
+		{
+			LOG_WARN << "SocketBase listen error!!!";
+			return ret;
+		}
+		int flags = fcntl(_socket_io.GetSockfd(), F_GETFL, 0);
+		if(flags < 0)
+		{
+			LOG_WARN << "fcntl error!!!";
+			return SocketBase::ERROR;
+		}
+		ret = fcntl(_socket_io.GetSockfd(), F_SETFL, flags| O_NONBLOCK);
+		if(ret < 0)
+		{
+			LOG_WARN << "fcntl error!!!";
+			return SocketBase::ERROR;
+		}
+		struct epoll_event epoll_ev;
+		memset(&epoll_ev, 0, sizeof(epoll_ev));
+		epoll_ev.events = EPOLLIN;
+		epoll_ev.data.fd = _socket_io.GetSockfd();
+		ret = epoll_ctl(_epollfd, EPOLL_CTL_ADD, 
+				_socket_io.GetSockfd(), &epoll_ev);
+		if(ret < 0)
+		{
+			LOG_WARN << "epoll_ctl failed!!!";
+			return SocketBase::ERROR;
+		}
+		return ret;
+	}
+
+	int32 Accept(std::vector<int> &connfds)
+	{
+		connfds.clear();
+		int32 ret = epoll_wait(_epollfd, _epoll_evs, _socket_conf._n_listen, _socket_conf._rec_timeout/1000);
+		if(ret < 0)
+		{
+			LOG_WARN << "epoll_wait failed!!!";
+			return -2;
+		}
+		for(int i = 0 ; i < ret ; ++i)
+		{
+			int fd = _epoll_evs[i].data.fd;
+			if(fd == _socket_io.GetSockfd())
+			{
+				while(1)
+				{
+					int connfd = _socket_io.Accept();
+					if(connfd < 0)
+					{
+						return connfds.size();
+					}
+					connfds.push_back(connfd);
+				}
+			}
+			else
+			{
+				LOG_WARN << "It's shouldn't happend!!!";
+			}
+		}
+		return -2;
+	}
+
+
+	~SocketEpoll()
+	{
+		if(_epoll_evs != NULL)
+			delete [] _epoll_evs;
+		_epoll_evs = NULL;
+		_epollfd = -1;
+	}
+private:
+
+	const SocketConf &_socket_conf;
+	SocketBase _socket_io;
+	int _epollfd;
+	struct epoll_event *_epoll_evs; // the epoll event length is n_listen
+	int32 _nwait_events;            // use Accept record wait event times.
+};
 #include "src/util/namespace-end.h"
 
 #endif

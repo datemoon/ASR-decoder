@@ -1,3 +1,5 @@
+// author: hubo
+// time  : 2020/08/31
 #ifndef __THREAD_POOL_WORK_THREAD_H__
 #define __THREAD_POOL_WORK_THREAD_H__
 #include "src/service2/thread-class.h"
@@ -32,7 +34,7 @@ public:
 				{// run ok
 					_ready_ok = true;
 				}
-				LOG_COM << "Thread " << tid << " wait task.";
+				VLOG_COM(3) << "Thread " << tid << " wait task.";
 				pthread_cond_wait(pthread_pool_cond, pthread_pool_mutex);
 			}
 			if(_thread_pool->Shutdown())
@@ -41,7 +43,7 @@ public:
 				LOG_COM << "Thread " << tid << " will exit.";
 				pthread_exit(NULL);
 			}
-			LOG_COM << "tid " << tid << " run.";
+			VLOG_COM(3) << "tid " << tid << " run.";
 		
 			TaskBase *task = _thread_pool->GetTask();		
 			_thread_pool->MoveToBusy(tid); // add busy list

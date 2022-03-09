@@ -1,3 +1,5 @@
+// author: hubo
+// time  : 2020/09
 #ifndef __THREAD_INFO_H__
 #define __THREAD_INFO_H__
 

@@ -1,14 +1,217 @@
+// author: hubo
+// time  : 2020/08/19
 #ifndef __NET_DATA_PACKAGE_H__
 #define __NET_DATA_PACKAGE_H__
 
 #include <vector>
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <unistd.h>
 #include "src/util/log-message.h"
 #include "src/util/io-funcs.h"
 
 #include "src/util/namespace-start.h"
+
+template<typename T>
+class NetPackageBase
+{
+public:
+	virtual ssize_t Read(int sockfd) = 0;
+	virtual ssize_t Write(int sockfd) = 0;
+	virtual void Reset() = 0;
+	virtual std::ostream &String(std::ostream &strm) = 0;
+	virtual void SetData(T &data) = 0;
+	virtual void SetData(const T &data) = 0;
+	virtual const T &GetData() = 0;
+
+	virtual ~NetPackageBase() { }
+private:
+};
+
+//////////////////////////////////////////////////////////////
+template<typename T=std::vector<std::string> >
+class NetPackageIO:NetPackageBase<T>
+{
+public:
+	NetPackageIO(std::string prefix=""):_prefix(prefix) { }
+
+	~NetPackageIO() { }
+
+	std::ostream &String(std::ostream &strm)
+	{
+		strm << _prefix << " ";
+		internal::PrintContainer(strm, _data);
+		return strm;
+	}
+
+	// parameter:
+	//    sockfd: socket fd
+	// return:
+	//    <= 0 : send error.
+	//    > 0  : send ok.
+	ssize_t Write(int sockfd)
+	{
+		std::ostringstream oss;
+		std::ostream &otrm = WriteType(oss, _data);
+		if(!otrm)
+		{
+			LOG_WARN << "format " << _prefix << " failed!!!";
+			return -1;
+		}
+		ssize_t nbest_len = oss.str().size();
+
+		ssize_t ret1 = WriteN(sockfd, static_cast<void*>(&nbest_len),
+				sizeof(nbest_len));
+		if(ret1 <= 0)
+		{
+			LOG_WARN << "write " << _prefix << " length failed!!!";
+			return ret1;
+		}
+		else if(ret1 != sizeof(nbest_len))
+		{
+			if(ret1 == 0)
+			{
+				LOG_WARN << "Socked have been closed " << sockfd << "!!!";
+			}
+			else
+			{
+				LOG_WARN << "Write error " << sockfd << "!!!";
+			}
+			return -1;
+		}
+		if(nbest_len > 0)
+		{
+			ssize_t ret2 = WriteN(sockfd, static_cast<void*>(&oss.str()[0]),
+					nbest_len);
+			if(ret2 < 0)
+			{
+				LOG_WARN << "write " << _prefix << " data failed!!!";
+				return ret2;
+			}
+			else if(ret2 != nbest_len)
+			{
+				if(ret2 == 0)
+				{
+					LOG_WARN << "Socked have been closed " << sockfd << "!!!";
+				}
+				else
+				{
+					LOG_WARN << "Write error " << sockfd << "!!!";
+				}
+				return -1;
+			}
+			return ret1 + ret2;
+		}
+		else
+			return ret1;
+	} // Write
+
+	// parameter:
+	//    sockfd: socket fd
+	// return:
+	//    <= 0 : receive error.
+	//    > 0  : receive ok.
+	ssize_t Read(int sockfd)
+	{
+		Reset();
+		ssize_t nbest_len=0;
+		ssize_t ret1 = ReadN(sockfd, static_cast<void *>(&nbest_len),
+				sizeof(nbest_len));
+		if(ret1 <= 0)
+		{
+			LOG_WARN << "Read " << _prefix << " length failed!!!" ;
+			return ret1;
+		}
+		else if(ret1 != sizeof(nbest_len))
+		{
+			if(ret1 == 0)
+			{
+				LOG_WARN << "Socked have been closed " << sockfd << "!!!";
+			}
+			else
+			{
+				LOG_WARN << "Write error " << sockfd << "!!!";
+			}
+			return -1;
+		}
+		if(nbest_len > 0)
+		{
+			std::string data_str(nbest_len, '0');
+			ssize_t ret2 = ReadN(sockfd, static_cast<void *>(&data_str[0]),
+					data_str.size());
+			if(ret2 < 0)
+			{
+				LOG_WARN << "Read " << _prefix << " data failed!!!";
+				return ret2;
+			}
+			else if(ret2 != data_str.size())
+			{
+				if(ret2 == 0)
+				{
+					LOG_WARN << "Socked have been closed " << sockfd << "!!!";
+				}
+				else
+				{
+					LOG_WARN << "Write error " << sockfd << "!!!";
+				}
+				return -1;
+			}
+			// read vector<std::string >
+			std::istringstream iss(data_str);
+			std::istream &istrm = ReadType(iss, &_data);
+			if(!istrm)
+			{
+				LOG_WARN << "load " << _prefix << " data error!!!";
+				return -1;
+			}
+			return ret1 + ret2;
+		}
+		else
+		{
+			return ret1;
+		}
+	} // Read
+
+	void Reset()
+	{
+		_data.clear();
+	}
+
+	void SetData(T &data)
+	{
+		_data.swap(data);
+	}
+
+	void SetData(const T &data)
+	{
+		_data = data;
+	}
+
+	const T &GetData()
+	{
+		return _data;
+	}
+
+private:
+	std::string _prefix;
+	T _data;
+};
+
+template <typename T>
+//template <class T, typename std::enable_if<std::is_class<T>::value, T>::type* = nullptr>
+std::ostream &operator<<(std::ostream &strm, NetPackageIO<T> &c)
+{
+	return internal::PrintContainer(strm, c.GetData());
+}
+
+typedef NetPackageIO<std::vector<std::string> > PackageNbest;
+
+typedef std::vector<std::pair<std::string, std::pair<float, float> > > AlignTime;
+
+typedef NetPackageIO<AlignTime > PackageAlign;
+
+typedef NetPackageIO<std::string> C2SPackageKey;
 
 //////////////////////////////////////////////////////////////
 template <class T>
@@ -41,7 +244,7 @@ typedef unsigned int uint;
 // _end_flag        : 0|1                -> 0:it isn't end, 1:end send.
 // _have_key        : 0|1                -> 0:no key, 1:have key
 // _keep            : 0|1                -> 0:no keep bit, 1:have
-// _n               : 0...               -> which one package,start from 0.
+// _n               : 1...               -> which one package,start from 1. Init is 0
 // _data_len        : 0...               -> data segment length.
 // sizeof(PackageHead) = 96;
 // from client to service package head,
@@ -65,78 +268,31 @@ struct C2SPackageHead
 
 	uint _n                : 32;
 	uint _data_len         : 32;
+	
+	void Print(std::string flag="c2s", int vlog=0)
+	{
+		VLOG_COM(vlog) << "*************************************************";
+		VLOG_COM(vlog) << flag << "->" << "_dtype\t: " << _dtype;
+		VLOG_COM(vlog) << flag << "->" << "_bit\t: " << _bit;
+		VLOG_COM(vlog) << flag << "->" << "_sample_rate\t: " << _sample_rate;
+		VLOG_COM(vlog) << flag << "->" << "_audio_type\t: " << _audio_type;
+		VLOG_COM(vlog) << flag << "->" << "_audio_head_flage\t: " << _audio_head_flage ;
+		VLOG_COM(vlog) << flag << "->" << "_lattice\t: " << _lattice;
+		VLOG_COM(vlog) << flag << "->" << "_ali_info\t: " << _ali_info;
+		VLOG_COM(vlog) << flag << "->" << "_score_info\t: " << _score_info;
+		VLOG_COM(vlog) << flag << "->" << "_nbest\t: " << _nbest;
+		VLOG_COM(vlog) << flag << "->" << "_end_flag\t: " << _end_flag;
+		VLOG_COM(vlog) << flag << "->" << "_have_key\t: " << _have_key;
+		VLOG_COM(vlog) << flag << "->" << "_keep\t: " << _keep;
+		VLOG_COM(vlog) << flag << "->" << "_n\t: " << _n;
+		VLOG_COM(vlog) << flag << "->" << "_data_len\t: " << _data_len;
+		VLOG_COM(vlog) << "*************************************************";
+		if(true)
+		{
+		}
+	}
 };
 
-class C2SKey
-{
-private:
-	char *_key_string;
-	uint _key_len;
-	uint _key_string_capacity;
-public:
-
-	std::string GetKey()
-	{
-		if(_key_string != NULL)
-			return std::string(_key_string, _key_len);
-		else
-			return std::string("");
-	}
-	void Info(int n=2)
-	{
-		if(_key_len != 0)
-			VLOG_COM(n) << "KEY : " << GetKey();
-	}
-	C2SKey():_key_string(NULL),_key_len(0),_key_string_capacity(0) { }
-	~C2SKey()
-	{
-		if(_key_string != NULL)
-			delete _key_string;
-		_key_string = NULL;
-		_key_len = 0;
-		_key_string_capacity = 0;
-	}
-	bool Write(int sockfd, std::string &key_string)
-	{
-		uint key_len = (uint)key_string.length();
-		int ret = WriteN(sockfd, static_cast<void *>(&key_len), sizeof(key_len));
-		if(ret != sizeof(key_len))
-		{
-			LOG_WARN << "write key_len failed.";
-            return false;
-		}
-		ret = WriteN(sockfd, (void *)(key_string.c_str()), sizeof(char)*key_len);
-		if(ret != sizeof(char)*key_len)
-		{
-			LOG_WARN << "write key_string failed.";
-			return false;
-		}
-		return true;
-	}
-	bool Read(int sockfd)
-	{
-		// read key length
-		int ret = ReadN(sockfd, static_cast<void *>(&_key_len), sizeof(_key_len));
-		if(ret != sizeof(_key_len))
-		{
-			LOG_WARN << "read C2SKey len error!!!";
-			return false;
-		}
-		if(_key_len > _key_string_capacity)
-		{ // Renew space
-			_key_string = Renew(_key_string, _key_string_capacity, _key_len + 10);
-			_key_string_capacity = _key_len + 10;
-		}
-		ret = ReadN(sockfd, static_cast<void *>(_key_string), sizeof(char)*_key_len);
-		if(ret != sizeof(char)*_key_len)
-		{
-			LOG_WARN << "read C2SKey key_string error!!!";
-			return false;
-		}
-		return true;
-	}
-
-};
 void C2SPackageHeadPrint(C2SPackageHead &c2s, std::string flag="", int vlog=1);
 // from client to service pack and unpack.
 class C2SPackageAnalysis
@@ -242,6 +398,10 @@ public:
 	bool IsEnd()
 	{
 		return _c2s_package_head._end_flag == 1 ? true:false;
+	}
+	bool IsStart()
+	{
+		return _c2s_package_head._n == 1 ? true:false;
 	}
 	
 	// set audio bit, 8bit 16bit,32bit
@@ -367,7 +527,7 @@ public:
 	void Print(std::string flag="", int vlog=2)
 	{
 		C2SPackageHeadPrint(_c2s_package_head, flag, vlog);
-		_c2skey.Info(vlog);
+		VLOG_COM(vlog) << "KEY : " << _c2skey;
 	}
 
 	char* GetData(uint *data_len)
@@ -376,192 +536,126 @@ public:
 		return _data_buffer;
 	}
 
-	std::string GetKey()
+	const std::string &GetKey()
 	{
-		return _c2skey.GetKey();
+		return _c2skey.GetData();
 	}
 private:
 	struct C2SPackageHead _c2s_package_head;
 	char *_data_buffer;
 	uint _data_buffer_capacity;
-	C2SKey _c2skey;
+	//C2SKey _c2skey;
+	C2SPackageKey _c2skey;
 };
 
-//////////////////////////////////////////////////////////////
-class S2CPackageNbest
-{
-public:
-	friend class S2CPackageAnalysis;
-private:
-	char *_nbest_res;         // nbest result.
-	uint _nbest_res_len;      // _nbest_res length.
-	uint _nbest_res_capacity; // _nbest_res capacity.
-	uint *_nbest_len;         // one result length.
-	uint _nbest_len_len;      // how many reuslt.
-	uint _nbest_len_capacity; // _nbest_len capacity.
-public:
-	void Print(std::string flag="")
-	{
-		std::vector<std::string> nbest;
-		GetData(&nbest);
-		for(size_t i=0; i < nbest.size(); ++i)
-		{
-			if(nbest[i].length() == 0)
-				continue;
-			LOG_COM << flag << " -> " << nbest[i];
-		}
-	}
+enum S2CENDFLAG {S2CNOEND=0,S2CMIDDLEEND=1,S2CEND=2};
 
-	S2CPackageNbest(uint nbest_res_capacity=1024,uint nbest_len_capacity=5):
-		_nbest_res(NULL), _nbest_res_len(0), 
-		_nbest_res_capacity(nbest_res_capacity),
-		_nbest_len(NULL), _nbest_len_len(0),
-		_nbest_len_capacity(nbest_len_capacity)
-	{
-		_nbest_res = new char[_nbest_res_capacity];
-		memset(_nbest_res, 0x00, _nbest_res_capacity*sizeof(char));
-		_nbest_res_len = 0;
-
-		_nbest_len = new uint[_nbest_len_capacity];
-		memset(_nbest_len, 0x00, _nbest_len_capacity*sizeof(uint));
-		_nbest_len_len = 0;
-	}
-	~S2CPackageNbest() 
-	{
-		if(_nbest_res != NULL)
-		{
-			delete [] _nbest_res;
-			_nbest_res = NULL;
-		}
-		_nbest_res_len = 0;
-		_nbest_res_capacity = 0;
-		if(_nbest_len != NULL)
-		{
-			delete []_nbest_len;
-			_nbest_len = NULL;
-		}
-		_nbest_len_len = 0;
-		_nbest_len_capacity = 0;
-	}
-
-	void GetData(std::vector<std::string> *nbest)
-	{
-		uint offset = 0;
-		for(uint i=0;i<_nbest_len_len;++i)
-		{
-			std::string res(_nbest_res+offset, _nbest_len[i]);
-			nbest->push_back(res);
-			offset += _nbest_len[i];
-		}
-	}
-	void SetNbest(std::string &result)
-	{
-		if(result.size() + _nbest_res_len > _nbest_res_capacity)
-		{ // realloc
-			_nbest_res_capacity = result.size() + _nbest_res_len + 128;
-			_nbest_res = Renew<char>(_nbest_res, _nbest_res_len, _nbest_res_capacity);
-		}
-		// copy result
-		memcpy(_nbest_res+_nbest_res_len, result.c_str(), result.size());
-		_nbest_res_len += result.size();
-
-		// set _nbest_len
-		if(_nbest_len_len + 1 > _nbest_len_capacity)
-		{
-			_nbest_len_capacity += 5;
-			_nbest_len = Renew<uint>(_nbest_len, _nbest_len_len, _nbest_len_capacity);
-		}
-		// add len
-		_nbest_len[_nbest_len_len] = result.size();
-		_nbest_len_len++;
-
-	}
-	ssize_t Write(int sockfd)
-	{
-		if(_nbest_len_len == 0)
-			return 0;
-		ssize_t ret1 = WriteN(sockfd, static_cast<void*>(_nbest_len), 
-				_nbest_len_len*sizeof(uint));
-		if(ret1 < 0)
-		{
-			LOG_WARN << "Write nbest_len failed." <<std::endl;
-			return ret1;
-		}
-		ssize_t ret2 = WriteN(sockfd, static_cast<void*>(_nbest_res),
-				_nbest_res_len*sizeof(char));
-		if(ret2 < 0)
-		{
-			LOG_WARN << "Write nbest_res failed.";
-			return ret2;
-		}
-		return ret1+ret2;
-	}
-	ssize_t Read(int sockfd, uint n)
-	{
-		_nbest_len_len = n;
-		if (n <= 0)
-		{
-			return -1;
-		}
-		if(n > _nbest_len_capacity)
-		{ // realloc _nbest_len
-			_nbest_len_capacity = n+5;
-			_nbest_len = Renew<uint>(_nbest_len, 0, 
-					_nbest_len_capacity);
-		}
-		ssize_t ret1 = ReadN(sockfd, static_cast<void *>(_nbest_len),
-			   	n*sizeof(uint));
-		if(ret1 < 0)
-		{
-			LOG_WARN << "Read _nbest_len failed." ;
-			return ret1;
-		}
-		else if((uint)ret1 != n*sizeof(uint))
-		{
-			LOG_WARN << "Read _nbest_len loss.";
-			return -1;
-		}
-		// calculate total length
-		size_t total_len = 0;
-		for(uint i=0;i<n;++i)
-		{
-			total_len += _nbest_len[i]*sizeof(char);
-		}
-		// realloc _nbest_res
-		if(total_len > _nbest_res_capacity)
-		{
-			_nbest_res_capacity = total_len +128;
-			_nbest_res = Renew<char>(_nbest_res, 0, _nbest_res_capacity);
-		}
-		ssize_t ret2 = ReadN(sockfd, static_cast<void *>(_nbest_res),
-				total_len*sizeof(char));
-		if((uint)ret2 != total_len*sizeof(char))
-		{
-			LOG_WARN << "Read _nbest_res loss.";
-			return -1;
-		}
-		return 0;
-	}
-	void Reset()
-	{
-		_nbest_res_len = 0;
-		_nbest_len_len = 0;
-	}
-};
-// _nbest           : 0,1...      -> nbest
-// _lattice         : 0|1
+// _nbest           : 0|1         -> 0:no nbest, 1: have nbest
+// _lattice         : 0|1         -> 0:no lattice, 1:have lattice
 // _ali_info        : 0|1
 // _score_info      : 0|1
 // _end_flag        : 0,1,2       -> 0:not end, 1:vad end, 2:all end.
+// _do_rescore      : 0|1         -> 0:not lattice rescore, 1: lattice rescore
+// _do_punctuate    : 0|1         -> 0:not add punctuate 1:add punctuate
+// _nres            : 0,1...      -> the n times full result.
 struct S2CPackageHead
 {
-	uint _nbest        :6;
+	uint _nbest        :1;
 	uint _lattice      :1;
 	uint _ali_info     :1;
 	uint _score_info   :1;
-	uint _end_flag     :2;     
+	uint _end_flag     :2;
+	uint _do_rescore   :1;
+	uint _do_punctuate :1;
 	uint _nres         :16;
 	unsigned int       :0;
+
+	S2CPackageHead():
+		_nbest(0), _lattice(0), _ali_info(0), _score_info(0),
+		_end_flag(S2CNOEND), _do_rescore(0), _do_punctuate(1), _nres(0) { }
+
+	void Reset()
+	{
+		if(IsAllEnd() == true)
+			_nres = 0;
+		_nbest = 0;
+		_lattice = 0;
+		_ali_info = 0;
+		_score_info = 0;
+		_end_flag = S2CNOEND;
+	}
+	bool SetUseNbest(uint nbest)
+	{
+		if(nbest >> 1 > 0)
+			return false;
+		_nbest = nbest;
+		return true;
+	}
+	bool HaveNbest() { return _nbest; }
+	bool SetUseLattice(uint lattice) 
+	{ 
+		if(lattice >> 1 > 0) 
+			return false;
+	   	_lattice = lattice;
+	   	return true;
+	}
+	bool HaveLattice() { return _lattice; }
+	bool SetUseAligninfo(uint ali_info) 
+	{ 
+		if(ali_info >> 1 > 0) 
+			return false; 
+		_ali_info = ali_info;
+		return true;
+	}
+	bool HaveAlign() { return _ali_info; }
+	bool SetUseScoreinfo(uint score_info) 
+	{ 
+		if(score_info >> 1 > 0)
+			return false; 
+		_score_info = score_info; 
+		return true;
+	}
+	bool HaveScoreInfo() { return _score_info; }
+	bool SetDoRescore(uint do_rescore)
+	{
+		if(do_rescore >> 1 >0)
+			return false;
+		_do_rescore = do_rescore;
+		return true;
+	}
+	bool SetDoPunctuate(uint do_punctuate)
+	{
+		if(do_punctuate >> 1 > 0)
+			return false;
+		_do_punctuate = do_punctuate;
+		return true;
+	}
+	bool IsAllEnd()
+	{
+		if(_end_flag == S2CEND)
+			return true;
+		return false;
+	}
+
+	bool IsMiddleEnd()
+	{
+		if(_end_flag == S2CMIDDLEEND)
+			return true;
+		return false;
+	}
+	void Print(std::string flag="s2c", int vlog=0)
+	{
+		VLOG_COM(vlog) << "*************************************************";
+		VLOG_COM(vlog) << flag << "->" << "_nbest\t: " << _nbest;
+		VLOG_COM(vlog) << flag << "->" << "_lattice\t: " << _lattice;
+		VLOG_COM(vlog) << flag << "->" << "_ali_info\t: " << _ali_info;
+		VLOG_COM(vlog) << flag << "->" << "_score_info\t: " << _score_info;
+		VLOG_COM(vlog) << flag << "->" << "_end_flag\t: " << _end_flag;
+		VLOG_COM(vlog) << flag << "->" << "_do_rescore\t: " << _do_rescore;
+		VLOG_COM(vlog) << flag << "->" << "_do_punctuate\t: " << _do_punctuate;
+		VLOG_COM(vlog) << flag << "->" << "_nres\t: " << _nres;
+		VLOG_COM(vlog) << "*************************************************";
+	}
 };
 
 void S2CPackageHeadPrint(S2CPackageHead &s2c, std::string flag="", int vlog=1);
@@ -569,8 +663,6 @@ void S2CPackageHeadPrint(S2CPackageHead &s2c, std::string flag="", int vlog=1);
 // from service to client pack and unpack.
 class S2CPackageAnalysis
 {
-public:
-	enum S2CENDFLAG {S2CNOEND=0,S2CMIDDLEEND=1,S2CEND=2};
 public:
 	S2CPackageAnalysis(uint nbest=0,uint lattice=0,
 			uint ali_info=0, uint score_info=0, uint end_flag=0, uint nres=0)
@@ -584,53 +676,67 @@ public:
 		_s2c_package_head._nres = nres;
 	}
 
-	bool SetUseLattice(uint lattice) { if(lattice >> 1 > 0) return false; _s2c_package_head._lattice = lattice; return true;}
-	bool SetUseAligninfo(uint ali_info) { if(ali_info >> 1 > 0) return false; _s2c_package_head._ali_info = ali_info;return true;}
-	bool SetUseScoreinfo(uint score_info) { if(score_info >> 1 > 0)return false; _s2c_package_head._score_info = score_info; return true;}
-	bool IsAllEnd()
-	{
-		if(_s2c_package_head._end_flag == S2CEND)
-			return true;
-		return false;
-	}
+	bool SetUseLattice(uint lattice) { return _s2c_package_head.SetUseLattice(lattice); }
+	
+	bool SetUseAligninfo(uint ali_info) { return _s2c_package_head.SetUseAligninfo(ali_info); }
+	
+	bool SetUseScoreinfo(uint score_info) { return _s2c_package_head.SetUseScoreinfo(score_info); }
+	
+	bool IsAllEnd() { return _s2c_package_head.IsAllEnd(); }
 
-	bool IsMiddleEnd()
-	{
-		if(_s2c_package_head._end_flag == S2CMIDDLEEND)
-			return true;
-		return false;
-	}
+	bool IsMiddleEnd() { return _s2c_package_head.IsMiddleEnd(); }
 
 	void Reset()
 	{
-		if(IsAllEnd())
-			_s2c_package_head._nres = 0;
-		_s2c_package_head._nbest = 0;
-		_s2c_package_head._end_flag = S2CNOEND;
+		_s2c_package_head.Reset();
 		_nbest_res.Reset();
+		_align_time.Reset();
 	}
 	~S2CPackageAnalysis() { }
 	// Set nbest result.
 	// if you result greater than 1, you should be recursive call n times.
-	void SetNbest(std::string &result)
+	void SetNbest(const std::string &result)
 	{
-		_nbest_res.SetNbest(result);
-		_s2c_package_head._nbest++;
+		std::vector<std::string> nbest;
+		nbest.push_back(result);
+		_nbest_res.SetData(nbest);
+		_s2c_package_head.SetUseNbest(1);
 	}
+	void SetNbest(std::vector<std::string> &nbest_result)
+	{
+		_nbest_res.SetData(nbest_result);
+		_s2c_package_head.SetUseNbest(1);
+	}
+
+	void SetAlign(AlignTime &align_time)
+	{
+		_align_time.SetData(align_time);
+		SetUseAligninfo(1);
+	}
+
 	// from service to client package write.
 	bool S2CWrite(int sockfd, uint end_flag);
 	// from service to client package unpack.
 	bool S2CRead(int sockfd);
 
+	// get nbest
 	void GetData(std::vector<std::string> *nbest)
 	{
-		_nbest_res.GetData(nbest);
+		*nbest = _nbest_res.GetData();
 	}
 
-	void Print(std::string flag="")
+	// get align result
+	const AlignTime &GetAlign()
 	{
-		S2CPackageHeadPrint(_s2c_package_head, flag);
-		_nbest_res.Print(flag);
+		return _align_time.GetData();
+	}
+
+	void Print(std::string flag="", int vlog=0)
+	{
+		S2CPackageHeadPrint(_s2c_package_head, flag, vlog);
+		//_nbest_res.Print(flag);
+		VLOG_COM(vlog) << flag << " " << _nbest_res;
+		VLOG_COM(vlog) << flag << " " << _align_time;
 	}
 
 	int GetNres()
@@ -641,9 +747,11 @@ public:
 private:
 	struct S2CPackageHead _s2c_package_head;
 	// nbest
-	S2CPackageNbest _nbest_res;
+	//S2CPackageNbest _nbest_res;
+	PackageNbest _nbest_res;
 	// lattice
 	// ali
+	PackageAlign _align_time;
 	// score
 };
 

@@ -1,3 +1,5 @@
+// author: hubo
+// time  : 2020/09/01
 #ifndef __PTHREAD_UTIL_H__
 #define __PTHREAD_UTIL_H__
 

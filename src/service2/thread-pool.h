@@ -1,3 +1,5 @@
+// author: hubo
+// time  : 2020/08
 #ifndef __THREAD_POOL_H__
 #define __THREAD_POOL_H__
 
@@ -10,6 +12,7 @@
 #include "src/util/util-common.h"
 
 #include "src/util/namespace-start.h"
+
 class TaskBase
 {
 public:

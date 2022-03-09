@@ -1,3 +1,5 @@
+// author: hubo
+// time  : 2020/08/14
 #include <unistd.h>
 #include "src/service2/thread-pool.h"
 #include "src/util/log-message.h"
@@ -118,6 +120,8 @@ typename ThreadPoolBase<T>::int32 ThreadPoolBase<T>::AddTask(TaskBase *task)
 			}
 			LOG_WARN <<  "Wait " << ntimes << " times and timeout. No idle pthread wait...";
 			task->Stop();
+			// delete task ptr
+			delete task;
 			return -1;
 			// task cancel
 		}

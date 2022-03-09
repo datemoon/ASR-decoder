@@ -111,13 +111,15 @@ bool S2CPackageAnalysisTest(const char *infile)
 	}
 	char cache[LEN];
 	int n=0;
+	std::vector<std::string> nbest;
 	while(true)
 	{
 		memset(cache, 0x00, sizeof(cache));
 		char *ret = fgets(cache, LEN, infp);
+		cache[strlen(cache)-1] = '\0';
 		if(ret == NULL)
 		{
-			if(ser.S2CWrite(fd, S2CPackageAnalysis::S2CEND) != true)
+			if(ser.S2CWrite(fd, S2CEND) != true)
 			{
 				std::cerr << "S2CWrite all end failed." << std::endl;
 				return false;
@@ -130,17 +132,20 @@ bool S2CPackageAnalysisTest(const char *infile)
 		n++;
 		if(n%3==0)
 		{
-			if(ser.S2CWrite(fd, S2CPackageAnalysis::S2CMIDDLEEND) != true)
+			ser.Print("ser-middle");
+			if(ser.S2CWrite(fd, S2CMIDDLEEND) != true)
 			{
 				std::cerr << "S2CWrite failed." << std::endl;
 				return false;
 			}
-			ser.Print("ser");
 			ser.Reset();
-			ser.Print("reset-ser");
+			nbest.clear();
+			ser.Print("reset-ser-middle");
 		}
 		std::string res1(cache);
-		ser.SetNbest(res1);
+		nbest.push_back(res1);
+		std::vector<std::string> tmpnbest = nbest;
+		ser.SetNbest(tmpnbest);
 	}
 	close(fd);
 	fd = open(tmpfile, O_RDONLY);
