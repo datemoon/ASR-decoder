@@ -1,0 +1,18 @@
+
+
+# 这是一个gpudecoder的代码目录，可以提供gpu版本的语音识别服务，
+# 其中nnet前向会拼batch使用gpu解码，使用kaldi-nnet3，
+# 由于kaldi-nnet3限制，所以每次前向计算会有部分重复性计算，
+# decoder部分使用kaldi的cudadecoder，现阶段已经调试好，添加能量vad
+# 配置文件见conf目录
+# 运行详见run.sh脚本，如修改配置，可详见命令行help
+
+to do:
+    1. 在工程化方向nnet前向拼batch部分有待进一步优化和支持更广范围的nnet模型
+	2. 前向，特征，解码线程池部分代码的同步还有问题，有待进一步解决，对同一个
+	corr_id的使用结束外部无法知道，所以尽量不用同一个corr_id在服务中，但这
+	几乎不可避免，这块有待进一步解决.
+	针对corr_id的冲突问题，当使用vad切音频产生多次corr_id时，不能由主线程分配
+	所以不能保证corr_id不会有冲突，引入GPU_CORRID_OFFSET宏，保证corr_id的增长
+	间隔是GPU_CORRID_OFFSET(默认100)，如果vad切割获得非静音少于100段，就不会有
+	corr_id冲突，但依然没有从本质上解决这个问题，有待修改注册函数。

@@ -12,7 +12,8 @@ SUBDIRS = fst_format_convert_tool \
 		  vad online-vad \
 		  biglm \
 		  post-processing-service \
-		  kaldi-bin
+		  kaldi-bin \
+		  gpu-asr
 
 lib : util align newfst newlm decoder service2 kaldi-nnet3 v1-asr v2-asr vad client \
 	fst_format_convert_tool pitch hmm service nnet

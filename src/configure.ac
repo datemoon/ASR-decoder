@@ -181,6 +181,7 @@ AC_CONFIG_FILES([Makefile
 				 kaldi-bin/Makefile
 				 kaldi-bin/bin/Makefile
 				 post-processing-service/Makefile
-				 biglm/Makefile])
+				 biglm/Makefile
+				 gpu-asr/Makefile])
 
 AC_OUTPUT

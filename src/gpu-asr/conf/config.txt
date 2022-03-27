@@ -1,0 +1,37 @@
+
+# vad config
+--use-energy-vad=true
+--use-realtime-vad=true
+--print-vad-ali-info=false
+
+# endpoint 
+# sil 1
+--endpoint.silence-phones=1
+#--endpoint.rule1.max-relative-cost=inf
+--endpoint.rule1.min-trailing-silence=5
+--endpoint.rule1.min-utterance-length=0
+--endpoint.rule1.must-contain-nonsilence=false
+
+
+#--verbose=3
+--print-thread-pool-info=true
+--gpu-feature-extract=true
+
+--rec-use-final=false
+--beam=13.0
+--lattice-beam=7.0
+--max-active=10000
+--acoustic-scale=1.0
+--max-batch-size=300
+--num-channels=900
+--num-parallel-streaming-channels=900
+--frame-subsampling-factor=3
+--frames-per-chunk=150
+
+--nthread=800
+--config-socket=conf/socket.conf
+--feature-type=fbank
+--fbank-config=conf/fbank.80.conf
+
+#--word-symbol-table=tdnnf_fbank80_train_5kh_aishell_add_10epoch/HCLG-1e-9-modefy-lex-v7-cvte-manual-v2/words.txt
+
