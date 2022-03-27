@@ -195,11 +195,13 @@ int32 V1ASRServiceTask::Run(void *data)
 //				best_result = best_result + asr_result[i];
 //			if(msg.size() > 0)
 //				best_result += msg;
-			ser_s2c.SetNbest(best_result);
-			for(size_t i = 1; i < nbest_result.size(); ++i)
-			{
-				ser_s2c.SetNbest(nbest_result[i]);
-			}
+			ser_s2c.SetNbest(nbest_result);
+			if(nbest_result.size() != 0)
+				ser_s2c.SetNbest(nbest_result);
+//			for(size_t i = 1; i < nbest_result.size(); ++i)
+//			{
+//				ser_s2c.SetNbest(nbest_result[i]);
+//			}
 		}
 
 		{ // send result from service to client.
